@@ -31,6 +31,7 @@ interface SystemStatus {
   extractor: boolean;
   database: { path: string; writable: boolean };
   limits: { maxDocuments: number; maxFileBytes: number };
+  localAccess: boolean;
   runningJob: { id: string; label: string } | null;
 }
 
@@ -383,6 +384,7 @@ export function AddCarWizard({
     system.pythonReady &&
     system.extractor &&
     system.database.writable &&
+    system.localAccess &&
     !system.runningJob;
 
   const years: number[] = [];
@@ -900,6 +902,14 @@ function StepRequirements({
                 {system.database.writable
                   ? "Folder bazy jest zapisywalny."
                   : "Brak uprawnień do zapisu w folderze bazy."}
+              </Check>
+              <Check
+                ok={system.localAccess}
+                label="Otwarte na komputerze z serwerem"
+              >
+                {system.localAccess
+                  ? "Adres lokalny (localhost)."
+                  : "Auta można dodawać tylko pod adresem http://localhost na komputerze, na którym działa serwer."}
               </Check>
               <Check ok={!running} label="Brak trwającego importu">
                 {running ? (

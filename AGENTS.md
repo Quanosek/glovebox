@@ -99,8 +99,9 @@ route)`, `getBook`, `getSection`, `sectionHref`, `getTocTree`, `getPrevNext`,
   this is also what keeps `/media` and imports path-safe. Cascada keeps book ids `manual` /
   `infotainment` (routes `instrukcja` / `navi-950`); imported books use id = route = slug of
   the title.
-- Mutating API routes call `rejectCrossSite()` (Sec-Fetch-Site / Origin vs Host) because the
-  server is unauthenticated; only GET routes may skip it.
+- Mutating API routes call `rejectCrossSite()` (loopback `Host` + same-origin `Origin` /
+  `Sec-Fetch-Site`; `MANUALS_ALLOW_REMOTE_IMPORT=1` allows LAN hosts) because the server is
+  unauthenticated; only GET routes may skip it.
 - Client state comes from `useAppData()` (`useSyncExternalStore` over the store). Anything that
   depends on stored data must wait for `useHydrated()` to avoid hydration mismatches.
   `useActiveCar(cars)` resolves the current car (URL `/auto/<id>` first, then

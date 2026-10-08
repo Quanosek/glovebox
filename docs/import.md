@@ -39,9 +39,17 @@ shares the car with every other checkout of the repository.
 | `/api/cars/<car>` | DELETE | removes `database/<car>/`; refused for built-in cars and the car being imported       |
 | `/api/jobs/<id>`  | GET    | `{ job: ImportJob }`; 404 after a server restart                                      |
 
-POST and DELETE call `rejectCrossSite()` (`src/lib/server/guard.ts`): requests with
-`Sec-Fetch-Site: cross-site` or an `Origin` whose host differs from `Host` get 403, because
-the local server has no authentication. Error messages are Polish.
+POST and DELETE call `rejectCrossSite()` (`src/lib/server/guard.ts`), because the local
+server has no authentication. A request gets 403 unless:
+
+- `Host` is a loopback name (`localhost`, `127.x.x.x`, `[::1]`) — blocks other devices on
+  the network and DNS rebinding; `MANUALS_ALLOW_REMOTE_IMPORT=1` lifts this on trusted
+  networks (`/api/system` reports it as `localAccess`, shown in wizard step 1);
+- and it comes from an app page: `Origin` equal to `Host`, or `Sec-Fetch-Site: same-origin`
+  when `Origin` is absent. Requests with neither header (curl, scripts) are rejected.
+
+Reading (all GET routes) works from any device that can reach the server. Error messages
+are Polish.
 
 ## Server pipeline (`src/lib/server/importer.ts`)
 

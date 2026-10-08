@@ -107,7 +107,9 @@ git commit -m "Add <auto>"
 git push
 ```
 
-Na innym komputerze wystarczy `git pull` i uruchomienie aplikacji — bez ponownego wgrywania
+Dodawanie i usuwanie aut działa tylko pod adresem `http://localhost` na komputerze, na którym
+działa serwer (czytanie instrukcji jest możliwe także z innych urządzeń w sieci). Na innym
+komputerze wystarczy `git pull` i uruchomienie aplikacji — bez ponownego wgrywania
 PDF. Auto dodane w kreatorze można usunąć na jego stronie („Usuń auto z bazy”); wbudowanej
 Cascady nie można usunąć.
 
