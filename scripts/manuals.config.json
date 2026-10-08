@@ -1,0 +1,24 @@
+{
+  "books": [
+    {
+      "id": "manual",
+      "title": "Instrukcja obsługi",
+      "url": "https://www.opel.pl/content/dam/opel/poland/owners/manuals/pdf/Cascada/instrukcja_cascada_0815_my16_pl.pdf",
+      "file": "manuals/instrukcja_cascada_0815_my16_pl.pdf",
+      "out": "src/content/manual",
+      "assets": "public/assets/manual",
+      "assetsUrl": "/assets/manual",
+      "args": ["--max-page-level", "2"]
+    },
+    {
+      "id": "infotainment",
+      "title": "System multimedialny Navi 950",
+      "url": "https://www.opel.pl/content/dam/opel/poland/owners/manuals/pdf/Cascada/instrukcja_sa_cascada_0815_my16_pl.pdf",
+      "file": "manuals/instrukcja_sa_cascada_0815_my16_pl.pdf",
+      "out": "src/content/infotainment",
+      "assets": "public/assets/infotainment",
+      "assetsUrl": "/assets/infotainment",
+      "args": ["--max-page-level", "2"]
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+.next
+out
+node_modules
+public
+src/content/**/*.json
+package-lock.json
+manuals

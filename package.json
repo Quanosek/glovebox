@@ -1,0 +1,44 @@
+{
+  "name": "opel-cascada-manual",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build && node scripts/generate-precache.mjs",
+    "start": "serve out -l 3000",
+    "lint": "eslint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "fetch-manuals": "node scripts/fetch-manuals.mjs",
+    "extract": "node scripts/extract.mjs",
+    "icons": "node scripts/generate-icons.mjs",
+    "test:extract": "python3 -m unittest discover -s scripts/tests"
+  },
+  "dependencies": {
+    "minisearch": "^7.2.0",
+    "next": "16.4.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/turbopack": "^4",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.0",
+    "jsdom": "^30.1.2",
+    "prettier": "^3.9.9",
+    "prettier-plugin-tailwindcss": "^0.8.1",
+    "serve": "^14.2.6",
+    "sharp": "^0.35.5",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^5.0.3"
+  },
+  "engines": {
+    "node": ">=20.9"
+  }
+}
