@@ -7,7 +7,7 @@ import type { FeatureState } from "@/config/vehicle";
  */
 
 export const STORAGE_KEY = "opel-cascada-manual";
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 export const EXPORT_APP_ID = "opel-cascada-manual";
 
 export type HighlightColor = "light" | "silver" | "graphite" | "red";
@@ -72,8 +72,11 @@ export interface Settings {
   fontSize: FontSize;
   /** Expand sections describing equipment the car does not have. */
   showUnavailable: boolean;
-  /** Overrides of `DEFAULT_PROFILE` keyed by feature id (Cascada profile). */
-  vehicle: Record<string, FeatureState>;
+  /**
+   * Equipment of each car: car id → feature id → state. Features without a
+   * state are unknown ("Nie wiem").
+   */
+  vehicles: Record<string, Record<string, FeatureState>>;
   /** Car chosen on the profile page (`database/<car>`), if any. */
   activeCar: string | null;
   /** Optional display name of the local profile. */
@@ -98,7 +101,7 @@ export interface ExportFile {
 export const DEFAULT_SETTINGS: Settings = {
   fontSize: "normal",
   showUnavailable: false,
-  vehicle: {},
+  vehicles: {},
   activeCar: null,
   profileName: "",
 };
@@ -110,7 +113,7 @@ export function createEmptyData(): AppData {
     notebook: { pages: [] },
     bookmarks: [],
     lastRead: null,
-    settings: { ...DEFAULT_SETTINGS, vehicle: {} },
+    settings: { ...DEFAULT_SETTINGS, vehicles: {} },
   };
 }
 

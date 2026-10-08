@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import type { CarSummary } from "@/lib/cars";
+import { equipmentHref, type CarSummary } from "@/lib/cars";
 import { useOnline } from "@/lib/offline";
 import { useActiveCar } from "@/lib/storage/hooks";
+import { CarLogo } from "./CarLogo";
 import { Logo } from "./Logo";
 
 export function Header({ cars }: { cars: CarSummary[] }) {
@@ -17,7 +18,7 @@ export function Header({ cars }: { cars: CarSummary[] }) {
     car
       ? { href: car.href, label: `${car.brand} ${car.model}` }
       : { href: "/auta", label: "Wybierz auto" },
-    ...(car?.hasProfile ? [{ href: "/twoje-auto", label: "Wyposażenie" }] : []),
+    ...(car ? [{ href: equipmentHref(car.id), label: "Wyposażenie" }] : []),
     { href: "/ostrzezenia", label: "Ostrzeżenia" },
     { href: "/komentarze", label: "Komentarze" },
     { href: "/zakladki", label: "Zakładki" },
@@ -63,7 +64,11 @@ export function Header({ cars }: { cars: CarSummary[] }) {
           className="flex shrink-0 items-center gap-2.5 text-black"
           aria-label="Strona główna"
         >
-          <Logo size={34} />
+          {car ? (
+            <CarLogo carId={car.id} brand={car.brand} size={34} />
+          ) : (
+            <Logo size={34} />
+          )}
           <span className="hidden leading-tight sm:block">
             <span className="block text-sm font-semibold tracking-wide uppercase">
               {car ? `${car.brand} ${car.model}` : "Moje instrukcje"}

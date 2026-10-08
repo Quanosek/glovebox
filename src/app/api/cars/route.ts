@@ -9,9 +9,11 @@ export function GET() {
 }
 
 /**
- * Starts importing a new car. Multipart form fields:
- * `brand`, `model`, `year`, optional `variant`, and repeated `files` (PDF)
- * with matching repeated `titles`.
+ * Starts importing a new car. Multipart form fields: `source` (`catalog` or
+ * `other`), `brand`, `model`, `year`, optional `engine` (catalogue engine id,
+ * `catalog` only) or `variant` (`other` only), and repeated `files` (PDF)
+ * with matching repeated `titles`. For `catalog`, brand and model are
+ * catalogue ids.
  */
 export async function POST(request: Request) {
   const blocked = rejectCrossSite(request);
@@ -30,11 +32,20 @@ export async function POST(request: Request) {
     .filter((f): f is File => f instanceof File);
   const titles = form.getAll("titles").map(String);
   try {
+    const source = form.get("source") === "catalog" ? "catalog" : "other";
     const job = await startImport({
+      source,
       brand: String(form.get("brand") ?? ""),
       model: String(form.get("model") ?? ""),
       year: Number(form.get("year")),
-      variant: form.get("variant") ? String(form.get("variant")) : undefined,
+      engine:
+        source === "catalog" && form.get("engine")
+          ? String(form.get("engine"))
+          : undefined,
+      variant:
+        source === "other" && form.get("variant")
+          ? String(form.get("variant"))
+          : undefined,
       docs: files.map((file, i) => ({ file, title: titles[i] ?? "" })),
     });
     return Response.json({ job }, { status: 202 });

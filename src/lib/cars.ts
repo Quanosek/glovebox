@@ -1,10 +1,11 @@
+import type { CarSpec } from "@/lib/catalog";
+
 /**
- * Car catalogue types shared by the server (database reader, importer) and
- * client components. Client-safe: no Node APIs.
+ * Car types shared by the server (database reader, importer) and client
+ * components. Client-safe: no Node APIs.
  */
 
-/** Car whose sections are tagged with the Opel Cascada MY16 feature rules. */
-export const CASCADA_PROFILE = "opel-cascada-my16";
+/** Id of the Opel Cascada; data from app version 1 belongs to it. */
 export const CASCADA_CAR_ID = "opel-cascada-2016";
 
 export interface CarBook {
@@ -26,10 +27,10 @@ export interface CarFile {
   year: number;
   /** Optional free-text description (engine, version…). */
   variant?: string;
-  /** Feature tagging profile; only `CASCADA_PROFILE` exists. */
-  profile?: typeof CASCADA_PROFILE;
-  /** Shipped with the repository; cannot be deleted from the UI. */
-  builtIn?: boolean;
+  /** Catalogue ids when the car was chosen from the official list. */
+  catalog?: { brand: string; model: string };
+  /** Engine chosen from the official catalogue. */
+  spec?: CarSpec;
   createdAt: string;
   books: CarBook[];
 }
@@ -43,8 +44,7 @@ export interface CarSummary {
   variant?: string;
   label: string;
   href: string;
-  builtIn: boolean;
-  hasProfile: boolean;
+  spec?: CarSpec;
   books: Array<
     CarBook & {
       href: string;
@@ -55,6 +55,18 @@ export interface CarSummary {
   >;
 }
 
+/** Section of a manual that describes an optional feature. */
+export interface FeatureSectionLink {
+  book: string;
+  /** Short book name. */
+  bookShort: string;
+  title: string;
+  href: string;
+}
+
+/** Equipment data of one car: feature id → sections describing it. */
+export type CarFeatureSections = Record<string, FeatureSectionLink[]>;
+
 export function carLabel(car: Pick<CarFile, "brand" | "model" | "year">) {
   return `${car.brand} ${car.model} ${car.year}`;
 }
@@ -62,6 +74,19 @@ export function carLabel(car: Pick<CarFile, "brand" | "model" | "year">) {
 export function carHref(carId: string): string {
   return `/auto/${carId}`;
 }
+
+/** Equipment page of a car (`/auto/<car>/wyposazenie`). */
+export function equipmentHref(carId: string): string {
+  return `/auto/${carId}/wyposazenie`;
+}
+
+/** Official brand logo of the car's model year (served by `app/logo/[car]`). */
+export function logoHref(carId: string): string {
+  return `/logo/${carId}`;
+}
+
+/** Book routes that would clash with fixed pages under `/auto/<car>/`. */
+export const RESERVED_BOOK_ROUTES = ["wyposazenie"];
 
 export function bookHref(carId: string, route: string): string {
   return `/auto/${carId}/${route}`;

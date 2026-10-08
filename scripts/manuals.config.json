@@ -1,4 +1,24 @@
 {
+  "car": {
+    "id": "opel-cascada-2016",
+    "brand": "Opel",
+    "model": "Cascada",
+    "year": 2016,
+    "books": [
+      {
+        "id": "manual",
+        "route": "instrukcja",
+        "title": "Instrukcja obsługi",
+        "short": "Instrukcja obsługi"
+      },
+      {
+        "id": "infotainment",
+        "route": "navi-950",
+        "title": "System multimedialny Navi 950",
+        "short": "Navi 950"
+      }
+    ]
+  },
   "books": [
     {
       "id": "manual",

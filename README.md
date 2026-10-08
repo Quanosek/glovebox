@@ -1,28 +1,27 @@
 # opel-cascada-manual
 
 Prywatna, lokalna aplikacja (Next.js) do czytania instrukcji aut z zakreślaczem, komentarzami
-i notatnikiem. Wbudowana jest pełna polska treść dwóch oficjalnych instrukcji
-**Opel Cascada MY16 (2016)**, a kolejne auta dodasz sam z plików PDF:
+i notatnikiem. Każdy, kto uruchamia projekt, dodaje **własne auta z plików PDF** — marka, model,
+rocznik i silnik wybierane są z oficjalnych katalogów aut rejestrowanych w Unii Europejskiej
+i USA, a dla aut spoza katalogu jest opcja „Inna (wpiszę ręcznie)”.
 
-1. **Instrukcja obsługi** — `instrukcja_cascada_0815_my16_pl.pdf`
-2. **System multimedialny Navi 950** — `instrukcja_sa_cascada_0815_my16_pl.pdf`
-
-Treść jest dopasowana do wyposażenia konkretnego auta (1.6 Turbo 170 KM, automat, Navi 950
-Europe…): sekcje dotyczące wyposażenia, którego auto nie ma, są zwijane i oznaczone
-„Brak w Twoim aucie”, a niepewne funkcje — „do weryfikacji” / „prawdopodobnie”.
+Po dodaniu auta zaznaczasz jego **wyposażenie** (np. tempomat, kamera cofania, hak): aplikacja
+sama wyszukuje w instrukcjach opisy wyposażenia opcjonalnego. Sekcje o wyposażeniu, którego
+auto nie ma, są zwijane i oznaczone „Brak w Twoim aucie”, a podpowiedzi wynikające z wybranego
+silnika — „prawdopodobnie”.
 
 ## Profil i auta
 
 Po wejściu do aplikacji widzisz **swój profil** — bez logowania i bez bazy danych. Z profilu
 wybierasz:
 
-- **auto** — listę aut z folderu `database/` (wbudowana Opel Cascada 2016 oraz auta dodane
-  przez Ciebie) albo „Dodaj własne auto”,
+- **auto** — listę aut z lokalnego folderu `database/` (auta dodane przez Ciebie) albo
+  „Dodaj własne auto”,
 - **własny notatnik** — puste kartki z podstawowym formatowaniem Markdown.
 
 Wybrane auto, zaznaczenia, komentarze, zakładki i notatki zapisują się w tej przeglądarce
-(localStorage). Instrukcje aut są w repozytorium, więc są dostępne na każdym urządzeniu, na
-którym uruchomisz projekt.
+(localStorage), a wyposażenie — osobno dla każdego auta. Instrukcje aut są tylko na Twoim
+komputerze: folder `database/` jest w `.gitignore` i nie trafia do repozytorium.
 
 ## Funkcje
 
@@ -39,15 +38,22 @@ którym uruchomisz projekt.
   _kursywa_, przekreślenie, listy, lista zadań `- [ ]`, cytaty, kod, linki.
 - **Zakładki** i **powrót do ostatnio czytanego miejsca**.
 - **Dodaj auto** — kreator krok po kroku (opis niżej).
-- **Wyposażenie Cascady** — profil wyposażenia (edytowalny w Ustawieniach), funkcje do
-  weryfikacji, opis nieaktywnych przycisków OnStar.
+- **Logo marki** — po wybraniu auta w nagłówku widać oficjalne logo jego marki z roku
+  produkcji (np. Opel z 2016 r. ma znak używany w latach 2009–2017), a gdy nie da się go
+  ustalić — najnowsze logo albo ikonę aplikacji. Logo pochodzi z Wikidanych i zapisuje się
+  na komputerze (`database/.logos/`), więc działa też offline.
+- **Wyposażenie auta** — dla każdego auta osobno („Mam” / „Nie mam” / „Nie wiem”), tylko
+  funkcje opisane w jego instrukcjach, z linkami do odpowiednich sekcji; podpowiedzi na
+  podstawie silnika. Strona „Wyposażenie” auta (też w menu i w Ustawieniach).
 - **Offline** — po otwarciu auta wszystkie jego strony i ilustracje zapisują się same w tle;
   potem całe auto działa bez internetu (znaczek „Offline” w nagłówku). Połączenie jest
   potrzebne tylko do dodawania aut i odświeżenia listy aut.
 - **Proste w obsłudze** — okna potwierdzeń na środku ekranu, czytelne komunikaty po polsku
   bez technicznego żargonu, wygląd w stylu ekranów radia Opel Navi 950 (jasny motyw).
-- **Prywatność** — brak bazy danych, kont, analityki i zewnętrznych zapytań. Pliki PDF są
-  przetwarzane tylko na Twoim komputerze.
+- **Prywatność** — brak bazy danych, kont i analityki. Pliki PDF są przetwarzane tylko na
+  Twoim komputerze. Jedyne zapytania na zewnątrz wysyła lokalny serwer — do publicznych
+  katalogów aut (kreator „Dodaj auto”) i po logo marki (Wikidane) — bez żadnych Twoich
+  danych.
 
 ## Prawa autorskie — tylko do użytku prywatnego
 
@@ -60,7 +66,7 @@ repozytorium (są w `.gitignore` i są usuwane po imporcie).
 
 - **Node.js 20.9+** (zalecany 22 LTS) i **pnpm 10+** (`npm install -g pnpm` albo
   `corepack enable`) — projekt używa wyłącznie pnpm (`pnpm-lock.yaml`)
-- Do dodawania aut z PDF i (ponownego) generowania treści: **Python 3.10+** oraz pakiety z
+- Do dodawania aut z PDF i generowania treści: **Python 3.10+** oraz pakiety z
   `scripts/requirements.txt` (PyMuPDF, Pillow) — patrz „Przygotowanie komputera” niżej
 
 ## Instalacja i uruchomienie
@@ -86,15 +92,25 @@ tylko w wersji produkcyjnej otwartej pod `http://localhost` (albo przez HTTPS).
 
 ### Dla użytkownika — kreator „Dodaj auto”
 
-Menu „Dodaj auto” (lub kafelek „Dodaj własne auto” na profilu) otwiera kreator w trzech
+Menu „Dodaj auto” (lub kafelek „Dodaj własne auto” na profilu) otwiera kreator w czterech
 krokach, bez żadnych technicznych pytań:
 
-1. **Auto i instrukcje** — u góry obok siebie: marka → model → rocznik (lista podpowiedzi
-   albo „Inna marka…/Inny model…”), opcjonalnie wersja silnika. Niżej pole do przeciągania
-   plików z siatką instrukcji: podgląd pierwszej strony, liczba stron, nazwa, kolejność.
-   Limit: **10 plików PDF** na auto (do 250 MB każdy).
+1. **Auto i instrukcje** — marka → model → rocznik → silnik, wybierane z list. Listy pochodzą
+   z oficjalnych danych rejestracyjnych (Europejska Agencja Środowiska — wszystkie nowe auta
+   osobowe rejestrowane w UE od 2010 r.; NHTSA — modele sprzedawane w USA od 2000 r.), więc
+   nie da się wybrać modelu ani rocznika, który nie istniał. Silnik jest opcjonalny („Nie
+   wiem / pomiń”). Dla aut spoza katalogu (np. starszych) wybierz markę **„Inna (wpiszę
+   ręcznie)”** — wtedy wpisujesz markę i model, wybierasz rocznik (obowiązkowe) i opcjonalnie
+   wersję. Niżej pole do przeciągania plików z siatką instrukcji: podgląd pierwszej strony,
+   liczba stron, nazwa, kolejność. Limit: **10 plików PDF** na auto (do 250 MB każdy).
 2. **Odczytywanie** — aplikacja odczytuje tekst, rozdziały, ostrzeżenia, tabele i ilustracje.
-3. **Gotowe** — auto pojawia się na liście. **Pliki PDF są zawsze usuwane** (także po błędzie).
+3. **Wyposażenie** — lista wyposażenia opcjonalnego znalezionego w instrukcjach; zaznacz, co
+   ma Twoje auto (można pominąć i uzupełnić później na stronie „Wyposażenie” auta).
+4. **Gotowe** — auto pojawia się na liście. **Pliki PDF są zawsze usuwane** (także po błędzie).
+
+Katalog aut jest pobierany przy pierwszym otwarciu kreatora (wymaga internetu) i
+zapamiętywany w `database/.catalog/` na kilka dni. Gdy katalog jest niedostępny, kreator
+pozwala dodać auto tylko przez „Inna”.
 
 Jeśli dodawanie nie jest możliwe (brak połączenia, trwa dodawanie innego auta, komputer nie
 jest przygotowany), kreator pokazuje jeden prosty komunikat zamiast formularza wymagań.
@@ -112,29 +128,24 @@ python3 -m venv .venv
 
 Inny interpreter wskażesz zmienną `PYTHON`, np. `PYTHON=/usr/bin/python3 pnpm start`.
 
-### Gdzie trafiają auta i jak je udostępnić
+### Gdzie trafiają auta i jak je przenieść
 
 Kreator zapisuje auto w folderze `database/<marka-model-rocznik>/` obok kodu aplikacji
-(pliki JSON i obrazy WebP). Aby auto było dostępne na innych komputerach, zatwierdź folder w
-repozytorium:
+(pliki JSON i obrazy WebP). Cały folder `database/` jest w `.gitignore` — baza aut zostaje
+lokalnie, a każdy, kto uruchamia kod, wgrywa własne instrukcje. Aby przenieść auto na inny
+komputer, skopiuj jego folder do `database/` w drugiej kopii projektu (bez ponownego wgrywania
+PDF).
 
-```bash
-git add database/<marka-model-rocznik>
-git commit -m "Add <auto>"
-git push
-```
-
-Na innym komputerze wystarczy `git pull` i uruchomienie aplikacji — bez ponownego wgrywania
-PDF. Dodawanie i usuwanie aut działa tylko pod adresem `http://localhost` na komputerze, na
+Dodawanie i usuwanie aut działa tylko pod adresem `http://localhost` na komputerze, na
 którym działa aplikacja (czytanie instrukcji jest możliwe także z innych urządzeń w sieci;
-`MANUALS_ALLOW_REMOTE_IMPORT=1` zdejmuje to ograniczenie w zaufanej sieci). Auto dodane w
-kreatorze można usunąć na jego stronie („Usuń to auto”); wbudowanej Cascady nie można usunąć.
+`MANUALS_ALLOW_REMOTE_IMPORT=1` zdejmuje to ograniczenie w zaufanej sieci). Każde auto można
+usunąć na jego stronie („Usuń to auto”).
 
-## Generowanie treści wbudowanej Cascady
+## Generowanie treści Opel Cascada MY16 z poleceń
 
-Wygenerowana treść Cascady (pliki JSON i obrazy WebP w `database/opel-cascada-2016/`) jest
-przechowywana w repozytorium. Jeśli w aplikacji widzisz tylko rozdział „Zanim zaczniesz”, treść
-nie została jeszcze wygenerowana — wykonaj lokalnie:
+Instrukcje Opel Cascada MY16 (2016) — **Instrukcja obsługi** i **System multimedialny Navi
+950** — można dodać kreatorem albo wygenerować poleceniami do
+`database/opel-cascada-2016/` (plik `car.json` auta powstaje sam, jeśli go nie ma):
 
 ```bash
 # 1. zależności Pythona (najlepiej w środowisku wirtualnym)
@@ -160,16 +171,16 @@ Jeśli pobieranie się nie uda, pobierz pliki ręcznie ze stron:
 
 i zapisz je w katalogu `manuals/` pod tymi samymi nazwami.
 
-Po ekstrakcji zatwierdź (commit) zmiany w `database/opel-cascada-2016/`. Ekstrakcja
-nadpisuje poprzednio wygenerowaną treść — zaznaczenia przypięte do tekstu, który się zmienił,
+Ekstrakcja nadpisuje poprzednio wygenerowaną treść — zaznaczenia przypięte do tekstu, który się zmienił,
 zostaną oznaczone jako „nie odnaleziono” (nie znikną).
 
-Oznaczanie sekcji funkcjami auta (np. „Brak w Twoim aucie”) jest w
-`src/config/featureRules.ts` — można je poprawiać bez ponownej ekstrakcji.
+Rozpoznawanie wyposażenia w treści (tytuły sekcji i nagłówki, np. „Tempomat”) jest w
+`src/config/featureRules.ts` i działa dla wszystkich aut — można je poprawiać bez ponownej
+ekstrakcji. Szczegóły: `docs/vehicle-profile.md` i `docs/catalog.md`.
 
 ## Kopia zapasowa notatek
 
-Zaznaczenia, komentarze, notatnik, zakładki i ustawienia są zapisywane tylko w tej
+Zaznaczenia, komentarze, notatnik, zakładki, wyposażenie aut i ustawienia są zapisywane tylko w tej
 przeglądarce (dla wszystkich aut). Wyczyszczenie danych przeglądarki usunie je bezpowrotnie.
 Dane ze starszej wersji aplikacji (tylko Cascada) są automatycznie przenoszone do nowego
 formatu.

@@ -76,12 +76,11 @@ export function CarPicker({ cars }: { cars: CarSummary[] }) {
                     </li>
                   ))}
                 </ul>
-                <p className="mt-3 text-xs text-steel">
-                  {car.builtIn
-                    ? "W aplikacji od początku"
-                    : "Dodane przez Ciebie"}
-                  {placeholder ? " · treść jeszcze niegotowa" : ""}
-                </p>
+                {placeholder && (
+                  <p className="mt-3 text-xs text-steel">
+                    Treść jeszcze niegotowa
+                  </p>
+                )}
                 <div className="mt-auto flex gap-2 pt-4">
                   <button
                     type="button"

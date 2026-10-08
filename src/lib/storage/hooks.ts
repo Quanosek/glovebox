@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
-import { resolveProfile, type VehicleProfile } from "@/config/vehicle";
+import type { FeatureState, VehicleProfile } from "@/config/vehicle";
 import type { CarSummary } from "@/lib/cars";
 import { EMPTY_DATA, type AppData } from "./schema";
 import { getStore } from "./store";
@@ -26,9 +26,47 @@ export function useHydrated(): boolean {
 
 const noopSubscribe = () => () => {};
 
-export function useVehicleProfile(): VehicleProfile {
+const EMPTY_PROFILE: VehicleProfile = {};
+
+/**
+ * Equipment of a car (feature id → state). Defaults to the car of the open
+ * `/auto/<car>` page; empty when nothing was marked yet.
+ */
+export function useVehicleProfile(carId?: string | null): VehicleProfile {
+  const pathname = usePathname();
   const data = useAppData();
-  return resolveProfile(data.settings.vehicle);
+  const id = carId ?? /^\/auto\/([^/]+)/.exec(pathname)?.[1];
+  return (id && data.settings.vehicles[id]) || EMPTY_PROFILE;
+}
+
+/** Sets (or with `null` clears) the state of one feature of a car. */
+export function setFeatureState(
+  carId: string,
+  featureId: string,
+  state: FeatureState | null,
+): void {
+  updateData((d) => {
+    const profile = { ...d.settings.vehicles[carId] };
+    if (state) profile[featureId] = state;
+    else delete profile[featureId];
+    const vehicles = { ...d.settings.vehicles };
+    if (Object.keys(profile).length > 0) vehicles[carId] = profile;
+    else delete vehicles[carId];
+    return { ...d, settings: { ...d.settings, vehicles } };
+  });
+}
+
+/** Replaces the whole equipment profile of a car. */
+export function setVehicleProfile(
+  carId: string,
+  profile: VehicleProfile,
+): void {
+  updateData((d) => {
+    const vehicles = { ...d.settings.vehicles };
+    if (Object.keys(profile).length > 0) vehicles[carId] = { ...profile };
+    else delete vehicles[carId];
+    return { ...d, settings: { ...d.settings, vehicles } };
+  });
 }
 
 export function updateData(fn: (data: AppData) => AppData): void {

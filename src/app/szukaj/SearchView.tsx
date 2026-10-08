@@ -30,7 +30,6 @@ export function SearchView({ cars }: { cars: SearchCar[] }) {
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [book, setBook] = useState<string>("all");
-  const profile = useVehicleProfile();
   const hydrated = useHydrated();
   const { settings } = useAppData();
 
@@ -44,6 +43,7 @@ export function SearchView({ cars }: { cars: SearchCar[] }) {
     cars[0]?.id ??
     null;
   const car = cars.find((c) => c.id === carId) ?? null;
+  const profile = useVehicleProfile(carId);
   const docs = loaded && loaded.car === carId ? loaded.docs : null;
 
   // Sync with the header search box (?q=).

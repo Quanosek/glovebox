@@ -4,19 +4,21 @@ import path from "node:path";
 import { matchFeatures } from "@/config/featureRules";
 import type { FeatureId } from "@/config/vehicle";
 import {
-  CASCADA_PROFILE,
   bookHref,
   carHref,
   carLabel,
+  equipmentHref,
   type CarBook,
   type CarFile,
   type CarSummary,
+  type FeatureSectionLink,
 } from "@/lib/cars";
 import { isValidId } from "@/lib/slug";
 import type {
   Block,
   BookIndex,
   ChapterFile,
+  HeadingBlock,
   Run,
   SectionMeta,
   WarningBlock,
@@ -79,11 +81,7 @@ export function listCars(): CarFile[] {
     const car = getCar(e.name);
     if (car) cars.push(car);
   }
-  return cars.sort(
-    (a, b) =>
-      Number(Boolean(b.builtIn)) - Number(Boolean(a.builtIn)) ||
-      carLabel(a).localeCompare(carLabel(b), "pl"),
-  );
+  return cars.sort((a, b) => carLabel(a).localeCompare(carLabel(b), "pl"));
 }
 
 export function getCar(id: string): CarFile | undefined {
@@ -121,8 +119,7 @@ export function getCarSummary(car: CarFile): CarSummary {
     variant: car.variant,
     label: carLabel(car),
     href: carHref(car.id),
-    builtIn: Boolean(car.builtIn),
-    hasProfile: car.profile === CASCADA_PROFILE,
+    ...(car.spec ? { spec: car.spec } : {}),
     books: bookCtxs(car).map((ctx) => {
       const index = getBook(ctx);
       return {
@@ -214,15 +211,11 @@ export function getPrevNext(ctx: BookCtx, section: SectionMeta) {
   };
 }
 
-/**
- * Features of a section, including the ones inherited from its ancestors.
- * Only cars with the Cascada profile are tagged.
- */
+/** Features of a section, including the ones inherited from its ancestors. */
 export function getSectionFeatures(
   ctx: BookCtx,
   section: SectionMeta,
 ): FeatureId[] {
-  if (ctx.car.profile !== CASCADA_PROFILE) return [];
   const chain = [...getAncestors(ctx, section), section];
   const out: FeatureId[] = [];
   for (const s of chain) {
@@ -230,6 +223,82 @@ export function getSectionFeatures(
       if (!out.includes(f)) out.push(f);
   }
   return out;
+}
+
+/**
+ * Blocks of a section, with the parts that start at a heading mentioning
+ * optional equipment grouped (a part runs until the next heading of the same
+ * or a higher level). Manuals often describe equipment under headings inside
+ * a longer section, e.g. "Tempomat" inside "Systemy wspomagania kierowcy".
+ */
+export type FeatureNode =
+  | { kind: "block"; block: Block }
+  | {
+      kind: "part";
+      heading: HeadingBlock;
+      /** Features of this part not already inherited from outside it. */
+      features: FeatureId[];
+      children: FeatureNode[];
+    };
+
+export function getFeatureTree(
+  ctx: BookCtx,
+  blocks: Block[],
+  inherited: readonly FeatureId[],
+): FeatureNode[] {
+  const build = (
+    from: number,
+    to: number,
+    outer: readonly FeatureId[],
+  ): FeatureNode[] => {
+    const nodes: FeatureNode[] = [];
+    let i = from;
+    while (i < to) {
+      const block = blocks[i];
+      const features =
+        block.type === "heading"
+          ? matchFeatures(ctx.book.id, runsToText(block.runs)).filter(
+              (f) => !outer.includes(f),
+            )
+          : [];
+      if (block.type !== "heading" || features.length === 0) {
+        nodes.push({ kind: "block", block });
+        i++;
+        continue;
+      }
+      let end = i + 1;
+      while (end < to) {
+        const b = blocks[end];
+        if (b.type === "heading" && b.level <= block.level) break;
+        end++;
+      }
+      nodes.push({
+        kind: "part",
+        heading: block,
+        features,
+        children: build(i + 1, end, [...outer, ...features]),
+      });
+      i = end;
+    }
+    return nodes;
+  };
+  return build(0, blocks.length, inherited);
+}
+
+/** Calls `fn` for every top-level block with all features that apply to it. */
+function forEachBlockFeatures(
+  nodes: FeatureNode[],
+  outer: FeatureId[],
+  fn: (block: Block, features: FeatureId[]) => void,
+) {
+  for (const n of nodes) {
+    if (n.kind === "block") fn(n.block, outer);
+    else {
+      const inner = [...outer, ...n.features];
+      fn(n.heading, inner);
+      forEachBlockFeatures(n.children, inner, fn);
+    }
+  }
 }
 
 export interface TocNode {
@@ -333,8 +402,9 @@ export function getAllWarnings(): WarningEntry[] {
   for (const car of listCars()) {
     for (const ctx of bookCtxs(car)) {
       for (const s of getBook(ctx).sections) {
-        const features = getSectionFeatures(ctx, s);
-        for (const b of getBlocks(ctx, s)) {
+        const inherited = getSectionFeatures(ctx, s);
+        const tree = getFeatureTree(ctx, getBlocks(ctx, s), inherited);
+        forEachBlockFeatures(tree, inherited, (b, features) => {
           if (b.type === "warning") {
             out.push({
               car: car.id,
@@ -345,7 +415,7 @@ export function getAllWarnings(): WarningEntry[] {
               features,
             });
           }
-        }
+        });
       }
     }
   }
@@ -387,7 +457,7 @@ export function getSearchDocs(car: CarFile): SearchDoc[] {
 
 /** Every page and image URL of a car (used for "save for offline"). */
 export function getCarUrls(car: CarFile): string[] {
-  const urls = new Set<string>([carHref(car.id)]);
+  const urls = new Set<string>([carHref(car.id), equipmentHref(car.id)]);
   for (const ctx of bookCtxs(car)) {
     urls.add(bookHref(car.id, ctx.book.route));
     for (const s of getBook(ctx).sections) {
@@ -437,27 +507,43 @@ function collectImages(block: Block, urls: Set<string>) {
     block.blocks.forEach((b) => collectImages(b, urls));
 }
 
-export interface FeatureSectionLink {
-  book: string;
-  title: string;
-  href: string;
-}
-
-/** Sections whose own title is tagged with each feature (not inherited). */
+/**
+ * Places in the manuals of a car that describe each optional feature:
+ * sections whose own title mentions it and headings inside sections.
+ */
 export function getFeatureSections(
   car: CarFile,
 ): Record<string, FeatureSectionLink[]> {
   const out: Record<string, FeatureSectionLink[]> = {};
-  if (car.profile !== CASCADA_PROFILE) return out;
+  const add = (f: string, link: FeatureSectionLink) => {
+    const list = (out[f] ??= []);
+    if (!list.some((l) => l.href === link.href)) list.push(link);
+  };
+  const walk = (ctx: BookCtx, href: string, nodes: FeatureNode[]) => {
+    for (const n of nodes) {
+      if (n.kind !== "part") continue;
+      for (const f of n.features)
+        add(f, {
+          book: ctx.book.id,
+          bookShort: ctx.book.short,
+          title: runsToText(n.heading.runs),
+          href: `${href}#${n.heading.id}`,
+        });
+      walk(ctx, href, n.children);
+    }
+  };
   for (const ctx of bookCtxs(car)) {
     for (const s of getBook(ctx).sections) {
-      for (const f of matchFeatures(ctx.book.id, s.title)) {
-        (out[f] ??= []).push({
+      const href = sectionHref(ctx, s);
+      for (const f of matchFeatures(ctx.book.id, s.title))
+        add(f, {
           book: ctx.book.id,
+          bookShort: ctx.book.short,
           title: s.title,
-          href: sectionHref(ctx, s),
+          href,
         });
-      }
+      const inherited = getSectionFeatures(ctx, s);
+      walk(ctx, href, getFeatureTree(ctx, getBlocks(ctx, s), inherited));
     }
   }
   return out;

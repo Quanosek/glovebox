@@ -9,18 +9,15 @@ import {
   useOfflineState,
   useOnline,
 } from "@/lib/offline";
-import { setActiveCar, useAppData, useHydrated } from "@/lib/storage/hooks";
+import {
+  setActiveCar,
+  setVehicleProfile,
+  useAppData,
+  useHydrated,
+} from "@/lib/storage/hooks";
 
 /** Offline copy status and the "delete car" action of the car page. */
-export function CarActions({
-  carId,
-  label,
-  builtIn,
-}: {
-  carId: string;
-  label: string;
-  builtIn: boolean;
-}) {
+export function CarActions({ carId, label }: { carId: string; label: string }) {
   const router = useRouter();
   const { settings } = useAppData();
   const hydrated = useHydrated();
@@ -61,6 +58,7 @@ export function CarActions({
         throw new Error(body.error ?? "Nie udało się usunąć auta.");
       }
       await forgetCarOffline(carId);
+      setVehicleProfile(carId, {});
       if (settings.activeCar === carId) setActiveCar(null);
       router.push("/auta");
       router.refresh();
@@ -133,18 +131,16 @@ export function CarActions({
             teraz odświeżyć.
           </p>
         )}
-        {!builtIn && (
-          <div className="border-t border-line pt-3">
-            <button
-              type="button"
-              className="btn"
-              onClick={remove}
-              disabled={deleting || !online}
-            >
-              {deleting ? "Usuwanie…" : "Usuń to auto"}
-            </button>
-          </div>
-        )}
+        <div className="border-t border-line pt-3">
+          <button
+            type="button"
+            className="btn"
+            onClick={remove}
+            disabled={deleting || !online}
+          >
+            {deleting ? "Usuwanie…" : "Usuń to auto"}
+          </button>
+        </div>
         {error && <p className="text-red">{error}</p>}
       </div>
     </div>

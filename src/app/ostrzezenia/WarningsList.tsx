@@ -4,11 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import type { WarningKind } from "@/content/types";
 import { getAvailability } from "@/lib/availability";
-import {
-  useAppData,
-  useHydrated,
-  useVehicleProfile,
-} from "@/lib/storage/hooks";
+import { useAppData, useHydrated } from "@/lib/storage/hooks";
 
 export interface WarningItem {
   id: string;
@@ -41,7 +37,6 @@ export function WarningsList({
   initialCar?: string;
 }) {
   const [kind, setKind] = useState<WarningKind | "all">("all");
-  const profile = useVehicleProfile();
   const hydrated = useHydrated();
   const { settings } = useAppData();
   const [chosenCar, setChosenCar] = useState<string | null>(initialCar ?? null);
@@ -58,7 +53,8 @@ export function WarningsList({
     if (
       hydrated &&
       !settings.showUnavailable &&
-      getAvailability(w.features, profile).kind === "missing"
+      getAvailability(w.features, settings.vehicles[w.car] ?? {}).kind ===
+        "missing"
     ) {
       return false;
     }

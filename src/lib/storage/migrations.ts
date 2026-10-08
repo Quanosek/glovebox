@@ -11,6 +11,11 @@ import {
   type NotePage,
   type Settings,
 } from "./schema";
+import {
+  FEATURE_BY_ID,
+  RENAMED_FEATURES,
+  type FeatureState,
+} from "@/config/vehicle";
 import { CASCADA_CAR_ID } from "@/lib/cars";
 import { isValidId } from "@/lib/slug";
 
@@ -30,6 +35,9 @@ export const MIGRATIONS: Record<number, Migration> = {
   // v2: multiple cars. Everything stored before belongs to the Opel Cascada
   // and its URLs move from `/<book>/…` to `/auto/<car>/<book>/…`.
   1: migrateV1toV2,
+  // v3: equipment per car. The old single profile (overrides of the removed
+  // Opel Cascada defaults) becomes the Cascada's own profile.
+  2: migrateV2toV3,
 };
 
 const V1_ROUTES = ["/instrukcja", "/navi-950"];
@@ -86,6 +94,19 @@ function migrateV1toV2(data: Record<string, unknown>) {
       activeCar: hasData ? CASCADA_CAR_ID : null,
     },
   };
+}
+
+function migrateV2toV3(data: Record<string, unknown>) {
+  const settings = isObject(data.settings) ? { ...data.settings } : {};
+  const vehicles: Record<string, unknown> = {};
+  if (isObject(settings.vehicle)) {
+    const cascada: Record<string, unknown> = {};
+    for (const [id, state] of Object.entries(settings.vehicle))
+      cascada[RENAMED_FEATURES[id] ?? id] ??= state;
+    if (Object.keys(cascada).length > 0) vehicles[CASCADA_CAR_ID] = cascada;
+  }
+  delete settings.vehicle;
+  return { ...data, settings: { ...settings, vehicles } };
 }
 
 export class UnsupportedVersionError extends Error {
@@ -203,7 +224,7 @@ export function sanitize(data: Record<string, unknown>): AppData {
   }
 
   const s = isObject(data.settings) ? data.settings : {};
-  const settings: Settings = { ...DEFAULT_SETTINGS, vehicle: {} };
+  const settings: Settings = { ...DEFAULT_SETTINGS, vehicles: {} };
   if (FONT_SIZES.includes(s.fontSize as FontSize))
     settings.fontSize = s.fontSize as FontSize;
   if (typeof s.showUnavailable === "boolean")
@@ -211,23 +232,33 @@ export function sanitize(data: Record<string, unknown>): AppData {
   if (isValidId(s.activeCar)) settings.activeCar = s.activeCar;
   if (typeof s.profileName === "string")
     settings.profileName = s.profileName.slice(0, 80);
-  if (isObject(s.vehicle)) {
-    for (const [id, state] of Object.entries(s.vehicle)) {
-      if (
-        isObject(state) &&
-        (state.status === "has" || state.status === "no") &&
-        (state.certainty === "confirmed" ||
-          state.certainty === "verify" ||
-          state.certainty === "probable")
-      ) {
-        settings.vehicle[id] = {
-          status: state.status,
-          certainty: state.certainty,
-        };
-      }
+  if (isObject(s.vehicles)) {
+    for (const [car, profile] of Object.entries(s.vehicles)) {
+      if (!isValidId(car) || !isObject(profile)) continue;
+      const clean = sanitizeProfile(profile);
+      if (Object.keys(clean).length > 0) settings.vehicles[car] = clean;
     }
   }
   out.settings = settings;
+  return out;
+}
+
+/** Keeps valid states of known features only. */
+function sanitizeProfile(
+  profile: Record<string, unknown>,
+): Record<string, FeatureState> {
+  const out: Record<string, FeatureState> = {};
+  for (const [id, state] of Object.entries(profile)) {
+    if (
+      FEATURE_BY_ID[id] &&
+      isObject(state) &&
+      (state.status === "has" || state.status === "no") &&
+      (state.certainty === "confirmed" ||
+        state.certainty === "verify" ||
+        state.certainty === "probable")
+    )
+      out[id] = { status: state.status, certainty: state.certainty };
+  }
   return out;
 }
 
@@ -283,7 +314,8 @@ export function parseImport(json: string): AppData {
 
 /**
  * Merges imported data into current data. Items are matched by id, the more
- * recently updated version wins. Settings are kept from `current`.
+ * recently updated version wins. Settings are kept from `current`, except
+ * equipment of cars that `current` knows nothing about.
  */
 export function mergeData(current: AppData, incoming: AppData): AppData {
   const highlights = { ...current.highlights };
@@ -313,11 +345,15 @@ export function mergeData(current: AppData, incoming: AppData): AppData {
     (incoming.lastRead && incoming.lastRead.at > current.lastRead.at)
       ? incoming.lastRead
       : current.lastRead;
+  const vehicles = { ...current.settings.vehicles };
+  for (const [car, profile] of Object.entries(incoming.settings.vehicles))
+    vehicles[car] = { ...profile, ...vehicles[car] };
   return {
     ...current,
     highlights,
     notebook: { pages },
     bookmarks,
     lastRead,
+    settings: { ...current.settings, vehicles },
   };
 }

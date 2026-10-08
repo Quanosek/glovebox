@@ -3,8 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CarActions } from "@/components/CarActions";
 import { ContinueReading } from "@/components/ContinueReading";
-import { Logo } from "@/components/Logo";
-import { carLabel } from "@/lib/cars";
+import { CarLogo } from "@/components/CarLogo";
+import { carLabel, equipmentHref } from "@/lib/cars";
 import { getCar, getCarSummary } from "@/lib/content";
 import { plural } from "@/lib/typography";
 
@@ -31,15 +31,11 @@ export default async function CarPage({ params }: Props) {
       title: "Ostrzeżenia",
       text: "Ostrzeżenia, przestrogi i uwagi z instrukcji.",
     },
-    ...(car.hasProfile
-      ? [
-          {
-            href: "/twoje-auto",
-            title: "Wyposażenie",
-            text: "Lista wyposażenia i rzeczy do sprawdzenia.",
-          },
-        ]
-      : []),
+    {
+      href: equipmentHref(car.id),
+      title: "Wyposażenie",
+      text: "Zaznacz, co ma Twoje auto – instrukcja dopasuje się do niego.",
+    },
     {
       href: "/komentarze",
       title: "Moje komentarze",
@@ -65,7 +61,12 @@ export default async function CarPage({ params }: Props) {
         › <span className="text-ink">{car.label}</span>
       </nav>
       <section className="flex flex-col items-start gap-5 border-b-2 border-red pb-6 sm:flex-row sm:items-center">
-        <Logo size={64} className="shrink-0 text-black" />
+        <CarLogo
+          carId={car.id}
+          brand={car.brand}
+          size={64}
+          className="shrink-0 text-black"
+        />
         <div>
           <p className="text-xs tracking-[0.12em] text-steel uppercase">
             {car.brand}
@@ -124,7 +125,7 @@ export default async function CarPage({ params }: Props) {
       </section>
 
       <div className="mt-6 grid gap-4 md:grid-cols-[1fr_1fr]">
-        <CarActions carId={car.id} label={car.label} builtIn={car.builtIn} />
+        <CarActions carId={car.id} label={car.label} />
         <div className="panel">
           <div className="panel-title">Twoje dane</div>
           <div className="space-y-2 p-4 text-sm text-graphite">

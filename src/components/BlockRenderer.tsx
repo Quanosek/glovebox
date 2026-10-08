@@ -1,23 +1,47 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { FeatureId } from "@/config/vehicle";
 import type { Block, Run, WarningKind } from "@/content/types";
-import { resolvePageRef, type BookCtx } from "@/lib/content";
+import {
+  getFeatureTree,
+  resolvePageRef,
+  type BookCtx,
+  type FeatureNode,
+} from "@/lib/content";
 import { NBSP, polishTypography } from "@/lib/typography";
+import { AvailabilityBadges } from "./AvailabilityBadges";
+import { SectionGate } from "./SectionGate";
 
-/** Server component rendering extracted manual blocks. */
+/**
+ * Server component rendering extracted manual blocks. Parts under headings
+ * that describe optional equipment get availability badges and collapse
+ * when the car does not have it (`features` = tags of the whole section).
+ */
 export function BlockRenderer({
   ctx,
   blocks,
+  features = [],
 }: {
   ctx: BookCtx;
   blocks: Block[];
+  features?: FeatureId[];
 }) {
-  return (
-    <>
-      {blocks.map((block) => (
-        <BlockView key={block.id} ctx={ctx} block={block} />
-      ))}
-    </>
+  return <Nodes ctx={ctx} nodes={getFeatureTree(ctx, blocks, features)} />;
+}
+
+function Nodes({ ctx, nodes }: { ctx: BookCtx; nodes: FeatureNode[] }) {
+  return nodes.map((n) =>
+    n.kind === "block" ? (
+      <BlockView key={n.block.id} ctx={ctx} block={n.block} />
+    ) : (
+      <div key={n.heading.id}>
+        <BlockView ctx={ctx} block={n.heading} />
+        <AvailabilityBadges features={n.features} />
+        <SectionGate features={n.features} compact>
+          <Nodes ctx={ctx} nodes={n.children} />
+        </SectionGate>
+      </div>
+    ),
   );
 }
 

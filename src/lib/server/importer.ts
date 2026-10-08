@@ -2,9 +2,11 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { CarBook, CarFile } from "@/lib/cars";
+import type { CarSpec } from "@/lib/catalog";
+import { RESERVED_BOOK_ROUTES, type CarBook, type CarFile } from "@/lib/cars";
 import { getCar, getDatabaseDir } from "@/lib/content";
 import { isValidId, slugify, uniqueSlug } from "@/lib/slug";
+import { CatalogUnavailableError, resolveCatalogCar } from "./catalog";
 import { findPython, run } from "./python";
 
 /**
@@ -56,10 +58,27 @@ export interface ImportJob {
 }
 
 export interface ImportRequest {
+  /**
+   * `catalog`: brand/model are catalogue ids checked against the official
+   * list (and `engine` an engine id from it); `other`: typed by hand.
+   */
+  source: "catalog" | "other";
+  brand: string;
+  model: string;
+  year: number;
+  engine?: string;
+  variant?: string;
+  docs: Array<{ file: File; title: string }>;
+}
+
+/** Request after validation: display names and catalogue data resolved. */
+interface ValidImport {
   brand: string;
   model: string;
   year: number;
   variant?: string;
+  catalog?: { brand: string; model: string };
+  spec?: CarSpec;
   docs: Array<{ file: File; title: string }>;
 }
 
@@ -101,11 +120,17 @@ const RESERVED: ImportJob = {
 const clean = (v: string, max = 60) =>
   v.replace(/\s+/g, " ").trim().slice(0, max);
 
-/** Validates the request; throws `ImportError` with a Polish message. */
-export function validateImport(req: ImportRequest): ImportRequest {
-  const brand = clean(req.brand);
-  const model = clean(req.model);
-  const variant = req.variant ? clean(req.variant, 120) : undefined;
+/**
+ * Validates the request; throws `ImportError` with a Polish message. Cars
+ * from the catalogue are checked against the official list, so a model that
+ * was never sold cannot be added.
+ */
+export async function validateImport(req: ImportRequest): Promise<ValidImport> {
+  let brand = clean(req.brand);
+  let model = clean(req.model);
+  let variant = req.variant ? clean(req.variant, 120) : undefined;
+  let catalog: ValidImport["catalog"];
+  let spec: CarSpec | undefined;
   if (!brand || !slugify(brand)) throw new ImportError("Podaj markę auta.");
   if (!model || !slugify(model)) throw new ImportError("Podaj model auta.");
   if (
@@ -114,6 +139,26 @@ export function validateImport(req: ImportRequest): ImportRequest {
     req.year > maxYear()
   )
     throw new ImportError("Podaj prawidłowy rocznik.");
+  if (req.source === "catalog") {
+    let resolved: Awaited<ReturnType<typeof resolveCatalogCar>>;
+    try {
+      resolved = await resolveCatalogCar({
+        brand,
+        model,
+        year: req.year,
+        engine: req.engine || undefined,
+      });
+    } catch (err) {
+      if (err instanceof CatalogUnavailableError)
+        throw new ImportError(err.message, 503);
+      throw err;
+    }
+    if (typeof resolved === "string") throw new ImportError(resolved);
+    ({ brand, model, catalog, spec } = resolved);
+    variant = spec?.label;
+  } else if (req.source !== "other") {
+    throw new ImportError("Wybierz markę z listy albo „Inna”.");
+  }
   if (req.docs.length === 0)
     throw new ImportError("Dodaj co najmniej jeden plik PDF.");
   if (req.docs.length > MAX_DOCUMENTS)
@@ -133,6 +178,8 @@ export function validateImport(req: ImportRequest): ImportRequest {
     model,
     year: req.year,
     variant,
+    ...(catalog ? { catalog } : {}),
+    ...(spec ? { spec } : {}),
     docs: req.docs.map((d) => ({
       file: d.file,
       title:
@@ -151,7 +198,7 @@ async function existingIds(): Promise<string[]> {
 
 /** Stores the PDFs in a temp dir and starts the background extraction. */
 export async function startImport(input: ImportRequest): Promise<ImportJob> {
-  const req = validateImport(input);
+  const req = await validateImport(input);
   if (runningJob())
     throw new ImportError(
       "Trwa już dodawanie innego auta. Poczekaj, aż się zakończy.",
@@ -165,7 +212,7 @@ export async function startImport(input: ImportRequest): Promise<ImportJob> {
   }
 }
 
-async function prepareJob(req: ImportRequest): Promise<ImportJob> {
+async function prepareJob(req: ValidImport): Promise<ImportJob> {
   const python = (await findPython()).best;
   if (!python)
     throw new ImportError(
@@ -178,7 +225,7 @@ async function prepareJob(req: ImportRequest): Promise<ImportJob> {
   const id = randomUUID();
   const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "manual-import-"));
 
-  const usedBooks: string[] = ["assets"];
+  const usedBooks: string[] = ["assets", ...RESERVED_BOOK_ROUTES];
   const docs: ImportDocStatus[] = [];
   const pdfPaths: string[] = [];
   try {
@@ -229,7 +276,7 @@ async function prepareJob(req: ImportRequest): Promise<ImportJob> {
 
 async function processJob(
   job: ImportJob,
-  req: ImportRequest,
+  req: ValidImport,
   python: string,
   tmp: string,
   pdfPaths: string[],
@@ -289,6 +336,8 @@ async function processJob(
       model: req.model,
       year: req.year,
       ...(req.variant ? { variant: req.variant } : {}),
+      ...(req.catalog ? { catalog: req.catalog } : {}),
+      ...(req.spec ? { spec: req.spec } : {}),
       createdAt: new Date().toISOString(),
       books,
     };
@@ -332,8 +381,6 @@ export async function deleteCar(id: string): Promise<void> {
   if (!isValidId(id)) throw new ImportError("Nieprawidłowe auto.", 400);
   const car = getCar(id);
   if (!car) throw new ImportError("Nie znaleziono auta.", 404);
-  if (car.builtIn)
-    throw new ImportError("Wbudowanego auta nie można usunąć.", 403);
   if (runningJob()?.carId === id)
     throw new ImportError("Auto jest właśnie dodawane.", 409);
   await fs.rm(path.join(getDatabaseDir(), id), {

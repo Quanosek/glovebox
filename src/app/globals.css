@@ -174,6 +174,26 @@ body {
     background: var(--color-red);
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
   }
+  .btn-dark {
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+    color: var(--color-white);
+  }
+  .btn-dark:hover {
+    background: var(--color-graphite);
+    border-color: var(--color-graphite);
+  }
+  .btn-dark:active:not(:disabled) {
+    background: var(--color-ink);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+  /* Selected neutral option of a button group (stays "pressed in"). */
+  .btn-pressed,
+  .btn-pressed:hover {
+    background: var(--silver-gradient-active);
+    border-color: var(--color-steel);
+    box-shadow: inset 0 1px 2px rgba(43, 46, 49, 0.18);
+  }
   .btn-ghost {
     background: transparent;
     border-color: transparent;

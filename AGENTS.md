@@ -11,22 +11,27 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 # AGENTS.md — opel-cascada-manual
 
 Private, local-only Next.js app for reading car owner manuals with highlighting, comments,
-bookmarks and a Markdown notebook. It ships the full Polish content of the two official
-Opel Cascada MY16 manuals (main manual + Navi 950 infotainment, personalised to the owner's
-car) and lets the user add more cars from PDF files with a step-by-step wizard.
+bookmarks and a Markdown notebook. Every user adds their own cars from PDF manuals with a
+step-by-step wizard (brand / model / year / engine from official catalogues) and marks each
+car's optional equipment; content about equipment the car lacks is collapsed. The owner's
+Opel Cascada MY16 manuals can be regenerated with `pnpm extract`.
 
 - **No accounts, no database server.** On entry the user sees a local profile (`/`): car
   picker or notebook. User data lives in the browser only (localStorage + Cache API).
-- **Manual content is a file database in the repo** (`database/`), served by the local
-  Next.js server (`next dev` / `next start`). Committing `database/<car>/` makes a car
-  available on every device that runs the repo.
+- **Manual content is a local file database** (`database/`, **git-ignored**), served by the
+  local Next.js server (`next dev` / `next start`). Nothing in it is committed; every
+  checkout imports its own manuals (copy `database/<car>/` to move a car).
 - **Offline after a car is chosen.** Opening a car saves all its pages, images and scripts
   to the Cache API in the background; from then on it works with no connection. A
   connection is only needed to add cars and to refresh the car list (`docs/offline.md`).
 - **Non-technical users.** UI text is plain Polish without jargon (no paths, commands, file
   formats, "serwer", "JSON", "localStorage" …); technical details belong in `README.md` /
   `docs/` (`docs/ui.md`).
-- No external API calls and no analytics — keep it that way. PDFs never stay on disk.
+- No analytics and no third-party calls from the browser — keep it that way. The only
+  outbound requests are made by the local server: the official car catalogues used by the
+  wizard (EEA CO2 data, NHTSA vPIC; cached in `database/.catalog/`, `docs/catalog.md`) and
+  brand logos from Wikidata / Wikimedia Commons (cached in `database/.logos/`,
+  `docs/logos.md`); public, no keys, no user data sent. PDFs never stay on disk.
 
 ## Language rules (strict)
 
@@ -51,7 +56,7 @@ pnpm test              # Vitest (src/**/*.test.ts)
 pnpm format            # Prettier (+ Tailwind class sorting); `pnpm format:check` only checks
 pnpm test:extract      # Python unittest for scripts/extract.py (needs PyMuPDF)
 pnpm fetch-manuals     # download the Cascada PDFs into manuals/ (git-ignored)
-pnpm extract           # Cascada PDFs -> database/opel-cascada-2016/** (extra args pass through)
+pnpm extract           # Cascada PDFs -> database/opel-cascada-2016/** (+ car.json if missing)
 pnpm icons             # src/app/icon.svg -> apple-icon.png + favicon.ico
 ```
 
@@ -61,39 +66,48 @@ then `python3`, `python`, `py` (first one with PyMuPDF + Pillow wins; `src/lib/s
 ## Architecture
 
 ```
-database/                       manual content (committed; JSON + WebP, never PDFs)
-  <car>/car.json                CarFile: brand, model, year, variant?, profile?, builtIn?, books[]
+database/                       local manual content (git-ignored; JSON + WebP, never PDFs)
+  <car>/car.json                CarFile: brand, model, year, variant?, catalog?, spec?, books[]
   <car>/<bookId>/index.json     BookIndex (+ one ChapterFile JSON per top-level chapter)
   <car>/assets/<bookId>/<chapter>/p<page>-<n>.webp   illustrations, served as /media/<car>/...
-  .import-<job>/                staging folder of a running import (git-ignored, skipped)
+  .import-<job>/                staging folder of a running import (skipped)
+  .catalog/                     cached official catalogue answers (docs/catalog.md)
+  .logos/                       cached brand logos (docs/logos.md)
 scripts/                        extraction pipeline (Python + Node wrappers), icon generator
   extract.py                    PDF -> JSON blocks + WebP images (PyMuPDF, Pillow)
-  extract.mjs / manuals.config.json   regenerates the built-in Cascada books
+  extract.mjs / manuals.config.json   regenerates the Cascada books (+ car.json)
 public/sw.js                    service worker (shell precache + runtime caching, docs/offline.md)
 src/
   app/
     page.tsx                    profile (ProfileView): car choice / notebook / continue reading
     auta/                       car list (CarPicker)
-    auto/[car]/                 car overview (books, offline status, delete); layout runs
-                                ActiveCarTracker (active car + automatic offline copy)
+    auto/[car]/                 car overview (books, equipment, offline status, delete);
+                                layout runs ActiveCarTracker (active car + offline copy)
+    auto/[car]/wyposazenie/     equipment of the car (EquipmentEditor)
     auto/[car]/[book]/          book index + sidebar layout; [...slug]/ section pages
-    dodaj-auto/                 import wizard (AddCarWizard: 3 steps, plain-language status)
+    dodaj-auto/                 import wizard (AddCarWizard: car + PDFs, reading, equipment, done)
     api/system                  GET environment check (Python, PyMuPDF, Pillow, writable db)
     api/cars                    GET list · POST multipart import (202 {job})
-    api/cars/[car]              GET · DELETE (not built-in, not while importing)
+    api/cars/[car]              GET · DELETE (not while importing)
     api/cars/[car]/offline      GET { version, urls } for the offline copy of a car
+    api/cars/[car]/features     GET { sections, spec } equipment found in the car's manuals
+    api/catalog/{brands,models,engines}   GET official catalogue lists (wizard)
     api/jobs/[id]               GET import progress
     api/search-index?car=       GET search corpus of one car
     media/[...path]             GET images from database/<car>/assets (webp/png/jpg only)
-    szukaj, ostrzezenia, komentarze, zakladki, notatnik, ustawienia, twoje-auto
+    logo/[car]                  GET brand logo of the car's model year (404 = app icon)
+    szukaj, ostrzezenia, komentarze, zakladki, notatnik, ustawienia
   components/                   UI (server: BlockRenderer; the rest are client components)
   components/Dialog.tsx         confirmDialog()/alertDialog() + DialogHost (root layout)
-  config/vehicle.ts             Cascada feature definitions + defaults
-  config/featureRules.ts        title-based rules tagging Cascada sections with features
-  config/carCatalog.ts          brand -> model suggestions for the wizard
+  components/EquipmentEditor.tsx  per-car equipment checklist (wizard + equipment page)
+  components/CarLogo.tsx        brand logo of the active car (header, car page), falls back to Logo
+  config/vehicle.ts             generic optional features (no defaults) + suggestFromSpec
+  config/featureRules.ts        title rules tagging sections/headings of every car
   content/types.ts              content format contract
   lib/content.ts                server-only database reader (Node fs, mtime-checked cache)
-  lib/server/                   importer (jobs), python detection, cross-site guard
+  lib/server/                   importer (jobs), official catalogue, python, cross-site guard
+  lib/catalog.ts                client-safe catalogue types + name normalisation
+  lib/logos.ts                  brand logo matching + year selection (pure, tested)
   lib/cars.ts, lib/slug.ts      client-safe car types/helpers and id rules
   lib/storage/                  localStorage store, schema, migrations, React hooks
   lib/anchoring/                text-quote/position anchoring + DOM helpers
@@ -105,15 +119,17 @@ src/
 
 - The app runs as a **local Node server**; pages are `force-dynamic` (root layout) so newly
   imported cars appear without a rebuild. `next.config.ts` permanently redirects the old
-  `/instrukcja/*` and `/navi-950/*` URLs to `/auto/opel-cascada-2016/...`.
+  `/instrukcja/*` and `/navi-950/*` URLs to `/auto/opel-cascada-2016/...` and `/twoje-auto`
+  to `/auta`.
 - Content API (`src/lib/content.ts`) works on a `BookCtx { car, book }`: `getBookCtx(car,
 route)`, `getBook`, `getSection`, `sectionHref`, `getTocTree`, `getPrevNext`,
   `resolvePageRef`, … plus `listCars`, `listCarSummaries`, `getAllWarnings`,
-  `getSearchDocs(car)`, `getCarUrls(car)`, `getCarVersion(car)`. Override the folder with `MANUALS_DATABASE_DIR`.
+  `getSearchDocs(car)`, `getSectionFeatures`, `getFeatureTree`, `getFeatureSections(car)`,
+  `getCarUrls(car)`, `getCarVersion(car)`. Override the folder with `MANUALS_DATABASE_DIR`.
 - Ids: car and book ids match `ID_PATTERN` (`/^[a-z0-9][a-z0-9-]{0,79}$/`, `src/lib/slug.ts`);
   this is also what keeps `/media` and imports path-safe. Cascada keeps book ids `manual` /
   `infotainment` (routes `instrukcja` / `navi-950`); imported books use id = route = slug of
-  the title.
+  the title (`assets` and `wyposazenie` reserved, `RESERVED_BOOK_ROUTES`).
 - Mutating API routes call `rejectCrossSite()` (loopback `Host` + same-origin `Origin` /
   `Sec-Fetch-Site`; `MANUALS_ALLOW_REMOTE_IMPORT=1` allows LAN hosts) because the server is
   unauthenticated; only GET routes may skip it.
@@ -124,11 +140,13 @@ route)`, `getBook`, `getSection`, `sectionHref`, `getTocTree`, `getPrevNext`,
 
 ## Import pipeline (wizard `/dodaj-auto`)
 
-See `docs/import.md`. In short: multipart POST → limits checked (10 PDFs, 250 MB each,
+See `docs/import.md`. In short: multipart POST (`source=catalog` is validated against the
+official catalogue, `docs/catalog.md`; `source=other` = "Inna", free text) → limits checked (10 PDFs, 250 MB each,
 `%PDF-` magic) → PDFs written to an `os.tmpdir()` folder → `extract.py` per document into
 `database/.import-<job>/` → `car.json` written → staging renamed to `database/<car>/`.
 The temp folder is removed in `finally`, so **PDFs are deleted on success and on failure**.
-One import at a time; job state lives in memory (`globalThis`) and is polled by the wizard.
+One import at a time; job state lives in memory (`globalThis`) and is polled by the wizard,
+which then shows the equipment step.
 
 ## Design rules (strict)
 
@@ -150,7 +168,9 @@ One import at a time; job state lives in memory (`globalThis`) and is polled by 
   `watchTypography()` on the client for everything else. Editorial Polish (`„…”`, `–`, `…`,
   sentence case, one term per concept). Details in `docs/ui.md`.
 - Favicon: black Opel blitz in a ring on white (`src/app/icon.svg`, original simplified
-  drawing). After editing it run `pnpm icons`.
+  drawing). After editing it run `pnpm icons`. With an active car the header and the car
+  page show the official brand logo of the car's model year instead (`CarLogo`,
+  `docs/logos.md`); brand logos keep their own colours (content, not UI chrome).
 - **Never use native `window.confirm` / `alert` / `prompt`.** Use `confirmDialog()` /
   `alertDialog()` from `src/components/Dialog.tsx` (centred `<dialog>` over a blurred
   backdrop, Esc / backdrop click = cancel, `danger` focuses "Anuluj").
@@ -158,25 +178,26 @@ One import at a time; job state lives in memory (`globalThis`) and is polled by 
   `.field` has exactly one focus cue (graphite border, no ring/underline); `.hover-tile` for
   clickable cards; everything respects `prefers-reduced-motion`. Details in `docs/ui.md`.
 
-## Vehicle profile & feature tagging
+## Vehicle equipment & feature tagging
 
-Only the built-in car (`car.json` `"profile": "opel-cascada-my16"`) is tagged; imported cars
-show all content without availability labels (`CarSummary.hasProfile === false`).
+Details in `docs/vehicle-profile.md`. Every car is tagged; no car has preset equipment.
 
-- `src/config/vehicle.ts` lists every feature (`FEATURES`) with a Polish label, group,
-  optional Polish note and a default `{ status: "has" | "no", certainty: "confirmed" |
-"verify" | "probable" }`. `verify` renders "do weryfikacji", `probable` "prawdopodobnie".
-- The user can override any feature on `/ustawienia`; overrides are stored in
-  `settings.vehicle` (only differences from the defaults) and merged by `resolveProfile`.
-- `src/config/featureRules.ts` tags sections by regex on their **title**
-  (`pattern`, optional `exclude`, optional `book`). Tags are inherited by sub-sections
-  (`getSectionFeatures`). Rules are evaluated on the server when pages render; editing
-  them needs no re-extraction.
+- `src/config/vehicle.ts` lists generic optional features (`FEATURES`: id, group, Polish
+  label, optional note) — no defaults. A feature without a stored state is neutral.
+- Profiles are per car in `settings.vehicles[carId]`, edited with `EquipmentEditor` on
+  `/auto/<car>/wyposazenie` and in the wizard's equipment step ("Mam" / "Nie mam" / "Nie
+  wiem"). Owner choices are `confirmed`; `suggestFromSpec(car.spec)` (engine from the
+  catalogue) adds `probable` suggestions. Only features detected in the car's manuals are
+  offered (`getFeatureSections`).
+- `src/config/featureRules.ts` tags by regex on Polish **section titles** (inherited by
+  sub-sections, `getSectionFeatures`) and **heading blocks** inside a section
+  (`getFeatureTree`: a heading part runs to the next heading of the same or higher level).
+  Rules run on the server at render time; editing them needs no re-extraction.
 - `getAvailability` (`src/lib/availability.ts`): any tagged feature with status `no` ->
-  `missing` ("Brak w Twoim aucie": section collapsed by `SectionGate`, greyed in the TOC,
-  lists and search, filtered from the warnings index unless "Pokaż wszystko" is on);
-  else `verify` / `probable` badges; else "Twoje auto". Collapsed content stays in the DOM
-  (`hidden`) so anchoring and in-page links keep working.
+  `missing` ("Brak w Twoim aucie": section or heading part collapsed by `SectionGate`,
+  greyed in the TOC, lists and search, filtered from the warnings index unless "Pokaż
+  wszystko" is on); else `verify` / `probable` badges; else "Twoje auto". Collapsed
+  content stays in the DOM (`hidden`) so anchoring and in-page links keep working.
 - To add a feature: add it to `FEATURES`, add a rule in `FEATURE_RULES`, run `pnpm test`.
 
 ## Content
@@ -188,9 +209,8 @@ show all content without availability labels (`CarSummary.hasProfile === false`)
 - Generated content must not be edited by hand (it is overwritten by `pnpm extract` or a
   re-import). Fix the extractor or its CLI options in `scripts/manuals.config.json` instead
   (see `docs/extraction.md`).
-- The Cascada placeholder content (`"placeholder": true`, chapter "Zanim zaczniesz") is
-  shipped until the owner runs the extraction locally. Raw PDFs are never committed
-  (`manuals/`, `*.pdf`).
+- A fresh checkout has an empty `database/` (the app offers adding a car). Raw PDFs are
+  never committed (`manuals/`, `*.pdf`), and neither is any generated content.
 - Adding a car by hand: create `database/<id>/car.json` + book folders in the same format
   (the wizard does exactly this).
 
@@ -201,19 +221,22 @@ Single localStorage key `opel-cascada-manual`, versioned (`SCHEMA_VERSION` in
 
 ```ts
 AppData {
-  version: 2;
+  version: 3;
   highlights: Record<id, { id, car, book, sectionId, sectionTitle, href,
     anchor: { exact, prefix, suffix, start, end }, color, comment, createdAt, updatedAt }>;
   notebook: { pages: { id, title, body /* Markdown */, createdAt, updatedAt }[] }; // user order
   bookmarks: { id: `${car}:${book}:${sectionId}`, car, book, sectionId, title, href, createdAt }[];
   lastRead: { car, book, sectionId, title, href, scrollY, at } | null;
-  settings: { fontSize, showUnavailable, vehicle: Record<featureId, FeatureState>,
+  settings: { fontSize, showUnavailable,
+    vehicles: Record<carId, Record<featureId, FeatureState>>,
     activeCar: string | null, profileName: string };
 }
 ```
 
 - v1 → v2 (`MIGRATIONS[1]`): everything belongs to `opel-cascada-2016`, hrefs are rewritten
   to `/auto/opel-cascada-2016/...`, bookmark ids rebuilt.
+- v2 → v3 (`MIGRATIONS[2]`): `settings.vehicle` overrides move to
+  `settings.vehicles["opel-cascada-2016"]` (renamed feature ids mapped, old defaults dropped).
 - Changing the shape: bump `SCHEMA_VERSION`, add `MIGRATIONS[oldVersion]` in
   `migrations.ts`, extend `sanitize`, add a test in `src/lib/__tests__/storage.test.ts`.
 - Export file: `{ app: "opel-cascada-manual", exportedAt, data }`. Import accepts it (or bare
@@ -222,7 +245,7 @@ AppData {
 
 More detail: `docs/ui.md`, `docs/import.md`, `docs/offline.md`, `docs/storage.md`,
 `docs/highlighting.md`, `docs/comments.md`, `docs/notebook.md`, `docs/extraction.md`,
-`docs/vehicle-profile.md`. Keep these files in sync with the code in the same change.
+`docs/vehicle-profile.md`, `docs/catalog.md`, `docs/logos.md`. Keep these files in sync with the code in the same change.
 
 ## Conventions
 

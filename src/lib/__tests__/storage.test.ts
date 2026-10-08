@@ -134,6 +134,8 @@ describe("migrate", () => {
         showUnavailable: true,
         vehicle: {
           "key.keyless": { status: "has", certainty: "confirmed" },
+          "infotainment.infinity": { status: "no", certainty: "confirmed" },
+          "engine.petrol16Turbo": { status: "has", certainty: "confirmed" },
           bad: { status: "maybe" },
         },
       },
@@ -144,8 +146,33 @@ describe("migrate", () => {
     expect(data.bookmarks[0].href).toBe("/auto/opel-cascada-2016/instrukcja/a");
     expect(data.settings.fontSize).toBe("normal");
     expect(data.settings.showUnavailable).toBe(true);
-    expect(data.settings.vehicle).toEqual({
-      "key.keyless": { status: "has", certainty: "confirmed" },
+    expect(data.settings.vehicles).toEqual({
+      "opel-cascada-2016": {
+        "key.keyless": { status: "has", certainty: "confirmed" },
+        "infotainment.premiumAudio": { status: "no", certainty: "confirmed" },
+      },
+    });
+    expect("vehicle" in data.settings).toBe(false);
+  });
+
+  it("keeps equipment of every car in v3 data", () => {
+    const data = migrate({
+      version: SCHEMA_VERSION,
+      settings: {
+        vehicles: {
+          "skoda-octavia-2019": {
+            "drive.towbar": { status: "has", certainty: "confirmed" },
+            "made.up": { status: "has", certainty: "confirmed" },
+          },
+          "../x": { "drive.towbar": { status: "has", certainty: "confirmed" } },
+          empty: {},
+        },
+      },
+    });
+    expect(data.settings.vehicles).toEqual({
+      "skoda-octavia-2019": {
+        "drive.towbar": { status: "has", certainty: "confirmed" },
+      },
     });
   });
 });
@@ -200,7 +227,20 @@ describe("parseImport / mergeData", () => {
         updatedAt: "2026-01-01",
       },
     ];
+    a.settings.vehicles = {
+      car1: { "drive.towbar": { status: "has", certainty: "confirmed" } },
+    };
+    b.settings.vehicles = {
+      car1: {
+        "drive.towbar": { status: "no", certainty: "confirmed" },
+        "access.alarm": { status: "has", certainty: "confirmed" },
+      },
+      car2: { "drive.towbar": { status: "no", certainty: "confirmed" } },
+    };
     const merged = mergeData(a, b);
+    expect(merged.settings.vehicles.car1["drive.towbar"].status).toBe("has");
+    expect(merged.settings.vehicles.car1["access.alarm"].status).toBe("has");
+    expect(merged.settings.vehicles.car2["drive.towbar"].status).toBe("no");
     expect(merged.highlights.x.comment).toBe("nowszy");
     expect(Object.keys(merged.highlights).sort()).toEqual(["x", "y"]);
     expect(merged.notebook.pages.map((p) => p.body)).toEqual(["new", ""]);

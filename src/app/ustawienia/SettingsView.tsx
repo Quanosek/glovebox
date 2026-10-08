@@ -1,22 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState } from "react";
-import {
-  DEFAULT_PROFILE,
-  FEATURE_GROUPS,
-  FEATURES,
-  type FeatureCertainty,
-  type FeatureGroupId,
-  type FeatureState,
-  type FeatureStatus,
-} from "@/config/vehicle";
+import { equipmentHref, type CarSummary } from "@/lib/cars";
 import type { FontSize } from "@/lib/storage/schema";
-import {
-  updateData,
-  useAppData,
-  useHydrated,
-  useVehicleProfile,
-} from "@/lib/storage/hooks";
+import { updateData, useAppData, useHydrated } from "@/lib/storage/hooks";
 import { getStore } from "@/lib/storage/store";
 import { confirmDialog } from "@/components/Dialog";
 import { resetOfflineStatus } from "@/lib/offline";
@@ -29,16 +17,9 @@ const FONT_SIZES: { id: FontSize; label: string }[] = [
   { id: "xlarge", label: "Bardzo duża" },
 ];
 
-const CERTAINTY: { id: FeatureCertainty; label: string }[] = [
-  { id: "confirmed", label: "potwierdzone" },
-  { id: "verify", label: "do weryfikacji" },
-  { id: "probable", label: "prawdopodobnie" },
-];
-
-export function SettingsView() {
+export function SettingsView({ cars }: { cars: CarSummary[] }) {
   const data = useAppData();
   const hydrated = useHydrated();
-  const profile = useVehicleProfile();
   const [message, setMessage] = useState<{
     kind: "ok" | "error";
     text: string;
@@ -49,20 +30,6 @@ export function SettingsView() {
   if (!hydrated) return <p className="mt-4 text-steel">Ładowanie…</p>;
   const { settings } = data;
   const store = getStore();
-
-  const setFeature = (id: string, state: FeatureState) =>
-    updateData((d) => {
-      const vehicle = { ...d.settings.vehicle };
-      const def = DEFAULT_PROFILE[id];
-      if (
-        def &&
-        def.status === state.status &&
-        def.certainty === state.certainty
-      )
-        delete vehicle[id];
-      else vehicle[id] = state;
-      return { ...d, settings: { ...d.settings, vehicle } };
-    });
 
   const exportData = () => {
     const blob = new Blob([store.exportJson()], { type: "application/json" });
@@ -135,8 +102,6 @@ export function SettingsView() {
     });
   };
 
-  const groups = Object.keys(FEATURE_GROUPS) as FeatureGroupId[];
-
   return (
     <div className="mt-4 flex flex-col gap-6">
       {message && (
@@ -205,96 +170,42 @@ export function SettingsView() {
       </section>
 
       <section className="panel">
-        <h2 className="panel-title flex items-center justify-between">
-          Wyposażenie: Opel Cascada MY16
-          <button
-            type="button"
-            className="btn h-7 py-0 normal-case"
-            onClick={async () => {
-              const ok = await confirmDialog({
-                title: "Przywrócić domyślne wyposażenie?",
-                message:
-                  "Wszystkie Twoje zmiany w liście wyposażenia zostaną cofnięte.",
-                confirmLabel: "Przywróć",
-              });
-              if (ok)
-                updateData((d) => ({
-                  ...d,
-                  settings: { ...d.settings, vehicle: {} },
-                }));
-            }}
-          >
-            Przywróć domyślne
-          </button>
-        </h2>
+        <h2 className="panel-title">Wyposażenie aut</h2>
         <div className="p-4 text-sm">
-          <p className="mb-3 text-graphite">
-            Określ, które wyposażenie ma Twoja Cascada. Sekcje instrukcji
-            dotyczące brakującego wyposażenia są zwijane i oznaczane jako „Brak
-            w Twoim aucie”. Profil wyposażenia dotyczy tylko wbudowanego auta
-            Opel Cascada 2016 – auta dodane przez Ciebie pokazują pełną treść.
+          <p className="text-graphite">
+            Dla każdego auta możesz zaznaczyć, które wyposażenie dodatkowe
+            opisane w instrukcji ma Twój egzemplarz. Sekcje o brakującym
+            wyposażeniu są wtedy zwijane i oznaczane jako „Brak w Twoim aucie”.
           </p>
-          {groups.map((g) => (
-            <fieldset key={g} className="mb-4">
-              <legend className="mb-1 text-xs font-semibold tracking-[0.08em] text-graphite uppercase">
-                {FEATURE_GROUPS[g]}
-              </legend>
-              <ul className="border-t border-line">
-                {FEATURES.filter((f) => f.group === g).map((f) => {
-                  const state = profile[f.id];
-                  const changed = f.id in settings.vehicle;
-                  return (
-                    <li
-                      key={f.id}
-                      className="flex flex-col gap-2 border-b border-line py-2 sm:flex-row sm:items-center"
-                    >
-                      <span className="flex-1">
-                        {f.label}
-                        {changed && (
-                          <span className="ml-2 text-xs text-red">
-                            (zmienione)
-                          </span>
-                        )}
+          {cars.length === 0 ? (
+            <p className="mt-3 text-steel">Nie dodano jeszcze żadnego auta.</p>
+          ) : (
+            <ul className="mt-3 border-t border-line">
+              {cars.map((car) => {
+                const count = Object.keys(
+                  settings.vehicles[car.id] ?? {},
+                ).length;
+                return (
+                  <li
+                    key={car.id}
+                    className="flex flex-wrap items-center justify-between gap-2 border-b border-line py-2"
+                  >
+                    <span>
+                      <span className="font-semibold">{car.label}</span>
+                      <span className="ml-2 text-xs text-steel">
+                        {count > 0
+                          ? `zaznaczono ${count} ${plural(count, "element", "elementy", "elementów")}`
+                          : "nic nie zaznaczono"}
                       </span>
-                      <span className="flex gap-1">
-                        <select
-                          className="field w-32 py-1"
-                          value={state.status}
-                          aria-label={`${f.label} – czy mam`}
-                          onChange={(e) =>
-                            setFeature(f.id, {
-                              ...state,
-                              status: e.target.value as FeatureStatus,
-                            })
-                          }
-                        >
-                          <option value="has">Mam</option>
-                          <option value="no">Nie mam</option>
-                        </select>
-                        <select
-                          className="field w-40 py-1"
-                          value={state.certainty}
-                          aria-label={`${f.label} – pewność`}
-                          onChange={(e) =>
-                            setFeature(f.id, {
-                              ...state,
-                              certainty: e.target.value as FeatureCertainty,
-                            })
-                          }
-                        >
-                          {CERTAINTY.map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.label}
-                            </option>
-                          ))}
-                        </select>
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-            </fieldset>
-          ))}
+                    </span>
+                    <Link href={equipmentHref(car.id)} className="btn">
+                      Wyposażenie
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       </section>
 

@@ -26,11 +26,18 @@ const PROBE = [
 ].join("\n");
 
 function candidates(): string[] {
+  // Runtime-only lookup: keep the bundler from tracing the venv symlinks,
+  // which point outside the project and break `next build`.
   const root = process.cwd();
   return [
     process.env.PYTHON,
-    path.join(root, ".venv", "bin", "python"),
-    path.join(root, ".venv", "Scripts", "python.exe"),
+    path.join(/* turbopackIgnore: true */ root, ".venv", "bin", "python"),
+    path.join(
+      /* turbopackIgnore: true */ root,
+      ".venv",
+      "Scripts",
+      "python.exe",
+    ),
     "python3",
     "python",
     "py",

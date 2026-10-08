@@ -11,12 +11,13 @@ Nothing is sent anywhere.
   `sanitize()` drops/repairs invalid entries. Also `parseImport()` and `mergeData()`.
 - `store.ts` — `AppStore` (in-memory snapshot + persistence + listeners), `getStore()`
   browser singleton (listens to the `storage` event for cross-tab sync), `newId()`.
-- `hooks.ts` — `useAppData()`, `useHydrated()`, `useVehicleProfile()`, `useActiveCar(cars)`,
-  `setActiveCar(id)`, `updateData(fn)`.
+- `hooks.ts` — `useAppData()`, `useHydrated()`, `useVehicleProfile(carId?)`,
+  `setFeatureState(car, id, state | null)`, `setVehicleProfile(car, profile)`,
+  `useActiveCar(cars)`, `setActiveCar(id)`, `updateData(fn)`.
 
 `updateData` takes a pure function `(data) => newData`; never mutate the snapshot.
 
-## Schema (version 2)
+## Schema (version 3)
 
 See `AGENTS.md` → Storage schema. Notes:
 
@@ -26,7 +27,9 @@ See `AGENTS.md` → Storage schema. Notes:
 - `settings.activeCar` is the car picked on the profile; the URL (`/auto/<id>`) wins while
   reading (`useActiveCar`). `settings.profileName` is the local profile's display name.
 
-- `settings.vehicle` contains only overrides of `DEFAULT_PROFILE`.
+- `settings.vehicles[carId]` is the equipment profile of one car (`docs/vehicle-profile.md`):
+  only features the owner set (or accepted suggestions); there are no defaults. `sanitize`
+  keeps known feature ids and valid states only.
 - `lastRead.scrollY` is restored only when the user clicks "Kontynuuj czytanie"
   (a one-shot sessionStorage flag, `opel-cascada-manual:restore-scroll`).
 
@@ -35,6 +38,10 @@ See `AGENTS.md` → Storage schema. Notes:
 - `1 → 2`: assigns all data to `opel-cascada-2016`, rewrites hrefs (`/instrukcja/...`,
   `/navi-950/...` → `/auto/opel-cascada-2016/...`, `upgradeV1Href`), rebuilds bookmark ids as
   `${car}:${book}:${sectionId}` and sets `activeCar` when the user already had data.
+
+- `2 → 3`: `settings.vehicle` (overrides of the old built-in Cascada defaults) moves to
+  `settings.vehicles["opel-cascada-2016"]`, with renamed feature ids mapped; the old
+  defaults themselves are not copied.
 
 Migrations run in memory on load; the upgraded shape is written on the next change.
 
@@ -55,7 +62,8 @@ Migrations run in memory on load; the upgraded shape is written on the next chan
 
 - Export: `{ app: "opel-cascada-manual", exportedAt, data }` (pretty-printed JSON download).
 - Import: export file or bare `AppData`; `merge` mode keeps current data and takes the newer
-  entry per id (`updatedAt`/`createdAt`), notebook pages and bookmarks are merged by id;
+  entry per id (`updatedAt`/`createdAt`), notebook pages and bookmarks are merged by id,
+  equipment profiles per car and feature (the current state wins);
   `replace` mode overwrites everything.
 - UI labels: "Pobierz kopię zapasową" (export), "Wczytaj kopię z pliku…" (import).
 - "Usuń wszystkie dane" removes the key; "Usuń instrukcje zapisane offline" deletes the Cache

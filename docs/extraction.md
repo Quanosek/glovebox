@@ -2,12 +2,14 @@
 
 The manuals are copyrighted PDFs, so they are not committed. The pipeline converts them into
 structured JSON (`database/<car>/<book>/`) and WebP images (`database/<car>/assets/<book>/`,
-served as `/media/<car>/<book>/...`), which are committed.
+served as `/media/<car>/<book>/...`). The whole `database/` folder is git-ignored: every
+checkout keeps its own local vehicle database.
 
 Two entry points use the same `scripts/extract.py`:
 
-- `pnpm extract` regenerates the built-in Opel Cascada books listed in
-  `scripts/manuals.config.json` (this document);
+- `pnpm extract` (re)generates the Opel Cascada books listed in
+  `scripts/manuals.config.json` (this document) and writes `database/<car>/car.json` from
+  its `car` entry when the file does not exist yet;
 - the "Dodaj auto" wizard runs it for uploaded PDFs (see `docs/import.md`).
 
 `--book` accepts any lowercase slug (`[a-z0-9-]`), `--assets-url` sets the image URL prefix.

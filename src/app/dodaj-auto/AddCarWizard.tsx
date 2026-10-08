@@ -10,12 +10,20 @@ import {
   type DragEvent,
   type ReactNode,
 } from "react";
-import { CAR_CATALOG, CATALOG_BRANDS } from "@/config/carCatalog";
-import { carHref, type CarSummary } from "@/lib/cars";
+import { EquipmentEditor } from "@/components/EquipmentEditor";
+import { suggestFromSpec } from "@/config/vehicle";
+import type {
+  CarSpec,
+  CatalogBrand,
+  CatalogEngine,
+  CatalogModel,
+} from "@/lib/catalog";
+import { carHref, type CarFeatureSections, type CarSummary } from "@/lib/cars";
 import { useOnline } from "@/lib/offline";
 import { renderPdfPreview } from "@/lib/pdfPreview";
 import { slugify } from "@/lib/slug";
-import { setActiveCar } from "@/lib/storage/hooks";
+import { getStore } from "@/lib/storage/store";
+import { setActiveCar, setVehicleProfile } from "@/lib/storage/hooks";
 import { plural } from "@/lib/typography";
 
 /* ------------------------------------------------------------------ types */
@@ -69,7 +77,7 @@ interface PickedDoc {
   previewState: "loading" | "done" | "error";
 }
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
 
 const STEPS: { n: Step; label: string; hint: string }[] = [
   {
@@ -78,10 +86,43 @@ const STEPS: { n: Step; label: string; hint: string }[] = [
     hint: "marka, model, rocznik i pliki PDF",
   },
   { n: 2, label: "Odczytywanie", hint: "aplikacja czyta instrukcje" },
-  { n: 3, label: "Gotowe", hint: "auto pojawia się na liście" },
+  { n: 3, label: "Wyposażenie", hint: "co ma Twoje auto" },
+  { n: 4, label: "Gotowe", hint: "auto pojawia się na liście" },
 ];
 
 const OTHER = "__other__";
+
+const BRAND_GROUPS: {
+  label: string;
+  filter: (b: CatalogBrand) => boolean;
+}[] = [
+  { label: "Popularne marki", filter: (b) => b.popular && !b.usOnly },
+  { label: "Pozostałe marki", filter: (b) => !b.popular && !b.usOnly },
+  { label: "Marki z rynku amerykańskiego", filter: (b) => b.usOnly },
+];
+
+/** Lists from the official catalogue, loaded on demand. */
+type Loadable<T> =
+  | { state: "loading" }
+  | { state: "done"; items: T[] }
+  | { state: "error"; error: string };
+
+async function fetchList<T>(url: string, key: string): Promise<T[]> {
+  let r: Response;
+  try {
+    r = await fetch(url);
+  } catch {
+    throw new Error("Brak połączenia z aplikacją. Spróbuj ponownie za chwilę.");
+  }
+  const body = (await r.json().catch(() => ({}))) as Record<string, unknown>;
+  if (!r.ok || !Array.isArray(body[key]))
+    throw new Error(
+      typeof body.error === "string"
+        ? body.error
+        : "Nie udało się wczytać listy aut.",
+    );
+  return body[key] as T[];
+}
 
 const formatSize = (bytes: number) =>
   bytes >= 1024 * 1024
@@ -113,40 +154,58 @@ export function AddCarWizard({
   const [checking, setChecking] = useState(false);
   const online = useOnline();
 
-  // Step 1 form.
+  // Step 1 form. Brand, model and year come from the official catalogue;
+  // "Inna" lets the owner type them (all still required).
+  const [brands, setBrands] = useState<Loadable<CatalogBrand>>({
+    state: "loading",
+  });
+  const [models, setModels] = useState<Loadable<CatalogModel> | null>(null);
+  const [engines, setEngines] = useState<Loadable<CatalogEngine> | null>(null);
   const [brandChoice, setBrandChoice] = useState("");
   const [brandOther, setBrandOther] = useState("");
   const [modelChoice, setModelChoice] = useState("");
   const [modelOther, setModelOther] = useState("");
   const [year, setYear] = useState("");
+  const [engineChoice, setEngineChoice] = useState("");
   const [variant, setVariant] = useState("");
+  const request = useRef(0);
   const [docs, setDocs] = useState<PickedDoc[]>([]);
   const [notice, setNotice] = useState<string[]>([]);
   const [dragging, setDragging] = useState(false);
 
-  // Steps 2–3.
+  // Steps 2–4.
   const [upload, setUpload] = useState<number | null>(null);
   const [job, setJob] = useState<Job | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [equipment, setEquipment] = useState<
+    | { state: "loading" }
+    | { state: "done"; sections: CarFeatureSections; spec?: CarSpec }
+    | { state: "error" }
+    | null
+  >(null);
 
   const maxDocs = system?.limits.maxDocuments ?? 10;
   const maxBytes = system?.limits.maxFileBytes ?? 250 * 1024 * 1024;
 
   const brandIsOther = brandChoice === OTHER;
-  const brand = brandIsOther ? brandOther.trim() : brandChoice;
-  const models = brandIsOther ? [] : (CAR_CATALOG[brandChoice] ?? []);
-  const modelIsOther = brandIsOther || modelChoice === OTHER;
-  const model = modelIsOther ? modelOther.trim() : modelChoice;
-  const targetId =
-    brand && model && year ? slugify(`${brand} ${model} ${year}`, 70) : "";
-  const duplicate = targetId
-    ? cars.find(
-        (c) =>
-          slugify(c.brand) === slugify(brand) &&
-          slugify(c.model) === slugify(model) &&
-          String(c.year) === year,
-      )
-    : undefined;
+  const brandList = brands.state === "done" ? brands.items : [];
+  const modelList = models?.state === "done" ? models.items : [];
+  const engineList = engines?.state === "done" ? engines.items : [];
+  const catalogModel = modelList.find((m) => m.id === modelChoice);
+  const brand = brandIsOther
+    ? brandOther.trim()
+    : (brandList.find((b) => b.id === brandChoice)?.name ?? "");
+  const model = brandIsOther ? modelOther.trim() : (catalogModel?.name ?? "");
+  const engine = engineList.find((e) => e.id === engineChoice);
+  const duplicate =
+    brand && model && year
+      ? cars.find(
+          (c) =>
+            slugify(c.brand) === slugify(brand) &&
+            slugify(c.model) === slugify(model) &&
+            String(c.year) === year,
+        )
+      : undefined;
 
   /* ---- background check: can this app read PDFs right now? */
 
@@ -165,10 +224,80 @@ export function AddCarWizard({
     }
   }, []);
 
+  const loadBrands = useCallback(async () => {
+    setBrands({ state: "loading" });
+    try {
+      setBrands({
+        state: "done",
+        items: await fetchList<CatalogBrand>("/api/catalog/brands", "brands"),
+      });
+    } catch (err) {
+      setBrands({ state: "error", error: (err as Error).message });
+    }
+  }, []);
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch
     void check();
-  }, [check]);
+    void loadBrands();
+  }, [check, loadBrands]);
+
+  /* ---- step 1: car from the catalogue */
+
+  const chooseBrand = async (id: string) => {
+    const ticket = ++request.current;
+    setBrandChoice(id);
+    setModelChoice("");
+    setModelOther("");
+    setYear("");
+    setEngineChoice("");
+    setEngines(null);
+    setVariant("");
+    if (!id || id === OTHER) {
+      setModels(null);
+      return;
+    }
+    setModels({ state: "loading" });
+    try {
+      const items = await fetchList<CatalogModel>(
+        `/api/catalog/models?brand=${encodeURIComponent(id)}`,
+        "models",
+      );
+      if (ticket === request.current) setModels({ state: "done", items });
+    } catch (err) {
+      if (ticket === request.current)
+        setModels({ state: "error", error: (err as Error).message });
+    }
+  };
+
+  const chooseModel = (id: string) => {
+    ++request.current;
+    setModelChoice(id);
+    setYear("");
+    setEngineChoice("");
+    setEngines(null);
+  };
+
+  const chooseYear = async (value: string) => {
+    const ticket = ++request.current;
+    setYear(value);
+    setEngineChoice("");
+    if (brandIsOther || !value || !modelChoice) {
+      setEngines(null);
+      return;
+    }
+    setEngines({ state: "loading" });
+    try {
+      const items = await fetchList<CatalogEngine>(
+        `/api/catalog/engines?brand=${encodeURIComponent(brandChoice)}&model=${encodeURIComponent(modelChoice)}&year=${value}`,
+        "engines",
+      );
+      if (ticket === request.current) setEngines({ state: "done", items });
+    } catch (err) {
+      if (ticket === request.current)
+        setEngines({ state: "error", error: (err as Error).message });
+    }
+  };
 
   /* ---- step 1: documents */
 
@@ -276,9 +405,11 @@ export function AddCarWizard({
   };
 
   const formErrors: string[] = [];
-  if (!brand) formErrors.push("Wybierz lub wpisz markę.");
+  if (!brand) formErrors.push("Wybierz markę z listy albo „Inna” i wpisz ją.");
   if (!model) formErrors.push("Wybierz lub wpisz model.");
   if (!year) formErrors.push("Wybierz rocznik.");
+  if (!brandIsOther && engines?.state === "loading")
+    formErrors.push("Poczekaj na listę silników.");
   if (docs.length === 0) formErrors.push("Dodaj co najmniej jeden plik PDF.");
   if (docs.some((d) => !d.title.trim()))
     formErrors.push("Każda instrukcja musi mieć nazwę.");
@@ -291,10 +422,12 @@ export function AddCarWizard({
     setUpload(0);
     setStep(2);
     const form = new FormData();
-    form.set("brand", brand);
-    form.set("model", model);
+    form.set("source", brandIsOther ? "other" : "catalog");
+    form.set("brand", brandIsOther ? brand : brandChoice);
+    form.set("model", brandIsOther ? model : modelChoice);
     form.set("year", year);
-    if (variant.trim()) form.set("variant", variant.trim());
+    if (!brandIsOther && engine) form.set("engine", engine.id);
+    if (brandIsOther && variant.trim()) form.set("variant", variant.trim());
     for (const d of docs) {
       form.append("files", d.file, d.file.name);
       form.append("titles", d.title.trim());
@@ -353,14 +486,44 @@ export function AddCarWizard({
     };
   }, [jobId, jobRunning]);
 
+  /* ---- step 3: equipment described in the new manuals */
+
+  const loadEquipment = useCallback(async (carId: string) => {
+    setEquipment({ state: "loading" });
+    try {
+      const r = await fetch(`/api/cars/${carId}/features`, {
+        cache: "no-store",
+      });
+      if (!r.ok) throw new Error();
+      const body = (await r.json()) as {
+        sections: CarFeatureSections;
+        spec: CarSpec | null;
+      };
+      const spec = body.spec ?? undefined;
+      // Pre-fill what the engine tells for sure (shown as suggestions).
+      if (!getStore().get().settings.vehicles[carId]) {
+        const suggested = Object.entries(suggestFromSpec(spec)).filter(
+          ([id]) => body.sections[id]?.length,
+        );
+        if (suggested.length > 0)
+          setVehicleProfile(carId, Object.fromEntries(suggested));
+      }
+      setEquipment({ state: "done", sections: body.sections, spec });
+    } catch {
+      setEquipment({ state: "error" });
+    }
+  }, []);
+
   const jobState = job?.state;
+  const jobCar = job?.carId;
   useEffect(() => {
-    if (jobState !== "done") return;
+    if (jobState !== "done" || !jobCar) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- job finished
     setStep(3);
+    void loadEquipment(jobCar);
     // Reload server components so the new car appears in the header and lists.
     router.refresh();
-  }, [jobState, router]);
+  }, [jobState, jobCar, router, loadEquipment]);
 
   const resume = (id: string) => {
     setJob({
@@ -379,13 +542,10 @@ export function AddCarWizard({
   const reset = () => {
     for (const d of docs) if (d.preview) URL.revokeObjectURL(d.preview);
     setDocs([]);
-    setBrandChoice("");
+    void chooseBrand("");
     setBrandOther("");
-    setModelChoice("");
-    setModelOther("");
-    setYear("");
-    setVariant("");
     setJob(null);
+    setEquipment(null);
     setUpload(null);
     setNotice([]);
     setStep(1);
@@ -402,13 +562,14 @@ export function AddCarWizard({
     !system.runningJob;
 
   const years: number[] = [];
-  for (let y = maxYear; y >= minYear; y--) years.push(y);
+  if (brandIsOther) for (let y = maxYear; y >= minYear; y--) years.push(y);
+  else if (catalogModel) years.push(...[...catalogModel.years].reverse());
 
   /* ---- render */
 
   return (
     <div className="mt-6">
-      <ol className="grid border border-line bg-white text-sm sm:grid-cols-3">
+      <ol className="grid border border-line bg-white text-sm sm:grid-cols-2 lg:grid-cols-4">
         {STEPS.map((s) => (
           <li
             key={s.n}
@@ -456,25 +617,32 @@ export function AddCarWizard({
       {step === 1 && (
         <section className="mt-6">
           <h2 className="sr-only">Auto i instrukcje</h2>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Field label="1. Marka" htmlFor="car-brand">
               <select
                 id="car-brand"
                 className="field"
                 value={brandChoice}
-                onChange={(e) => {
-                  setBrandChoice(e.target.value);
-                  setModelChoice("");
-                  setModelOther("");
-                }}
+                onChange={(e) => void chooseBrand(e.target.value)}
               >
-                <option value="">Wybierz markę</option>
-                {CATALOG_BRANDS.map((b) => (
-                  <option key={b} value={b}>
-                    {b}
-                  </option>
-                ))}
-                <option value={OTHER}>Inna marka…</option>
+                <option value="">
+                  {brands.state === "loading"
+                    ? "Wczytywanie listy marek…"
+                    : "Wybierz markę"}
+                </option>
+                {BRAND_GROUPS.map((g) => {
+                  const list = brandList.filter(g.filter);
+                  return list.length === 0 ? null : (
+                    <optgroup key={g.label} label={g.label}>
+                      {list.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  );
+                })}
+                <option value={OTHER}>Inna (wpiszę ręcznie)</option>
               </select>
               {brandIsOther && (
                 <input
@@ -483,7 +651,7 @@ export function AddCarWizard({
                   maxLength={60}
                   value={brandOther}
                   onChange={(e) => setBrandOther(e.target.value)}
-                  aria-label="Własna marka"
+                  aria-label="Marka wpisana ręcznie"
                   autoFocus
                 />
               )}
@@ -493,43 +661,35 @@ export function AddCarWizard({
                 <input
                   id="car-model"
                   className="field"
-                  placeholder={brand ? "Wpisz model" : "najpierw podaj markę"}
+                  placeholder={brand ? "Wpisz model" : "najpierw wpisz markę"}
                   maxLength={60}
                   value={modelOther}
                   disabled={!brand}
                   onChange={(e) => setModelOther(e.target.value)}
                 />
               ) : (
-                <>
-                  <select
-                    id="car-model"
-                    className="field"
-                    value={modelChoice}
-                    disabled={!brand}
-                    onChange={(e) => setModelChoice(e.target.value)}
-                  >
-                    <option value="">
-                      {brand ? "Wybierz model" : "najpierw wybierz markę"}
+                <select
+                  id="car-model"
+                  className="field"
+                  value={modelChoice}
+                  disabled={models?.state !== "done"}
+                  onChange={(e) => chooseModel(e.target.value)}
+                >
+                  <option value="">
+                    {!brandChoice
+                      ? "najpierw wybierz markę"
+                      : models?.state === "loading"
+                        ? "Wczytywanie modeli…"
+                        : models?.state === "error"
+                          ? "Nie udało się wczytać"
+                          : "Wybierz model"}
+                  </option>
+                  {modelList.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
                     </option>
-                    {models.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                    <option value={OTHER}>Inny model…</option>
-                  </select>
-                  {modelChoice === OTHER && (
-                    <input
-                      className="field mt-1"
-                      placeholder="Wpisz model"
-                      maxLength={60}
-                      value={modelOther}
-                      onChange={(e) => setModelOther(e.target.value)}
-                      aria-label="Własny model"
-                      autoFocus
-                    />
-                  )}
-                </>
+                  ))}
+                </select>
               )}
             </Field>
             <Field label="3. Rocznik" htmlFor="car-year">
@@ -538,7 +698,7 @@ export function AddCarWizard({
                 className="field"
                 value={year}
                 disabled={!model}
-                onChange={(e) => setYear(e.target.value)}
+                onChange={(e) => void chooseYear(e.target.value)}
               >
                 <option value="">
                   {model ? "Wybierz rocznik" : "najpierw wybierz model"}
@@ -550,21 +710,71 @@ export function AddCarWizard({
                 ))}
               </select>
             </Field>
+            {brandIsOther ? (
+              <Field label="4. Wersja (opcjonalnie)" htmlFor="car-variant">
+                <input
+                  id="car-variant"
+                  className="field"
+                  maxLength={120}
+                  placeholder="np. 1.6 Turbo 170 KM, automat"
+                  value={variant}
+                  onChange={(e) => setVariant(e.target.value)}
+                />
+              </Field>
+            ) : (
+              <Field label="4. Silnik (opcjonalnie)" htmlFor="car-engine">
+                <select
+                  id="car-engine"
+                  className="field"
+                  value={engineChoice}
+                  disabled={engines?.state !== "done"}
+                  onChange={(e) => setEngineChoice(e.target.value)}
+                >
+                  <option value="">
+                    {!year
+                      ? "najpierw wybierz rocznik"
+                      : engines?.state === "loading"
+                        ? "Wczytywanie silników…"
+                        : engines?.state === "error"
+                          ? "Nie udało się wczytać"
+                          : engineList.length === 0
+                            ? "Brak danych – pomiń"
+                            : "Nie wiem / pomiń"}
+                  </option>
+                  {engineList.map((e) => (
+                    <option key={e.id} value={e.id}>
+                      {e.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
           </div>
-          <Field
-            label="Wersja i silnik (opcjonalnie)"
-            htmlFor="car-variant"
-            className="mt-3"
-          >
-            <input
-              id="car-variant"
-              className="field"
-              maxLength={120}
-              placeholder="np. 1.6 Turbo 170 KM, automat"
-              value={variant}
-              onChange={(e) => setVariant(e.target.value)}
-            />
-          </Field>
+          {brands.state === "error" && !brandIsOther && (
+            <div
+              role="status"
+              className="mt-2 flex flex-col gap-2 border-l-4 border-red bg-paper px-3 py-2 text-sm sm:flex-row sm:items-center"
+            >
+              <p className="flex-1">{brands.error}</p>
+              <button
+                type="button"
+                className="btn shrink-0"
+                onClick={() => void loadBrands()}
+              >
+                Spróbuj ponownie
+              </button>
+            </div>
+          )}
+          {models?.state === "error" && (
+            <p className="mt-2 border-l-4 border-red bg-paper px-3 py-2 text-sm">
+              {models.error}
+            </p>
+          )}
+          <p className="mt-2 text-xs text-steel">
+            {brandIsOther
+              ? "Wpisz markę i model oraz wybierz rocznik – wszystkie trzy są wymagane."
+              : "Marki, modele i roczniki pochodzą z oficjalnych rejestrów aut sprzedanych w Unii Europejskiej i w USA. Jeśli Twojego auta nie ma na liście, wybierz markę „Inna”."}
+          </p>
           {duplicate && (
             <p className="mt-2 border-l-4 border-red bg-paper px-3 py-2 text-sm">
               Auto „{duplicate.label}” jest już na liście. Nowe instrukcje
@@ -759,6 +969,15 @@ export function AddCarWizard({
       )}
 
       {step === 3 && job && (
+        <StepEquipment
+          job={job}
+          equipment={equipment}
+          onRetry={() => void loadEquipment(job.carId)}
+          onNext={() => setStep(4)}
+        />
+      )}
+
+      {step === 4 && job && (
         <StepDone
           job={job}
           onOpen={() => {
@@ -1029,6 +1248,77 @@ function Progress({ label, value }: { label: string; value: number }) {
   );
 }
 
+function StepEquipment({
+  job,
+  equipment,
+  onRetry,
+  onNext,
+}: {
+  job: Job;
+  equipment:
+    | { state: "loading" }
+    | { state: "done"; sections: CarFeatureSections; spec?: CarSpec }
+    | { state: "error" }
+    | null;
+  onRetry: () => void;
+  onNext: () => void;
+}) {
+  return (
+    <section className="mt-6 flex flex-col gap-4">
+      <div className="panel">
+        <h2 className="panel-title">Wyposażenie: {job.label}</h2>
+        <div className="space-y-2 p-4 text-sm text-graphite">
+          <p>
+            Instrukcje opisują też wyposażenie dostępne tylko w niektórych
+            wersjach auta. Zaznacz, co ma Twoje auto – sekcje o wyposażeniu,
+            którego nie masz, zostaną zwinięte. Gdy nie masz pewności, zostaw
+            „Nie wiem”: wtedy nic nie jest ukrywane.
+          </p>
+          {equipment?.state === "done" && equipment.spec && (
+            <p>
+              Silnik:{" "}
+              <strong className="text-ink">{equipment.spec.label}</strong>. Na
+              tej podstawie część pozycji jest już podpowiedziana – możesz je
+              zmienić.
+            </p>
+          )}
+          <p className="text-xs text-steel">
+            Wszystko zmienisz później na stronie „Wyposażenie” tego auta.
+          </p>
+        </div>
+      </div>
+      {(!equipment || equipment.state === "loading") && (
+        <p className="text-sm text-steel">
+          Wyszukiwanie wyposażenia w instrukcjach…
+        </p>
+      )}
+      {equipment?.state === "error" && (
+        <div className="flex flex-col gap-2 border-l-4 border-red bg-paper px-4 py-3 text-sm sm:flex-row sm:items-center">
+          <p className="flex-1">
+            Nie udało się wczytać listy wyposażenia. Możesz spróbować ponownie
+            albo uzupełnić ją później.
+          </p>
+          <button type="button" className="btn shrink-0" onClick={onRetry}>
+            Spróbuj ponownie
+          </button>
+        </div>
+      )}
+      {equipment?.state === "done" && (
+        <EquipmentEditor
+          carId={job.carId}
+          spec={equipment.spec}
+          sections={equipment.sections}
+        />
+      )}
+      <div className="flex flex-wrap justify-end gap-2">
+        <button type="button" className="btn btn-primary" onClick={onNext}>
+          Dalej →
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function StepDone({
   job,
   onOpen,
@@ -1100,8 +1390,11 @@ function StepDone({
         <h2 className="panel-title">Co dalej?</h2>
         <ul className="flex list-[square] flex-col gap-2 py-3 pr-4 pl-8 text-graphite marker:text-red">
           <li>
-            Auto jest już na liście aut – dla każdego, kto korzysta z tej
-            aplikacji, także na innych urządzeniach.
+            Auto jest już na liście aut – widać je na każdym urządzeniu, które
+            korzysta z aplikacji uruchomionej na tym komputerze.
+          </li>
+          <li>
+            Wyposażenie auta zmienisz w każdej chwili na stronie „Wyposażenie”.
           </li>
           <li>
             Po otwarciu auta jego instrukcje zapiszą się same, aby działały też

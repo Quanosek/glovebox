@@ -13,7 +13,7 @@ Europe screens. Every screen should be self-explanatory, calm and consistent. Vi
   "kopia zapasowa", "instrukcja", "bez internetu".
 - Errors say what happened and what to do next. Technical details, if useful at all, go into a
   collapsed `<details>` labelled "Szczegóły (dla osoby technicznej)".
-- Setup and maintenance (Python, `.venv`, git, sharing `database/`) is documented only in
+- Setup and maintenance (Python, `.venv`, git, moving `database/`) is documented only in
   `README.md`; the UI may point to "plik README, rozdział „Dodawanie aut”".
 
 - Editorial Polish: „…” quotes, " – " (spaced en dash) for dashes, "…" for ellipses, sentence

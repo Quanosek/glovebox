@@ -198,6 +198,6 @@ __pycache__/
 *.pyc
 /.venv/
 
-# Import pipeline scratch directories (finished imports land in database/<car>/)
-/database/.import-*
-/database/.write-test-*
+# Manual database: every user imports their own manuals, nothing is committed
+# (car folders, import staging folders and the cached official car catalogue).
+/database/

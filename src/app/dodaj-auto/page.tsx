@@ -15,9 +15,9 @@ export default function AddCarPage() {
         Dodaj auto z instrukcji w PDF
       </h1>
       <p className="mt-3 max-w-3xl text-sm text-graphite">
-        Dodasz tu własne auto krok po kroku. Instrukcje w PDF są odczytywane
-        tylko na tym komputerze. Po zakończeniu auto pojawi się na liście i
-        będzie dostępne dla wszystkich, którzy korzystają z tej aplikacji.
+        Dodasz tu własne auto krok po kroku: wybierzesz je z aktualnej listy
+        aut, dodasz instrukcje w PDF i zaznaczysz jego wyposażenie. Instrukcje
+        są odczytywane i zapisywane tylko na tym komputerze.
       </p>
       <AddCarWizard
         cars={listCarSummaries()}

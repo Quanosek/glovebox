@@ -10,15 +10,17 @@ import {
 } from "@/lib/storage/hooks";
 
 /**
- * Collapses sections describing equipment the car does not have.
- * The content stays in the DOM (only `hidden`) so highlight anchoring and
- * in-page links keep working.
+ * Collapses sections (or, `compact`, parts of a section under a heading)
+ * describing equipment the car does not have. The content stays in the DOM
+ * (only `hidden`) so highlight anchoring and in-page links keep working.
  */
 export function SectionGate({
   features,
+  compact = false,
   children,
 }: {
   features: string[];
+  compact?: boolean;
   children: ReactNode;
 }) {
   const profile = useVehicleProfile();
@@ -30,6 +32,35 @@ export function SectionGate({
   const collapsed =
     hydrated && a.kind === "missing" && !settings.showUnavailable && !expanded;
   const greyed = hydrated && a.kind === "missing";
+
+  if (compact)
+    return (
+      <>
+        {collapsed && (
+          <p
+            className="my-3 flex flex-wrap items-center gap-2 border-l-4 border-silver bg-paper px-3 py-2 text-sm text-graphite print:hidden"
+            data-anchor-ignore
+          >
+            <span className="flex-1">
+              Ta część dotyczy wyposażenia, którego nie ma Twoje auto.
+            </span>
+            <button
+              type="button"
+              className="btn h-7 py-0"
+              onClick={() => setExpanded(true)}
+            >
+              Pokaż
+            </button>
+          </p>
+        )}
+        <div
+          hidden={collapsed}
+          className={greyed ? "text-graphite opacity-75" : undefined}
+        >
+          {children}
+        </div>
+      </>
+    );
 
   return (
     <>

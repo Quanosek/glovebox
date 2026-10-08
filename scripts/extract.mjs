@@ -2,7 +2,7 @@
 // Runs scripts/extract.py for every book in scripts/manuals.config.json.
 // Usage: pnpm extract [--book manual] [<extra extract.py args>]
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -82,5 +82,17 @@ for (const book of config.books) {
   ];
   const r = spawnSync(python, args, { stdio: "inherit", cwd: root });
   if (r.status !== 0) failed = true;
+}
+// `database/` is not in the repository: describe the car so the app lists it.
+const carFile = path.join(root, "database", config.car.id, "car.json");
+if (!failed && !existsSync(carFile)) {
+  mkdirSync(path.dirname(carFile), { recursive: true });
+  const car = {
+    formatVersion: 1,
+    ...config.car,
+    createdAt: new Date().toISOString(),
+  };
+  writeFileSync(carFile, `${JSON.stringify(car, null, 2)}\n`, "utf8");
+  console.log(`✓ ${path.relative(root, carFile)} written`);
 }
 process.exit(failed ? 1 : 0);

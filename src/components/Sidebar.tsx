@@ -29,12 +29,9 @@ export interface SidebarBook {
 export function Sidebar({
   books,
   current,
-  hasProfile,
 }: {
   books: SidebarBook[];
   current: string;
-  /** Car uses the equipment profile (availability labels). */
-  hasProfile: boolean;
 }) {
   const pathname = decodeURIComponent(usePathname());
   const [open, setOpen] = useState(false);
@@ -106,7 +103,7 @@ export function Sidebar({
                       node={node}
                       depth={0}
                       pathname={pathname}
-                      profile={hydrated && hasProfile ? profile : null}
+                      profile={hydrated ? profile : null}
                       hideMissing={!settings.showUnavailable}
                       onNavigate={() => setOpen(false)}
                     />

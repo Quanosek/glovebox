@@ -110,7 +110,7 @@ export default async function SectionPage({ params }: Props) {
           href={href}
         >
           {blocks.length > 0 ? (
-            <BlockRenderer ctx={ctx} blocks={blocks} />
+            <BlockRenderer ctx={ctx} blocks={blocks} features={features} />
           ) : (
             children.length === 0 && (
               <p className="text-steel">Ta sekcja nie zawiera treści.</p>

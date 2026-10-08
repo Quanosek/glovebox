@@ -44,7 +44,9 @@ strategy changes.
 - `ActiveCarTracker` (rendered by `src/app/auto/[car]/layout.tsx`) marks the car as active
   and, 1.5 s after hydration and only when `navigator.onLine`, calls `saveCarOffline(car)`.
 - `saveCarOffline` fetches `GET /api/cars/<car>/offline` → `{ version, urls }`. `urls` are
-  all book, section and image URLs (`getCarUrls`) plus `/api/search-index?car=<car>`;
+  the car page, its equipment page (`/auto/<car>/wyposazenie`), all book, section and image
+  URLs (`getCarUrls`) plus `/api/search-index?car=<car>` and the brand logo `/logo/<car>`
+  when one is known (`docs/logos.md`);
   `version` (`getCarVersion` in `src/lib/content.ts`) hashes size + mtime of `car.json` and
   every book JSON plus `.next/BUILD_ID`, so it changes on re-import, re-extraction and app
   rebuilds.
