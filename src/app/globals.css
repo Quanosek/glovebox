@@ -2,9 +2,9 @@
 
 /*
  * Design system (see AGENTS.md → Design rules):
- * - light theme inspired by the Opel Navi 950 UI
+ * - light theme inspired by in-car manual interfaces
  * - NO rounded corners anywhere
- * - palette restricted to white, greys, silver and Opel red
+ * - palette restricted to white, greys, silver and red accents
  */
 @theme {
   --color-*: initial;

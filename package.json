@@ -1,5 +1,5 @@
 {
-  "name": "opel-cascada-manual",
+  "name": "car-manual-library",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,8 +11,6 @@
     "format:check": "prettier --check .",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "fetch-manuals": "node scripts/fetch-manuals.mjs",
-    "extract": "node scripts/extract.mjs",
     "icons": "node scripts/generate-icons.mjs",
     "test:extract": "python3 -m unittest discover -s scripts/tests"
   },

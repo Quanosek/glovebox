@@ -76,10 +76,9 @@ export function ProfileView({ cars }: { cars: CarSummary[] }) {
       </section>
 
       <p className="mt-4 text-sm text-graphite">
-        Nie musisz zakładać konta ani się logować. Twoje zaznaczenia,
-        komentarze, notatki i ustawienia zostają tylko na tym urządzeniu.
-        Wybierz auto, a jego instrukcje zapiszą się tak, by działały także bez
-        internetu.
+        {!hasManuals
+          ? "Nie dodano jeszcze żadnych instrukcji. Dodaj pierwsze auto z plików PDF, aby rozpocząć czytanie."
+          : "Nie musisz zakładać konta ani się logować. Twoje zaznaczenia, komentarze, notatki i ustawienia zostają tylko na tym urządzeniu. Wybierz auto, a jego instrukcje zapiszą się tak, by działały także bez internetu."}
       </p>
 
       <section

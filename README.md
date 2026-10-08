@@ -1,9 +1,9 @@
-# opel-cascada-manual
+# Biblioteka instrukcji samochodowych
 
-Prywatna, lokalna aplikacja (Next.js) do czytania instrukcji aut z zakreślaczem, komentarzami
-i notatnikiem. Każdy, kto uruchamia projekt, dodaje **własne auta z plików PDF** — marka, model,
-rocznik i silnik wybierane są z oficjalnych katalogów aut rejestrowanych w Unii Europejskiej
-i USA, a dla aut spoza katalogu jest opcja „Inna (wpiszę ręcznie)”.
+Prywatna, lokalna aplikacja (Next.js) do czytania instrukcji samochodowych wszystkich marek z
+zakreślaczem, komentarzami i notatnikiem. Każda osoba dodaje **własne auta i instrukcje PDF** —
+markę, model, rocznik i silnik można wybrać z oficjalnych katalogów, a dane spoza katalogu
+wprowadzić ręcznie. Aplikacja nie zawiera domyślnego auta ani przykładowej instrukcji.
 
 Po dodaniu auta zaznaczasz jego **wyposażenie** (np. tempomat, kamera cofania, hak): aplikacja
 sama wyszukuje w instrukcjach opisy wyposażenia opcjonalnego. Sekcje o wyposażeniu, którego
@@ -16,7 +16,7 @@ Po wejściu do aplikacji widzisz **swój profil** — bez logowania i bez bazy d
 wybierasz:
 
 - **auto** — listę aut z lokalnego folderu `database/` (auta dodane przez Ciebie) albo
-  „Dodaj własne auto”,
+  „Dodaj pierwsze auto”, gdy nie ma jeszcze żadnej czytelnej instrukcji,
 - **własny notatnik** — puste kartki z podstawowym formatowaniem Markdown.
 
 Wybrane auto, zaznaczenia, komentarze, zakładki i notatki zapisują się w tej przeglądarce
@@ -30,7 +30,7 @@ komputerze: folder `database/` jest w `.gitignore` i nie trafia do repozytorium.
 - **Wyszukiwarka** — pełnotekstowa, w obrębie wybranego auta; ignoruje wielkość liter i polskie
   znaki („swiatla” znajdzie „światła”).
 - **Zakreślacz** — zaznacz dowolny fragment tekstu i wybierz kolor (odcienie srebra, grafit,
-  czerwień Opla). Kliknij zaznaczenie, aby zmienić kolor, dodać komentarz lub je usunąć.
+  czerwień). Kliknij zaznaczenie, aby zmienić kolor, dodać komentarz lub je usunąć.
 - **Komentarze** — do każdego zaznaczenia; lista w każdej sekcji oraz zbiorcza strona
   „Moje komentarze” (z podziałem na auta).
 - **Notatnik** — osobne kartki (tworzenie, zmiana nazwy, kolejność, usuwanie), zapis
@@ -39,8 +39,8 @@ komputerze: folder `database/` jest w `.gitignore` i nie trafia do repozytorium.
 - **Zakładki** i **powrót do ostatnio czytanego miejsca**.
 - **Dodaj auto** — kreator krok po kroku (opis niżej).
 - **Logo marki** — po wybraniu auta w nagłówku widać oficjalne logo jego marki z roku
-  produkcji (np. Opel z 2016 r. ma znak używany w latach 2009–2017), a gdy nie da się go
-  ustalić — najnowsze logo albo ikonę aplikacji. Logo pochodzi z Wikidanych i zapisuje się
+  produkcji, a gdy nie da się go ustalić — najnowsze logo albo ikonę aplikacji. Logo pochodzi
+  z Wikidanych i zapisuje się
   na komputerze (`database/.logos/`), więc działa też offline.
 - **Wyposażenie auta** — dla każdego auta osobno („Mam” / „Nie mam” / „Nie wiem”), tylko
   funkcje opisane w jego instrukcjach, z linkami do odpowiednich sekcji; podpowiedzi na
@@ -49,7 +49,7 @@ komputerze: folder `database/` jest w `.gitignore` i nie trafia do repozytorium.
   potem całe auto działa bez internetu (znaczek „Offline” w nagłówku). Połączenie jest
   potrzebne tylko do dodawania aut i odświeżenia listy aut.
 - **Proste w obsłudze** — okna potwierdzeń na środku ekranu, czytelne komunikaty po polsku
-  bez technicznego żargonu, wygląd w stylu ekranów radia Opel Navi 950 (jasny motyw).
+  bez technicznego żargonu, jasny wygląd inspirowany podziałem i stylistyką ekranów Opel Navi 950.
 - **Prywatność** — brak bazy danych, kont i analityki. Pliki PDF są przetwarzane tylko na
   Twoim komputerze. Jedyne zapytania na zewnątrz wysyła lokalny serwer — do publicznych
   katalogów aut (kreator „Dodaj auto”) i po logo marki (Wikidane) — bez żadnych Twoich
@@ -57,7 +57,7 @@ komputerze: folder `database/` jest w `.gitignore` i nie trafia do repozytorium.
 
 ## Prawa autorskie — tylko do użytku prywatnego
 
-Treść i ilustracje instrukcji © ich producentów (Opel Automobile GmbH / Stellantis i inni).
+Treść i ilustracje instrukcji © ich producentów.
 Repozytorium jest prywatne i przeznaczone wyłącznie do osobistego użytku. Nie publikuj
 wygenerowanej treści ani uruchomionej aplikacji. Pliki PDF nie są przechowywane w
 repozytorium (są w `.gitignore` i są usuwane po imporcie).
@@ -66,8 +66,8 @@ repozytorium (są w `.gitignore` i są usuwane po imporcie).
 
 - **Node.js 20.9+** (zalecany 22 LTS) i **pnpm 10+** (`npm install -g pnpm` albo
   `corepack enable`) — projekt używa wyłącznie pnpm (`pnpm-lock.yaml`)
-- Do dodawania aut z PDF i generowania treści: **Python 3.10+** oraz pakiety z
-  `scripts/requirements.txt` (PyMuPDF, Pillow) — patrz „Przygotowanie komputera” niżej
+- Do importowania instrukcji PDF: **Python 3.10+**, PyMuPDF 1.26+ i Pillow 12.3+ — patrz
+  „Przygotowanie komputera” niżej
 
 ## Instalacja i uruchomienie
 
@@ -85,10 +85,15 @@ pnpm start         # http://localhost:3000
 ```
 
 Aplikacja działa jako lokalny serwer Next.js (potrzebny do czytania folderu `database/` i do
-kreatora „Dodaj auto”). Tryb offline (service worker i automatyczne zapisywanie aut) działa
+kreatora „Dodaj auto”). Tryb offline (service worker i automatyczne zapisywanie instrukcji) działa
 tylko w wersji produkcyjnej otwartej pod `http://localhost` (albo przez HTTPS).
 
 ## Dodawanie aut
+
+Nowa kopia aplikacji nie ma żadnego domyślnego auta ani instrukcji. Kreator sprawdza, czy
+środowisko spełnia wymagania opisane niżej (Node.js, Python, biblioteki, skrypt odczytu i zapis
+do bazy). Jeśli `database/` nie zawiera jeszcze czytelnej instrukcji, profil pokazuje wyłącznie
+opcję „Dodaj pierwsze auto” zamiast siatki wyboru. Pusta baza nie blokuje dodawania pierwszego auta.
 
 ### Dla użytkownika — kreator „Dodaj auto”
 
@@ -141,38 +146,13 @@ którym działa aplikacja (czytanie instrukcji jest możliwe także z innych urz
 `MANUALS_ALLOW_REMOTE_IMPORT=1` zdejmuje to ograniczenie w zaufanej sieci). Każde auto można
 usunąć na jego stronie („Usuń to auto”).
 
-## Generowanie treści Opel Cascada MY16 z poleceń
+## Generowanie treści
 
-Instrukcje Opel Cascada MY16 (2016) — **Instrukcja obsługi** i **System multimedialny Navi
-950** — można dodać kreatorem albo wygenerować poleceniami do
-`database/opel-cascada-2016/` (plik `car.json` auta powstaje sam, jeśli go nie ma):
-
-```bash
-# 1. zależności Pythona (najlepiej w środowisku wirtualnym)
-python3 -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-python3 -m pip install -r scripts/requirements.txt
-
-# 2. pobranie obu plików PDF do katalogu manuals/
-pnpm fetch-manuals
-
-# 3. ekstrakcja tekstu, tabel, ostrzeżeń i obrazów
-pnpm extract                 # obie księgi
-pnpm extract --book manual   # tylko jedna księga (manual | infotainment)
-
-# 4. podgląd
-pnpm dev
-```
-
-Jeśli pobieranie się nie uda, pobierz pliki ręcznie ze stron:
-
-- https://www.opel.pl/content/dam/opel/poland/owners/manuals/pdf/Cascada/instrukcja_cascada_0815_my16_pl.pdf
-- https://www.opel.pl/content/dam/opel/poland/owners/manuals/pdf/Cascada/instrukcja_sa_cascada_0815_my16_pl.pdf
-
-i zapisz je w katalogu `manuals/` pod tymi samymi nazwami.
-
-Ekstrakcja nadpisuje poprzednio wygenerowaną treść — zaznaczenia przypięte do tekstu, który się zmienił,
-zostaną oznaczone jako „nie odnaleziono” (nie znikną).
+Nie ma wbudowanej instrukcji ani gotowego zestawu plików dla żadnego auta. Instrukcje każdej
+marki dodaje się w kreatorze „Dodaj auto”; podane pliki PDF są przetwarzane na tym komputerze,
+a następnie usuwane. Wygenerowane pliki trafiają do ignorowanego przez Git folderu
+`database/<marka-model-rocznik>/`. Nie edytuj ich ręcznie — ponowne dodanie instrukcji
+tworzy osobny wpis auta i jego ksiąg.
 
 Rozpoznawanie wyposażenia w treści (tytuły sekcji i nagłówki, np. „Tempomat”) jest w
 `src/config/featureRules.ts` i działa dla wszystkich aut — można je poprawiać bez ponownej
@@ -182,11 +162,9 @@ ekstrakcji. Szczegóły: `docs/vehicle-profile.md` i `docs/catalog.md`.
 
 Zaznaczenia, komentarze, notatnik, zakładki, wyposażenie aut i ustawienia są zapisywane tylko w tej
 przeglądarce (dla wszystkich aut). Wyczyszczenie danych przeglądarki usunie je bezpowrotnie.
-Dane ze starszej wersji aplikacji (tylko Cascada) są automatycznie przenoszone do nowego
-formatu.
+Dane ze starszej wersji aplikacji są automatycznie przenoszone do aktualnego formatu.
 
-- **Kopia:** Ustawienia → „Pobierz kopię zapasową” — pobiera plik
-  `opel-cascada-notatki-RRRR-MM-DD.json`.
+- **Kopia:** Ustawienia → „Pobierz kopię zapasową” — pobiera plik z datą w nazwie.
 - **Wczytanie:** Ustawienia → wybierz sposób („Scal z obecnymi danymi” lub „Zastąp obecne
   dane”) → „Wczytaj kopię z pliku…”.
 - **Przeniesienie na inny komputer / przeglądarkę:** eksport na starym, import na nowym.
@@ -201,13 +179,13 @@ formatu.
 | `pnpm dev`           | serwer deweloperski                                  |
 | `pnpm build`         | wersja produkcyjna (`.next/`)                        |
 | `pnpm start`         | uruchomienie wersji produkcyjnej na :3000            |
-| `pnpm fetch-manuals` | pobranie plików PDF do `manuals/`                    |
-| `pnpm extract`       | wygenerowanie treści z plików PDF                    |
 | `pnpm icons`         | wygenerowanie `apple-icon.png` i `favicon.ico` z SVG |
 | `pnpm test`          | testy jednostkowe (Vitest)                           |
 | `pnpm test:extract`  | testy skryptu ekstrakcji (Python)                    |
 | `pnpm lint`          | ESLint                                               |
 | `pnpm typecheck`     | sprawdzenie typów TypeScript                         |
 | `pnpm format`        | formatowanie (Prettier)                              |
+
+Pełna kontrola projektu: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:extract && pnpm format:check && pnpm build`.
 
 Dokumentacja techniczna (po angielsku): [`AGENTS.md`](AGENTS.md) i katalog [`docs/`](docs/).

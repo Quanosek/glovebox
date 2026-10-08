@@ -8,6 +8,7 @@ import {
   MAX_FILE_BYTES,
   runningJob,
 } from "@/lib/server/importer";
+import { listCarSummaries } from "@/lib/content";
 
 export const dynamic = "force-dynamic";
 
@@ -33,11 +34,18 @@ export async function GET(request: Request) {
     extractor = false;
   }
   const busy = runningJob();
+  const manuals = listCarSummaries().reduce(
+    (count, car) =>
+      count + car.books.filter((book) => !book.placeholder).length,
+    0,
+  );
+  const [nodeMajor, nodeMinor] = process.versions.node.split(".").map(Number);
   const localAccess =
     process.env.MANUALS_ALLOW_REMOTE_IMPORT === "1" ||
     isLoopbackHost(request.headers.get("host") ?? "");
   return Response.json({
     node: process.version,
+    nodeReady: nodeMajor > 20 || (nodeMajor === 20 && nodeMinor >= 9),
     platform: process.platform,
     python: best ?? found[0] ?? null,
     pythonReady: Boolean(best),
@@ -46,6 +54,7 @@ export async function GET(request: Request) {
       path: path.relative(process.cwd(), db) || db,
       writable: databaseWritable,
     },
+    manuals: { count: manuals },
     limits: { maxDocuments: MAX_DOCUMENTS, maxFileBytes: MAX_FILE_BYTES },
     localAccess,
     runningJob: busy?.id ? { id: busy.id, label: busy.label } : null,

@@ -23,8 +23,7 @@ import {
 
 const WIKIDATA = "https://www.wikidata.org/w/api.php";
 const COMMONS_FILE = "https://commons.wikimedia.org/wiki/Special:FilePath/";
-const USER_AGENT =
-  "opel-cascada-manual/1.0 (https://github.com/Quanosek/opel-cascada-manual; private local app)";
+const USER_AGENT = "car-manual-library/1.0 (private local app)";
 const IMAGE_WIDTH = 400;
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 const MAX_CANDIDATES = 5;

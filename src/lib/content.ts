@@ -134,7 +134,9 @@ export function getCarSummary(car: CarFile): CarSummary {
 }
 
 export function listCarSummaries(): CarSummary[] {
-  return listCars().map(getCarSummary);
+  return listCars()
+    .map(getCarSummary)
+    .filter((car) => car.books.some((book) => !book.placeholder));
 }
 
 /* ---------------------------------------------------------------- books */

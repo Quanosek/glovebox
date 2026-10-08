@@ -1,6 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <!-- Simplified original drawing of the Opel emblem: blitz in a ring, black on white. -->
   <rect width="64" height="64" fill="#ffffff"/>
-  <circle cx="32" cy="32" r="23.5" fill="none" stroke="#000000" stroke-width="4.5"/>
-  <path d="M6 26.2H42.5L30.5 34.2H58V38.2H21.5L33.5 30.2H6Z" fill="#000000"/>
+  <path d="M8 14.5c9.5-2.2 17.2-.8 24 4.2 6.8-5 14.5-6.4 24-4.2v35c-9.5-2.2-17.2-.8-24 4.2-6.8-5-14.5-6.4-24-4.2v-35Z" fill="none" stroke="#000000" stroke-width="3.5" stroke-linejoin="round"/>
+  <path d="M32 19v34M14 23c5-.8 9.5-.3 13 1.2M14 31c5-.8 9.5-.3 13 1.2m23-9.2c-5-.8-9.5-.3-13 1.2m13 6.8c-5-.8-9.5-.3-13 1.2" fill="none" stroke="#000000" stroke-width="2.5" stroke-linecap="round"/>
 </svg>

@@ -36,7 +36,7 @@ export function SettingsView({ cars }: { cars: CarSummary[] }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `opel-cascada-notatki-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `instrukcje-kopia-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     setMessage({ kind: "ok", text: "Kopia zapasowa została pobrana." });

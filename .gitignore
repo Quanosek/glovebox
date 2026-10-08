@@ -189,7 +189,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Source PDFs (copyrighted, fetched locally with `npm run fetch-manuals`)
+# User-provided source PDFs (never committed)
 /manuals/
 *.pdf
 

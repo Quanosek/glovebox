@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Extract structured content and illustrations from an Opel owner's manual PDF.
+"""Extract structured content and illustrations from a vehicle manual PDF.
 
 Produces the JSON format described in `src/content/types.ts`:
 
@@ -27,7 +27,7 @@ Strategy
    ("Niebezpieczeństwo", "Ostrzeżenie", "Przestroga", "Uwaga") with
    de-hyphenation and page references ("⇒ 45") turned into links.
 
-Run through `pnpm extract` (see `scripts/extract.mjs`).
+Run by the PDF import pipeline or directly with the required arguments.
 """
 
 from __future__ import annotations
@@ -1114,7 +1114,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     if not Path(args.pdf).exists():
-        print(f"PDF not found: {args.pdf}. Run `pnpm fetch-manuals` first.", file=sys.stderr)
+        print(f"PDF not found: {args.pdf}. Select a valid manual PDF.", file=sys.stderr)
         return 1
     build(args)
     return 0

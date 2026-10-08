@@ -30,6 +30,7 @@ import { plural } from "@/lib/typography";
 
 interface SystemStatus {
   node: string;
+  nodeReady: boolean;
   platform: string;
   python: {
     command: string;
@@ -40,6 +41,7 @@ interface SystemStatus {
   pythonReady: boolean;
   extractor: boolean;
   database: { path: string; writable: boolean };
+  manuals: { count: number };
   limits: { maxDocuments: number; maxFileBytes: number };
   localAccess: boolean;
   runningJob: { id: string; label: string } | null;
@@ -1070,6 +1072,7 @@ function Availability({
     text =
       "Ze względów bezpieczeństwa nowe auta można dodawać wyłącznie na komputerze, na którym działa aplikacja. Czytanie instrukcji działa na wszystkich urządzeniach.";
   } else if (
+    !system.nodeReady ||
     !system.pythonReady ||
     !system.extractor ||
     !system.database.writable
@@ -1083,7 +1086,12 @@ function Availability({
       </>
     );
   } else {
-    return null;
+    return system.manuals.count === 0 ? (
+      <p className="mt-4 border-l-4 border-graphite bg-paper px-4 py-3 text-sm text-graphite">
+        Nie ma tu jeszcze instrukcji. Dodaj pierwsze auto, aby rozpocząć
+        korzystanie z biblioteki.
+      </p>
+    ) : null;
   }
   return (
     <div
