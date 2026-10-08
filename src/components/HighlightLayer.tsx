@@ -20,7 +20,6 @@ import {
   HIGHLIGHT_COLORS,
   highlightName,
 } from "@/lib/highlightColors";
-import type { BookId } from "@/content/types";
 import type {
   Highlight as StoredHighlight,
   HighlightColor,
@@ -29,7 +28,8 @@ import { updateData, useAppData, useHydrated } from "@/lib/storage/hooks";
 import { newId } from "@/lib/storage/store";
 
 interface Props {
-  book: BookId;
+  car: string;
+  book: string;
   sectionId: string;
   sectionTitle: string;
   href: string;
@@ -56,6 +56,7 @@ const supportsHighlights = () =>
  * the comments attached to them.
  */
 export function HighlightLayer({
+  car,
   book,
   sectionId,
   sectionTitle,
@@ -76,9 +77,11 @@ export function HighlightLayer({
   const highlights = useMemo(
     () =>
       Object.values(data.highlights)
-        .filter((h) => h.book === book && h.sectionId === sectionId)
+        .filter(
+          (h) => h.car === car && h.book === book && h.sectionId === sectionId,
+        )
         .sort((a, b) => a.anchor.start - b.anchor.start),
-    [data.highlights, book, sectionId],
+    [data.highlights, car, book, sectionId],
   );
 
   // Plain text of the section; the server-rendered content never changes.
@@ -259,6 +262,7 @@ export function HighlightLayer({
     const now = new Date().toISOString();
     const h: StoredHighlight = {
       id: newId(),
+      car,
       book,
       sectionId,
       sectionTitle,

@@ -4,10 +4,17 @@ import Link from "next/link";
 import { useAppData, useHydrated } from "@/lib/storage/hooks";
 import { RESTORE_SCROLL_KEY } from "./ReadingTracker";
 
-export function ContinueReading() {
+/** Last read section; with `car`, only when it belongs to that car. */
+export function ContinueReading({
+  car,
+  carLabel,
+}: {
+  car?: string;
+  carLabel?: string;
+}) {
   const { lastRead } = useAppData();
   const hydrated = useHydrated();
-  if (!hydrated || !lastRead) return null;
+  if (!hydrated || !lastRead || (car && lastRead.car !== car)) return null;
 
   return (
     <div className="panel">
@@ -16,6 +23,7 @@ export function ContinueReading() {
         <div>
           <p className="font-semibold">{lastRead.title}</p>
           <p className="text-xs text-steel">
+            {carLabel ? `${carLabel} · ` : ""}
             {new Date(lastRead.at).toLocaleString("pl-PL")}
           </p>
         </div>

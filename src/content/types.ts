@@ -1,12 +1,14 @@
 /**
  * Content model shared by the extraction scripts (`scripts/extract.py`)
  * and the reader. Generated JSON files in `src/content/<book>/` must match
- * these types. Bump `CONTENT_FORMAT_VERSION` when the shape changes.
+ * these types. Generated files live in `database/<car>/<book>/`.
+ * Bump `CONTENT_FORMAT_VERSION` when the shape changes.
  */
 
 export const CONTENT_FORMAT_VERSION = 1;
 
-export type BookId = "manual" | "infotainment";
+/** Book id: lowercase slug, also the directory name inside the car folder. */
+export type BookId = string;
 
 /** Inline text run. Plain strings are regular text. */
 export type Run =
@@ -63,7 +65,7 @@ export interface TableBlock {
 export interface ImageBlock {
   type: "image";
   id: string;
-  /** Public URL, e.g. `/assets/manual/kluczyki-drzwi-i-szyby/p021-01.webp`. */
+  /** URL, e.g. `/media/opel-cascada-2016/manual/kluczyki/p021-01.webp`. */
   src: string;
   width: number;
   height: number;

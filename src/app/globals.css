@@ -246,6 +246,102 @@ body {
   .prose-manual :target {
     animation: target-flash 2s ease-out;
   }
+
+  /* Notebook Markdown preview */
+  .prose-note {
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+  }
+  .prose-note > :first-child {
+    margin-top: 0;
+  }
+  .prose-note h2 {
+    margin: 1.4rem 0 0.5rem;
+    padding-bottom: 0.2rem;
+    border-bottom: 1px solid var(--color-line);
+    font-size: 1.4em;
+    font-weight: 600;
+  }
+  .prose-note h3 {
+    margin: 1.2rem 0 0.4rem;
+    font-size: 1.2em;
+    font-weight: 600;
+  }
+  .prose-note h4 {
+    margin: 1rem 0 0.3rem;
+    font-weight: 600;
+  }
+  .prose-note p,
+  .prose-note ul,
+  .prose-note ol,
+  .prose-note pre,
+  .prose-note blockquote {
+    margin: 0.6rem 0;
+  }
+  .prose-note ul,
+  .prose-note ol {
+    padding-left: 1.5rem;
+  }
+  .prose-note ul {
+    list-style: square;
+  }
+  .prose-note ul li::marker {
+    color: var(--color-red);
+  }
+  .prose-note ol {
+    list-style: decimal;
+  }
+  .prose-note ul.task-list {
+    padding-left: 0.25rem;
+    list-style: none;
+  }
+  .prose-note .task-box {
+    display: inline-block;
+    width: 0.85em;
+    height: 0.85em;
+    margin-right: 0.5em;
+    border: 1px solid var(--color-steel);
+    vertical-align: -0.05em;
+  }
+  .prose-note .task-box-on {
+    border-color: var(--color-red);
+    background: var(--color-red);
+    box-shadow: inset 0 0 0 2px var(--color-white);
+  }
+  .prose-note blockquote {
+    border-left: 3px solid var(--color-silver);
+    padding: 0.1rem 0 0.1rem 0.9rem;
+    color: var(--color-graphite);
+  }
+  .prose-note code {
+    background: var(--color-paper);
+    border: 1px solid var(--color-line);
+    padding: 0 0.25em;
+    font-size: 0.9em;
+  }
+  .prose-note pre {
+    overflow-x: auto;
+    background: var(--color-paper);
+    border: 1px solid var(--color-line);
+    padding: 0.6rem 0.8rem;
+  }
+  .prose-note pre code {
+    border: 0;
+    padding: 0;
+  }
+  .prose-note hr {
+    margin: 1.2rem 0;
+    border: 0;
+    border-top: 1px solid var(--color-silver);
+  }
+  .prose-note a {
+    color: var(--color-red);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .prose-note del {
+    color: var(--color-steel);
+  }
 }
 
 @keyframes target-flash {

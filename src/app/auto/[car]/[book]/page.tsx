@@ -1,33 +1,47 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { carHref, carLabel } from "@/lib/cars";
 import {
   getBook,
-  getBookByRoute,
+  getBookCtx,
   getChildren,
   getSectionFeatures,
   sectionHref,
 } from "@/lib/content";
 import { SectionList } from "@/components/SectionList";
 
-export async function generateMetadata({
-  params,
-}: PageProps<"/[book]">): Promise<Metadata> {
-  const info = getBookByRoute((await params).book);
-  return { title: info ? getBook(info.id).title : "Nie znaleziono" };
+type Props = PageProps<"/auto/[car]/[book]">;
+
+async function load(params: Props["params"]) {
+  const { car, book } = await params;
+  return getBookCtx(car, book);
 }
 
-export default async function BookPage({ params }: PageProps<"/[book]">) {
-  const info = getBookByRoute((await params).book);
-  if (!info) notFound();
-  const index = getBook(info.id);
-  const chapters = getChildren(info.id, null);
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const ctx = await load(params);
+  return {
+    title: ctx
+      ? `${getBook(ctx).title} — ${carLabel(ctx.car)}`
+      : "Nie znaleziono",
+  };
+}
+
+export default async function BookPage({ params }: Props) {
+  const ctx = await load(params);
+  if (!ctx) notFound();
+  const index = getBook(ctx);
+  const chapters = getChildren(ctx, null);
 
   return (
     <article>
       <nav aria-label="Ścieżka" className="mb-4 text-xs text-steel">
         <Link href="/" className="hover:text-red">
-          Start
+          Profil
+        </Link>{" "}
+        ›{" "}
+        <Link href={carHref(ctx.car.id)} className="hover:text-red">
+          {carLabel(ctx.car)}
         </Link>{" "}
         › <span className="text-ink">{index.title}</span>
       </nav>
@@ -38,7 +52,12 @@ export default async function BookPage({ params }: PageProps<"/[book]">) {
         <p className="mt-4 border-l-4 border-red bg-paper px-4 py-3 text-sm">
           Treść tej księgi nie została jeszcze wygenerowana z oficjalnego pliku
           PDF. Instrukcję generowania znajdziesz w pliku README.md (polecenia{" "}
-          <code>npm run fetch-manuals</code> i <code>npm run extract</code>).
+          <code>npm run fetch-manuals</code> i <code>npm run extract</code>)
+          albo dodaj pliki PDF w kreatorze{" "}
+          <Link href="/dodaj-auto" className="text-red underline">
+            Dodaj auto
+          </Link>
+          .
         </p>
       )}
       <p className="mt-4 text-sm text-graphite">
@@ -55,9 +74,9 @@ export default async function BookPage({ params }: PageProps<"/[book]">) {
         items={chapters.map((s) => ({
           id: s.id,
           title: s.title,
-          href: sectionHref(info.id, s),
+          href: sectionHref(ctx, s),
           page: s.page,
-          features: getSectionFeatures(info.id, s),
+          features: getSectionFeatures(ctx, s),
         }))}
       />
     </article>

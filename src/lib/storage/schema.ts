@@ -1,5 +1,4 @@
 import type { FeatureState } from "@/config/vehicle";
-import type { BookId } from "@/content/types";
 
 /**
  * Persisted application data (localStorage, single key).
@@ -8,7 +7,7 @@ import type { BookId } from "@/content/types";
  */
 
 export const STORAGE_KEY = "opel-cascada-manual";
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 export const EXPORT_APP_ID = "opel-cascada-manual";
 
 export type HighlightColor = "light" | "silver" | "graphite" | "red";
@@ -24,7 +23,10 @@ export interface TextAnchor {
 
 export interface Highlight {
   id: string;
-  book: BookId;
+  /** Car id (`database/<car>`). */
+  car: string;
+  /** Book id inside the car. */
+  book: string;
   sectionId: string;
   sectionTitle: string;
   href: string;
@@ -44,9 +46,10 @@ export interface NotePage {
 }
 
 export interface Bookmark {
-  /** `${book}:${sectionId}` */
+  /** `${car}:${book}:${sectionId}` */
   id: string;
-  book: BookId;
+  car: string;
+  book: string;
   sectionId: string;
   title: string;
   href: string;
@@ -54,7 +57,8 @@ export interface Bookmark {
 }
 
 export interface LastRead {
-  book: BookId;
+  car: string;
+  book: string;
   sectionId: string;
   title: string;
   href: string;
@@ -68,8 +72,12 @@ export interface Settings {
   fontSize: FontSize;
   /** Expand sections describing equipment the car does not have. */
   showUnavailable: boolean;
-  /** Overrides of `DEFAULT_PROFILE` keyed by feature id. */
+  /** Overrides of `DEFAULT_PROFILE` keyed by feature id (Cascada profile). */
   vehicle: Record<string, FeatureState>;
+  /** Car chosen on the profile page (`database/<car>`), if any. */
+  activeCar: string | null;
+  /** Optional display name of the local profile. */
+  profileName: string;
 }
 
 export interface AppData {
@@ -91,6 +99,8 @@ export const DEFAULT_SETTINGS: Settings = {
   fontSize: "normal",
   showUnavailable: false,
   vehicle: {},
+  activeCar: null,
+  profileName: "",
 };
 
 export function createEmptyData(): AppData {

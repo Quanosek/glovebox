@@ -197,3 +197,7 @@ next-env.d.ts
 __pycache__/
 *.pyc
 /.venv/
+
+# Import pipeline scratch directories (finished imports land in database/<car>/)
+/database/.import-*
+/database/.write-test-*

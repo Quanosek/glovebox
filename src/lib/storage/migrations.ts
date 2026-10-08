@@ -8,10 +8,11 @@ import {
   type FontSize,
   type Highlight,
   type HighlightColor,
-  type LastRead,
   type NotePage,
   type Settings,
 } from "./schema";
+import { CASCADA_CAR_ID } from "@/lib/cars";
+import { isValidId } from "@/lib/slug";
 
 /**
  * Migrations upgrade stored data one version at a time:
@@ -26,7 +27,66 @@ export const MIGRATIONS: Record<number, Migration> = {
   // Data written before versioning existed (no `version` field) is treated
   // as version 0 and has the same shape as version 1.
   0: (data) => ({ ...data, version: 1 }),
+  // v2: multiple cars. Everything stored before belongs to the Opel Cascada
+  // and its URLs move from `/<book>/…` to `/auto/<car>/<book>/…`.
+  1: migrateV1toV2,
 };
+
+const V1_ROUTES = ["/instrukcja", "/navi-950"];
+
+/** Rewrites a v1 URL (`/instrukcja/…`) to the v2 car URL. */
+export function upgradeV1Href(href: string): string {
+  for (const route of V1_ROUTES) {
+    if (
+      href === route ||
+      href.startsWith(`${route}/`) ||
+      href.startsWith(`${route}#`)
+    )
+      return `/auto/${CASCADA_CAR_ID}${href}`;
+  }
+  return href;
+}
+
+function migrateV1toV2(data: Record<string, unknown>) {
+  const withCar = (item: unknown) =>
+    isObject(item)
+      ? {
+          ...item,
+          car: CASCADA_CAR_ID,
+          href: typeof item.href === "string" ? upgradeV1Href(item.href) : "",
+        }
+      : item;
+  const highlights: Record<string, unknown> = {};
+  if (isObject(data.highlights)) {
+    for (const [id, h] of Object.entries(data.highlights))
+      highlights[id] = withCar(h);
+  }
+  const bookmarks = Array.isArray(data.bookmarks)
+    ? data.bookmarks.map((b) =>
+        isObject(b)
+          ? {
+              ...(withCar(b) as Record<string, unknown>),
+              id: `${CASCADA_CAR_ID}:${str(b.book)}:${str(b.sectionId)}`,
+            }
+          : b,
+      )
+    : [];
+  const hasData =
+    Object.keys(highlights).length > 0 ||
+    bookmarks.length > 0 ||
+    isObject(data.lastRead);
+  const settings = isObject(data.settings) ? data.settings : {};
+  return {
+    ...data,
+    highlights,
+    bookmarks,
+    lastRead: isObject(data.lastRead) ? withCar(data.lastRead) : null,
+    settings: {
+      ...settings,
+      activeCar: hasData ? CASCADA_CAR_ID : null,
+    },
+  };
+}
 
 export class UnsupportedVersionError extends Error {
   constructor(public readonly found: number) {
@@ -51,7 +111,6 @@ const num = (v: unknown, fallback = 0): number =>
 
 const COLORS: HighlightColor[] = ["light", "silver", "graphite", "red"];
 const FONT_SIZES: FontSize[] = ["small", "normal", "large", "xlarge"];
-const BOOKS = ["manual", "infotainment"] as const;
 
 /** Upgrades raw stored data to the current schema and validates it. */
 export function migrate(
@@ -107,11 +166,14 @@ export function sanitize(data: Record<string, unknown>): AppData {
       .filter(isObject)
       .filter(
         (b) =>
-          typeof b.sectionId === "string" && BOOKS.includes(b.book as never),
+          typeof b.sectionId === "string" &&
+          isValidId(b.car) &&
+          isValidId(b.book),
       )
       .map((b): Bookmark => ({
-        id: str(b.id, `${str(b.book)}:${str(b.sectionId)}`),
-        book: b.book as Bookmark["book"],
+        id: `${str(b.car)}:${str(b.book)}:${str(b.sectionId)}`,
+        car: str(b.car),
+        book: str(b.book),
         sectionId: str(b.sectionId),
         title: str(b.title),
         href: str(b.href),
@@ -123,10 +185,12 @@ export function sanitize(data: Record<string, unknown>): AppData {
   if (
     isObject(lr) &&
     typeof lr.href === "string" &&
-    BOOKS.includes(lr.book as never)
+    isValidId(lr.car) &&
+    isValidId(lr.book)
   ) {
     out.lastRead = {
-      book: lr.book as LastRead["book"],
+      car: lr.car,
+      book: lr.book,
       sectionId: str(lr.sectionId),
       title: str(lr.title),
       href: str(lr.href),
@@ -141,6 +205,9 @@ export function sanitize(data: Record<string, unknown>): AppData {
     settings.fontSize = s.fontSize as FontSize;
   if (typeof s.showUnavailable === "boolean")
     settings.showUnavailable = s.showUnavailable;
+  if (isValidId(s.activeCar)) settings.activeCar = s.activeCar;
+  if (typeof s.profileName === "string")
+    settings.profileName = s.profileName.slice(0, 80);
   if (isObject(s.vehicle)) {
     for (const [id, state] of Object.entries(s.vehicle)) {
       if (
@@ -163,13 +230,18 @@ export function sanitize(data: Record<string, unknown>): AppData {
 
 function sanitizeHighlight(id: string, h: unknown): Highlight | null {
   if (!isObject(h) || !isObject(h.anchor)) return null;
-  if (!BOOKS.includes(h.book as never) || typeof h.sectionId !== "string")
+  if (
+    !isValidId(h.car) ||
+    !isValidId(h.book) ||
+    typeof h.sectionId !== "string"
+  )
     return null;
   const a = h.anchor;
   if (typeof a.exact !== "string" || !a.exact) return null;
   return {
     id: str(h.id, id),
-    book: h.book as Highlight["book"],
+    car: h.car,
+    book: h.book,
     sectionId: h.sectionId,
     sectionTitle: str(h.sectionTitle),
     href: str(h.href),
@@ -217,14 +289,21 @@ export function mergeData(current: AppData, incoming: AppData): AppData {
     if (!existing || existing.updatedAt < h.updatedAt) highlights[h.id] = h;
   }
   const pages = [...current.notebook.pages];
+  const pageIndex = new Map(pages.map((p, i) => [p.id, i]));
   for (const p of incoming.notebook.pages) {
-    const i = pages.findIndex((x) => x.id === p.id);
-    if (i === -1) pages.push(p);
-    else if (pages[i].updatedAt < p.updatedAt) pages[i] = p;
+    const i = pageIndex.get(p.id);
+    if (i === undefined) {
+      pageIndex.set(p.id, pages.length);
+      pages.push(p);
+    } else if (pages[i].updatedAt < p.updatedAt) pages[i] = p;
   }
   const bookmarks = [...current.bookmarks];
+  const bookmarkIds = new Set(bookmarks.map((b) => b.id));
   for (const b of incoming.bookmarks) {
-    if (!bookmarks.some((x) => x.id === b.id)) bookmarks.push(b);
+    if (!bookmarkIds.has(b.id)) {
+      bookmarkIds.add(b.id);
+      bookmarks.push(b);
+    }
   }
   const lastRead =
     !current.lastRead ||

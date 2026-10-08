@@ -1,16 +1,25 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { Markdown } from "@/components/Markdown";
+import {
+  markdownToText,
+  toggleLinePrefix,
+  wrapSelection,
+  type EditResult,
+} from "@/lib/markdown";
 import type { NotePage } from "@/lib/storage/schema";
 import { updateData, useAppData, useHydrated } from "@/lib/storage/hooks";
 import { newId } from "@/lib/storage/store";
 
 const AUTOSAVE_MS = 400;
 
-export function NotebookView() {
+export function NotebookView({ initialPage }: { initialPage?: string }) {
   const { notebook } = useAppData();
   const hydrated = useHydrated();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    initialPage ?? null,
+  );
   const pages = notebook.pages;
   const selected = pages.find((p) => p.id === selectedId) ?? pages[0] ?? null;
 
@@ -77,6 +86,11 @@ export function NotebookView() {
                 <span className="block truncate">
                   {p.title || "Bez tytułu"}
                 </span>
+                {p.body.trim() && (
+                  <span className="block truncate text-xs text-graphite">
+                    {markdownToText(p.body).slice(0, 80)}
+                  </span>
+                )}
                 <span className="block text-xs text-steel">
                   {new Date(p.updatedAt).toLocaleString("pl-PL")}
                 </span>
@@ -146,6 +160,8 @@ function NoteEditor({
   const [title, setTitle] = useState(page.title);
   const [body, setBody] = useState(page.body);
   const [status, setStatus] = useState<"saved" | "pending">("saved");
+  const [mode, setMode] = useState<Mode>("edit");
+  const area = useRef<HTMLTextAreaElement>(null);
   const timer = useRef<number | undefined>(undefined);
   const draft = useRef({ title: page.title, body: page.body });
 
@@ -171,6 +187,29 @@ function NoteEditor({
     setStatus("pending");
     window.clearTimeout(timer.current);
     timer.current = window.setTimeout(flush, AUTOSAVE_MS);
+  };
+
+  const apply = (run: Tool["run"]) => {
+    const el = area.current;
+    if (!el) return;
+    const r = run(el.value, el.selectionStart, el.selectionEnd);
+    setBody(r.value);
+    schedule({ title, body: r.value });
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(r.start, r.end);
+    });
+  };
+
+  const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+    const tool = TOOLS.find(
+      (t): t is Tool => t !== "|" && t.key === e.key.toLowerCase(),
+    );
+    if (tool) {
+      e.preventDefault();
+      apply(tool.run);
+    }
   };
 
   // Save pending changes when switching pages or leaving.
@@ -207,20 +246,181 @@ function NoteEditor({
           Usuń kartkę
         </button>
       </div>
-      <textarea
-        className="min-h-96 w-full flex-1 resize-y bg-[linear-gradient(transparent_calc(1.75rem-1px),var(--color-line)_1.75rem)] bg-size-[100%_1.75rem] bg-local px-4 py-[0.4rem] text-base leading-7 outline-none"
-        value={body}
-        aria-label="Treść notatki"
-        placeholder="Pisz tutaj…"
-        onChange={(e) => {
-          setBody(e.target.value);
-          schedule({ title, body: e.target.value });
-        }}
-      />
+      <div
+        role="toolbar"
+        aria-label="Formatowanie Markdown"
+        className="flex flex-wrap items-center gap-px border-b border-line bg-paper px-2 py-1"
+      >
+        {TOOLS.map((t, i) =>
+          t === "|" ? (
+            <span key={`sep-${i}`} className="mx-1 h-5 w-px bg-line" />
+          ) : (
+            <button
+              key={t.label}
+              type="button"
+              className="btn btn-ghost h-8 min-w-8 justify-center px-2 text-sm"
+              title={t.label + (t.key ? ` (Ctrl+${t.key.toUpperCase()})` : "")}
+              aria-label={t.label}
+              disabled={mode === "preview"}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => apply(t.run)}
+            >
+              <span aria-hidden="true" className={t.className}>
+                {t.icon}
+              </span>
+            </button>
+          ),
+        )}
+        <div className="ml-auto flex" role="group" aria-label="Widok">
+          {MODES.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              aria-pressed={mode === m.id}
+              className={`btn h-8 px-2.5 text-xs ${m.id === "split" ? "hidden lg:inline-flex" : ""} ${
+                mode === m.id ? "btn-primary" : ""
+              }`}
+              onClick={() => setMode(m.id)}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div
+        className={`grid flex-1 ${mode === "split" ? "lg:grid-cols-2 lg:divide-x lg:divide-line" : ""}`}
+      >
+        {mode !== "preview" && (
+          <textarea
+            ref={area}
+            className="min-h-96 w-full flex-1 resize-y bg-[linear-gradient(transparent_calc(1.75rem-1px),var(--color-line)_1.75rem)] bg-size-[100%_1.75rem] bg-local px-4 py-[0.4rem] font-mono text-[0.95rem] leading-7 outline-none"
+            value={body}
+            aria-label="Treść notatki (Markdown)"
+            placeholder={PLACEHOLDER}
+            onKeyDown={onKeyDown}
+            onChange={(e) => {
+              setBody(e.target.value);
+              schedule({ title, body: e.target.value });
+            }}
+          />
+        )}
+        {mode !== "edit" && (
+          <div className="min-h-96 overflow-auto px-5 py-3">
+            {body.trim() ? (
+              <Markdown source={body} />
+            ) : (
+              <p className="text-steel">Kartka jest pusta.</p>
+            )}
+          </div>
+        )}
+      </div>
       <p className="border-t border-line px-3 py-1.5 text-xs text-steel">
-        Notatki zapisują się automatycznie w tej przeglądarce. Znaki:{" "}
-        {body.length}
+        Notatki zapisują się automatycznie w tej przeglądarce. Formatowanie:
+        Markdown (**pogrubienie**, *kursywa*, # nagłówek, - lista, - [ ]
+        zadanie, &gt; cytat). Znaki: {body.length}
       </p>
     </section>
   );
 }
+
+type Mode = "edit" | "preview" | "split";
+
+const MODES: { id: Mode; label: string }[] = [
+  { id: "edit", label: "Pisz" },
+  { id: "preview", label: "Podgląd" },
+  { id: "split", label: "Obok siebie" },
+];
+
+const PLACEHOLDER = `Pisz tutaj… Możesz używać Markdown, np.:
+## Nagłówek
+**pogrubienie**, *kursywa*
+- lista
+- [ ] zadanie do zrobienia`;
+
+interface Tool {
+  label: string;
+  icon: string;
+  className?: string;
+  key?: string;
+  run: (value: string, start: number, end: number) => EditResult;
+}
+
+const TOOLS: Array<Tool | "|"> = [
+  {
+    label: "Pogrubienie",
+    icon: "B",
+    className: "font-bold",
+    key: "b",
+    run: (v, s, e) => wrapSelection(v, s, e, "**"),
+  },
+  {
+    label: "Kursywa",
+    icon: "I",
+    className: "italic font-serif",
+    key: "i",
+    run: (v, s, e) => wrapSelection(v, s, e, "*"),
+  },
+  {
+    label: "Przekreślenie",
+    icon: "S",
+    className: "line-through",
+    run: (v, s, e) => wrapSelection(v, s, e, "~~"),
+  },
+  {
+    label: "Kod",
+    icon: "</>",
+    className: "font-mono text-xs",
+    run: (v, s, e) => wrapSelection(v, s, e, "`"),
+  },
+  "|",
+  {
+    label: "Nagłówek",
+    icon: "H",
+    className: "font-semibold",
+    run: (v, s, e) => toggleLinePrefix(v, s, e, "## "),
+  },
+  {
+    label: "Lista",
+    icon: "•",
+    run: (v, s, e) => toggleLinePrefix(v, s, e, "- "),
+  },
+  {
+    label: "Lista numerowana",
+    icon: "1.",
+    className: "text-xs",
+    run: (v, s, e) => toggleLinePrefix(v, s, e, "{n}. "),
+  },
+  {
+    label: "Lista zadań",
+    icon: "☐",
+    run: (v, s, e) => toggleLinePrefix(v, s, e, "- [ ] "),
+  },
+  {
+    label: "Cytat",
+    icon: "❝",
+    run: (v, s, e) => toggleLinePrefix(v, s, e, "> "),
+  },
+  "|",
+  {
+    label: "Link",
+    icon: "↗",
+    key: "k",
+    run: (v, s, e) => {
+      const text = v.slice(s, e) || "opis";
+      const insert = `[${text}](https://)`;
+      const value = v.slice(0, s) + insert + v.slice(e);
+      const urlStart = s + text.length + 3;
+      return { value, start: urlStart, end: urlStart + 8 };
+    },
+  },
+  {
+    label: "Linia pozioma",
+    icon: "―",
+    run: (v, s) => {
+      const before = s > 0 && v[s - 1] !== "\n" ? "\n\n" : "";
+      const value = `${v.slice(0, s)}${before}---\n${v.slice(s)}`;
+      const pos = s + before.length + 4;
+      return { value, start: pos, end: pos };
+    },
+  },
+];

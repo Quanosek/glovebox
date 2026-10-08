@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { listCarSummaries } from "@/lib/content";
 import { BookmarksView } from "./BookmarksView";
 
 export const metadata: Metadata = { title: "Zakładki" };
@@ -12,7 +13,7 @@ export default function BookmarksPage() {
       <h1 className="border-b-2 border-red pb-2 text-2xl font-semibold">
         Zakładki
       </h1>
-      <BookmarksView />
+      <BookmarksView cars={listCarSummaries()} />
     </main>
   );
 }

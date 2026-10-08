@@ -1,22 +1,23 @@
 "use client";
 
-import type { BookId } from "@/content/types";
 import { updateData, useAppData, useHydrated } from "@/lib/storage/hooks";
 
 export function BookmarkButton({
+  car,
   book,
   sectionId,
   title,
   href,
 }: {
-  book: BookId;
+  car: string;
+  book: string;
   sectionId: string;
   title: string;
   href: string;
 }) {
   const data = useAppData();
   const hydrated = useHydrated();
-  const id = `${book}:${sectionId}`;
+  const id = `${car}:${book}:${sectionId}`;
   const active = hydrated && data.bookmarks.some((b) => b.id === id);
 
   const toggle = () =>
@@ -28,6 +29,7 @@ export function BookmarkButton({
             ...d.bookmarks,
             {
               id,
+              car,
               book,
               sectionId,
               title,

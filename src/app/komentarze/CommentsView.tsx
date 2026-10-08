@@ -1,17 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { bookName, carName, type CarSummary } from "@/lib/cars";
 import { useState } from "react";
 import { HIGHLIGHT_COLORS } from "@/lib/highlightColors";
 import type { Highlight } from "@/lib/storage/schema";
 import { updateData, useAppData, useHydrated } from "@/lib/storage/hooks";
 
-const BOOK_LABEL = {
-  manual: "Instrukcja obsługi",
-  infotainment: "Navi 950",
-} as const;
-
-export function CommentsView() {
+export function CommentsView({ cars }: { cars: CarSummary[] }) {
   const data = useAppData();
   const hydrated = useHydrated();
   const [onlyComments, setOnlyComments] = useState(false);
@@ -23,6 +19,7 @@ export function CommentsView() {
     .filter((h) => !onlyComments || h.comment.trim())
     .sort(
       (a, b) =>
+        a.car.localeCompare(b.car) ||
         a.book.localeCompare(b.book) ||
         a.href.localeCompare(b.href) ||
         a.anchor.start - b.anchor.start,
@@ -30,7 +27,7 @@ export function CommentsView() {
 
   const groups = new Map<string, Highlight[]>();
   for (const h of list) {
-    const key = `${h.book}:${h.sectionId}`;
+    const key = `${h.car}:${h.book}:${h.sectionId}`;
     groups.set(key, [...(groups.get(key) ?? []), h]);
   }
 
@@ -72,7 +69,10 @@ export function CommentsView() {
             <Link href={items[0].href} className="text-ink hover:text-red">
               {items[0].sectionTitle}
             </Link>
-            <span className="font-normal">{BOOK_LABEL[items[0].book]}</span>
+            <span className="font-normal">
+              {carName(cars, items[0].car)} ·{" "}
+              {bookName(cars, items[0].car, items[0].book)}
+            </span>
           </h2>
           <ul className="divide-y divide-line">
             {items.map((h) => (

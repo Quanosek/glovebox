@@ -3,7 +3,10 @@ import { NotebookView } from "./NotebookView";
 
 export const metadata: Metadata = { title: "Notatnik" };
 
-export default function NotebookPage() {
+export default async function NotebookPage({
+  searchParams,
+}: PageProps<"/notatnik">) {
+  const { kartka } = await searchParams;
   return (
     <main
       id="main"
@@ -12,7 +15,9 @@ export default function NotebookPage() {
       <h1 className="border-b-2 border-red pb-2 text-2xl font-semibold">
         Notatnik
       </h1>
-      <NotebookView />
+      <NotebookView
+        initialPage={typeof kartka === "string" ? kartka : undefined}
+      />
     </main>
   );
 }

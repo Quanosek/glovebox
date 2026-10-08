@@ -8,11 +8,12 @@ import { HighlightLayer } from "@/components/HighlightLayer";
 import { ReadingTracker } from "@/components/ReadingTracker";
 import { SectionGate } from "@/components/SectionGate";
 import { SectionList } from "@/components/SectionList";
+import { bookHref, carHref, carLabel } from "@/lib/cars";
 import {
   getAncestors,
   getBlocks,
   getBook,
-  getBookByRoute,
+  getBookCtx,
   getChildren,
   getPrevNext,
   getSection,
@@ -20,45 +21,36 @@ import {
   sectionHref,
 } from "@/lib/content";
 
-export const dynamicParams = false;
+type Props = PageProps<"/auto/[car]/[book]/[...slug]">;
 
-export function generateStaticParams({ params }: { params: { book: string } }) {
-  const info = getBookByRoute(params.book);
-  if (!info) return [];
-  return getBook(info.id).sections.map((s) => ({ slug: s.slug }));
+async function load(params: Props["params"]) {
+  const { car, book, slug } = await params;
+  const ctx = getBookCtx(car, book);
+  const section = ctx ? getSection(ctx, slug) : undefined;
+  if (!ctx || !section) notFound();
+  return { ctx, section };
 }
 
-async function load(params: PageProps<"/[book]/[...slug]">["params"]) {
-  const { book, slug } = await params;
-  const info = getBookByRoute(book);
-  const section = info ? getSection(info.id, slug) : undefined;
-  if (!info || !section) notFound();
-  return { info, section };
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { ctx, section } = await load(params);
+  return { title: `${section.title} — ${carLabel(ctx.car)}` };
 }
 
-export async function generateMetadata({
-  params,
-}: PageProps<"/[book]/[...slug]">): Promise<Metadata> {
-  const { section } = await load(params);
-  return { title: section.title };
-}
-
-export default async function SectionPage({
-  params,
-}: PageProps<"/[book]/[...slug]">) {
-  const { info, section } = await load(params);
-  const index = getBook(info.id);
-  const href = sectionHref(info.id, section);
-  const ancestors = getAncestors(info.id, section);
-  const features = getSectionFeatures(info.id, section);
-  const children = getChildren(info.id, section);
-  const { prev, next } = getPrevNext(info.id, section);
-  const blocks = getBlocks(info.id, section);
+export default async function SectionPage({ params }: Props) {
+  const { ctx, section } = await load(params);
+  const index = getBook(ctx);
+  const href = sectionHref(ctx, section);
+  const ancestors = getAncestors(ctx, section);
+  const features = getSectionFeatures(ctx, section);
+  const children = getChildren(ctx, section);
+  const { prev, next } = getPrevNext(ctx, section);
+  const blocks = getBlocks(ctx, section);
+  const ref = { car: ctx.car.id, book: ctx.book.id };
 
   return (
     <article>
       <ReadingTracker
-        book={info.id}
+        {...ref}
         sectionId={section.id}
         title={section.title}
         href={href}
@@ -66,14 +58,23 @@ export default async function SectionPage({
       <nav aria-label="Ścieżka" className="mb-4 text-xs text-steel">
         <ol className="flex flex-wrap gap-x-1.5">
           <li>
-            <Link href={`/${info.route}`} className="hover:text-red">
+            <Link href={carHref(ctx.car.id)} className="hover:text-red">
+              {carLabel(ctx.car)}
+            </Link>
+          </li>
+          <li>
+            ›{" "}
+            <Link
+              href={bookHref(ctx.car.id, ctx.book.route)}
+              className="hover:text-red"
+            >
               {index.title}
             </Link>
           </li>
           {ancestors.map((a) => (
             <li key={a.id}>
               ›{" "}
-              <Link href={sectionHref(info.id, a)} className="hover:text-red">
+              <Link href={sectionHref(ctx, a)} className="hover:text-red">
                 {a.title}
               </Link>
             </li>
@@ -91,7 +92,7 @@ export default async function SectionPage({
               <span className="text-xs text-steel">str. {section.page}</span>
             )}
             <BookmarkButton
-              book={info.id}
+              {...ref}
               sectionId={section.id}
               title={section.title}
               href={href}
@@ -103,13 +104,13 @@ export default async function SectionPage({
 
       <SectionGate features={features}>
         <HighlightLayer
-          book={info.id}
+          {...ref}
           sectionId={section.id}
           sectionTitle={section.title}
           href={href}
         >
           {blocks.length > 0 ? (
-            <BlockRenderer book={info.id} blocks={blocks} />
+            <BlockRenderer ctx={ctx} blocks={blocks} />
           ) : (
             children.length === 0 && (
               <p className="text-steel">Ta sekcja nie zawiera treści.</p>
@@ -127,9 +128,9 @@ export default async function SectionPage({
             items={children.map((c) => ({
               id: c.id,
               title: c.title,
-              href: sectionHref(info.id, c),
+              href: sectionHref(ctx, c),
               page: c.page,
-              features: getSectionFeatures(info.id, c),
+              features: getSectionFeatures(ctx, c),
             }))}
           />
         </section>
@@ -141,7 +142,7 @@ export default async function SectionPage({
       >
         {prev ? (
           <Link
-            href={sectionHref(info.id, prev)}
+            href={sectionHref(ctx, prev)}
             className="btn h-auto flex-col items-start py-2 whitespace-normal"
           >
             <span className="text-xs text-steel">‹ Poprzednia</span>
@@ -152,7 +153,7 @@ export default async function SectionPage({
         )}
         {next && (
           <Link
-            href={sectionHref(info.id, next)}
+            href={sectionHref(ctx, next)}
             className="btn h-auto flex-col items-end py-2 text-right whitespace-normal"
           >
             <span className="text-xs text-steel">Następna ›</span>

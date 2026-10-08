@@ -1,15 +1,19 @@
 import type { Metadata, Viewport } from "next";
 import { ClientEffects } from "@/components/ClientEffects";
 import { Header } from "@/components/Header";
+import { listCarSummaries } from "@/lib/content";
 import "./globals.css";
+
+// Every page reads `database/`, which changes when cars are imported.
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: {
-    default: "Opel Cascada MY16 — instrukcja",
-    template: "%s · Opel Cascada MY16",
+    default: "Moje instrukcje aut",
+    template: "%s · Moje instrukcje aut",
   },
   description:
-    "Prywatna, lokalna wersja instrukcji obsługi Opel Cascada MY16 i systemu Navi 950 z zakreślaczem, komentarzami i notatnikiem.",
+    "Prywatna, lokalna biblioteka instrukcji obsługi samochodów (m.in. Opel Cascada MY16 i Navi 950) z zakreślaczem, komentarzami i notatnikiem.",
   robots: { index: false, follow: false },
 };
 
@@ -32,12 +36,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         >
           Przejdź do treści
         </a>
-        <Header />
+        <Header cars={listCarSummaries()} />
         <ClientEffects />
         {children}
         <footer className="mt-auto border-t border-line bg-paper px-5 py-3 text-xs text-steel print:hidden">
-          Treść instrukcji © Opel / Stellantis — wyłącznie do prywatnego użytku.
-          Notatki są zapisywane tylko w tej przeglądarce.
+          Treść instrukcji © ich producentów (m.in. Opel / Stellantis) —
+          wyłącznie do prywatnego użytku. Notatki są zapisywane tylko w tej
+          przeglądarce.
         </footer>
       </body>
     </html>

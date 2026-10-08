@@ -190,7 +190,7 @@ export function SettingsView() {
 
       <section className="panel">
         <h2 className="panel-title flex items-center justify-between">
-          Profil pojazdu
+          Wyposażenie: Opel Cascada MY16
           <button
             type="button"
             className="btn h-7 py-0 normal-case"
@@ -207,9 +207,10 @@ export function SettingsView() {
         </h2>
         <div className="p-4 text-sm">
           <p className="mb-3 text-graphite">
-            Określ, które wyposażenie ma Twoje auto. Sekcje instrukcji dotyczące
-            brakującego wyposażenia są zwijane i oznaczane jako „Brak w Twoim
-            aucie”.
+            Określ, które wyposażenie ma Twoja Cascada. Sekcje instrukcji
+            dotyczące brakującego wyposażenia są zwijane i oznaczane jako „Brak
+            w Twoim aucie”. Profil wyposażenia dotyczy tylko wbudowanego auta
+            Opel Cascada 2016 — auta dodane w kreatorze pokazują pełną treść.
           </p>
           {groups.map((g) => (
             <fieldset key={g} className="mb-4">

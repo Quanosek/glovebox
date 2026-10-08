@@ -12,6 +12,7 @@ import {
 
 export interface WarningItem {
   id: string;
+  car: string;
   book: string;
   kind: WarningKind;
   title: string;
@@ -30,11 +31,27 @@ const KINDS: { id: WarningKind | "all"; label: string }[] = [
   { id: "note", label: "Uwaga" },
 ];
 
-export function WarningsList({ items }: { items: WarningItem[] }) {
+export function WarningsList({
+  items: allItems,
+  cars,
+  initialCar,
+}: {
+  items: WarningItem[];
+  cars: { id: string; label: string }[];
+  initialCar?: string;
+}) {
   const [kind, setKind] = useState<WarningKind | "all">("all");
   const profile = useVehicleProfile();
   const hydrated = useHydrated();
   const { settings } = useAppData();
+  const [chosenCar, setChosenCar] = useState<string | null>(initialCar ?? null);
+  const fallback =
+    hydrated && cars.some((c) => c.id === settings.activeCar)
+      ? settings.activeCar!
+      : "all";
+  const car = chosenCar ?? fallback;
+  const items =
+    car === "all" ? allItems : allItems.filter((w) => w.car === car);
 
   const visible = items.filter((w) => {
     if (kind !== "all" && w.kind !== kind) return false;
@@ -53,6 +70,23 @@ export function WarningsList({ items }: { items: WarningItem[] }) {
 
   return (
     <>
+      {cars.length > 1 && (
+        <label className="mt-4 flex max-w-md items-center gap-2 text-sm">
+          <span className="shrink-0 text-graphite">Auto:</span>
+          <select
+            className="field h-9"
+            value={car}
+            onChange={(e) => setChosenCar(e.target.value)}
+          >
+            <option value="all">Wszystkie auta</option>
+            {cars.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <div
         className="mt-4 flex flex-wrap gap-1"
         role="group"
@@ -109,6 +143,9 @@ export function WarningsList({ items }: { items: WarningItem[] }) {
                   {w.title}
                 </span>
                 <span className="text-steel">
+                  {car === "all"
+                    ? `${cars.find((c) => c.id === w.car)?.label ?? w.car} › `
+                    : ""}
                   {w.book} › {w.section}
                   {w.page != null ? ` · str. ${w.page}` : ""}
                 </span>

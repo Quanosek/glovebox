@@ -1,20 +1,20 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { Block, BookId, Run, WarningKind } from "@/content/types";
-import { resolvePageRef } from "@/lib/content";
+import type { Block, Run, WarningKind } from "@/content/types";
+import { resolvePageRef, type BookCtx } from "@/lib/content";
 
 /** Server component rendering extracted manual blocks. */
 export function BlockRenderer({
-  book,
+  ctx,
   blocks,
 }: {
-  book: BookId;
+  ctx: BookCtx;
   blocks: Block[];
 }) {
   return (
     <>
       {blocks.map((block) => (
-        <BlockView key={block.id} book={book} block={block} />
+        <BlockView key={block.id} ctx={ctx} block={block} />
       ))}
     </>
   );
@@ -27,20 +27,20 @@ const WARNING_STYLE: Record<WarningKind, string> = {
   note: "border-silver bg-paper",
 };
 
-function BlockView({ book, block }: { book: BookId; block: Block }) {
+function BlockView({ ctx, block }: { ctx: BookCtx; block: Block }) {
   switch (block.type) {
     case "heading": {
       const Tag = `h${block.level}` as "h2" | "h3" | "h4";
       return (
         <Tag id={block.id}>
-          <Runs book={book} runs={block.runs} />
+          <Runs ctx={ctx} runs={block.runs} />
         </Tag>
       );
     }
     case "paragraph":
       return (
         <p id={block.id}>
-          <Runs book={book} runs={block.runs} />
+          <Runs ctx={ctx} runs={block.runs} />
         </p>
       );
     case "list": {
@@ -49,7 +49,7 @@ function BlockView({ book, block }: { book: BookId; block: Block }) {
         <Tag id={block.id}>
           {block.items.map((item, i) => (
             <li key={i}>
-              <Runs book={book} runs={item} />
+              <Runs ctx={ctx} runs={item} />
             </li>
           ))}
         </Tag>
@@ -73,7 +73,7 @@ function BlockView({ book, block }: { book: BookId; block: Block }) {
             {block.title}
           </p>
           {block.blocks.map((b) => (
-            <BlockView key={b.id} book={book} block={b} />
+            <BlockView key={b.id} ctx={ctx} block={b} />
           ))}
         </aside>
       );
@@ -135,13 +135,13 @@ function BlockView({ book, block }: { book: BookId; block: Block }) {
   }
 }
 
-function Runs({ book, runs }: { book: BookId; runs: Run[] }) {
+function Runs({ ctx, runs }: { ctx: BookCtx; runs: Run[] }) {
   return (
     <>
       {runs.map((run, i) => {
         if (typeof run === "string") return run;
         if ("page" in run) {
-          const href = resolvePageRef(book, run.page);
+          const href = resolvePageRef(ctx, run.page);
           const label = `str. ${run.page}`;
           return href ? (
             <Link key={i} href={href} className="page-ref">

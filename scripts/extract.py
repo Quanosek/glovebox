@@ -1073,9 +1073,15 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
     return index
 
 
+def book_id(value: str) -> str:
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,63}", value):
+        raise argparse.ArgumentTypeError("book id must be a lowercase slug (a-z, 0-9, -)")
+    return value
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--book", required=True, choices=["manual", "infotainment"])
+    p.add_argument("--book", required=True, type=book_id, help="book id (lowercase slug), also the output directory name")
     p.add_argument("--pdf", required=True)
     p.add_argument("--out", required=True, help="output directory for JSON")
     p.add_argument("--assets", required=True, help="output directory for WebP images")

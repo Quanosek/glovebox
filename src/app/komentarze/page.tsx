@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { listCarSummaries } from "@/lib/content";
 import { CommentsView } from "./CommentsView";
 
 export const metadata: Metadata = { title: "Moje komentarze" };
@@ -12,7 +13,7 @@ export default function CommentsPage() {
       <h1 className="border-b-2 border-red pb-2 text-2xl font-semibold">
         Moje komentarze
       </h1>
-      <CommentsView />
+      <CommentsView cars={listCarSummaries()} />
     </main>
   );
 }

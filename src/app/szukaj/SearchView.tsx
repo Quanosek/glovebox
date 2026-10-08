@@ -13,19 +13,38 @@ import {
   useVehicleProfile,
 } from "@/lib/storage/hooks";
 
-type BookFilter = "all" | "manual" | "infotainment";
+export interface SearchCar {
+  id: string;
+  label: string;
+  books: { id: string; short: string }[];
+}
 
-export function SearchView() {
+export function SearchView({ cars }: { cars: SearchCar[] }) {
   const params = useSearchParams();
   const router = useRouter();
   const initial = params.get("q") ?? "";
   const [query, setQuery] = useState(initial);
-  const [docs, setDocs] = useState<SearchDoc[] | null>(null);
+  const [loaded, setLoaded] = useState<{
+    car: string;
+    docs: SearchDoc[];
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [book, setBook] = useState<BookFilter>("all");
+  const [book, setBook] = useState<string>("all");
   const profile = useVehicleProfile();
   const hydrated = useHydrated();
   const { settings } = useAppData();
+
+  // Car: ?car=, otherwise the active car of the profile, otherwise the first.
+  const [chosenCar, setChosenCar] = useState<string | null>(null);
+  const paramCar = params.get("car");
+  const carId =
+    [chosenCar, paramCar, hydrated ? settings.activeCar : null].find(
+      (id) => id && cars.some((c) => c.id === id),
+    ) ??
+    cars[0]?.id ??
+    null;
+  const car = cars.find((c) => c.id === carId) ?? null;
+  const docs = loaded && loaded.car === carId ? loaded.docs : null;
 
   // Sync with the header search box (?q=).
   const [lastInitial, setLastInitial] = useState(initial);
@@ -35,13 +54,18 @@ export function SearchView() {
   }
 
   useEffect(() => {
+    if (!carId || !hydrated) return;
     let cancelled = false;
-    fetch("/search-index.json")
+    fetch(`/api/search-index?car=${encodeURIComponent(carId)}`)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json() as Promise<SearchDoc[]>;
       })
-      .then((d) => !cancelled && setDocs(d))
+      .then((d) => {
+        if (cancelled) return;
+        setError(null);
+        setLoaded({ car: carId, docs: d });
+      })
       .catch(
         (e: unknown) =>
           !cancelled && setError(e instanceof Error ? e.message : String(e)),
@@ -49,7 +73,7 @@ export function SearchView() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [carId, hydrated]);
 
   const engine = useMemo(() => {
     if (!docs) return null;
@@ -83,9 +107,14 @@ export function SearchView() {
       .slice(0, 100);
   }, [engine, byId, query, book]);
 
+  const queryTerms = normalizeText(query)
+    .split(/\s+/)
+    .filter((t) => t.length >= 2);
+
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    router.replace(`/szukaj?q=${encodeURIComponent(query.trim())}`);
+    const q = `q=${encodeURIComponent(query.trim())}`;
+    router.replace(`/szukaj?${q}${carId ? `&car=${carId}` : ""}`);
   };
 
   return (
@@ -104,15 +133,35 @@ export function SearchView() {
           onChange={(e) => setQuery(e.target.value)}
           aria-label="Szukana fraza"
         />
+        {cars.length > 1 && (
+          <select
+            className="field sm:w-56"
+            value={carId ?? ""}
+            onChange={(e) => {
+              setChosenCar(e.target.value);
+              setBook("all");
+            }}
+            aria-label="Auto"
+          >
+            {cars.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+        )}
         <select
           className="field sm:w-56"
           value={book}
-          onChange={(e) => setBook(e.target.value as BookFilter)}
+          onChange={(e) => setBook(e.target.value)}
           aria-label="Księga"
         >
-          <option value="all">Obie księgi</option>
-          <option value="manual">Instrukcja obsługi</option>
-          <option value="infotainment">Navi 950</option>
+          <option value="all">Wszystkie księgi</option>
+          {car?.books.map((b) => (
+            <option key={b.id} value={b.id}>
+              {b.short}
+            </option>
+          ))}
         </select>
       </form>
       <p className="mt-2 text-xs text-steel">
@@ -125,7 +174,12 @@ export function SearchView() {
           Nie udało się wczytać indeksu wyszukiwania: {error}
         </p>
       )}
-      {!docs && !error && (
+      {!car && (
+        <p className="mt-4 text-steel">
+          Brak aut w bazie — dodaj auto w kreatorze „Dodaj auto”.
+        </p>
+      )}
+      {car && !docs && !error && (
         <p className="mt-4 text-steel">Wczytywanie indeksu…</p>
       )}
 
@@ -161,7 +215,10 @@ export function SearchView() {
                   {doc.path ? ` › ${doc.path}` : ""}
                 </span>
                 <span className="mt-0.5 flex flex-wrap items-center gap-2 font-semibold">
-                  <Marked text={doc.title} terms={result.terms} />
+                  <Marked
+                    text={doc.title}
+                    terms={[...result.terms, ...queryTerms]}
+                  />
                   {missing && (
                     <span className="badge badge-red">Brak w Twoim aucie</span>
                   )}
@@ -169,7 +226,7 @@ export function SearchView() {
                 <span className="mt-1 block text-sm text-graphite">
                   <Marked
                     text={excerpt(doc.text, result.terms)}
-                    terms={result.terms}
+                    terms={[...result.terms, ...queryTerms]}
                   />
                 </span>
               </Link>

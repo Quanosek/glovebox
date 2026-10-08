@@ -1,14 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { bookName, carName, type CarSummary } from "@/lib/cars";
 import { updateData, useAppData, useHydrated } from "@/lib/storage/hooks";
 
-const BOOK_LABEL = {
-  manual: "Instrukcja obsługi",
-  infotainment: "Navi 950",
-} as const;
-
-export function BookmarksView() {
+export function BookmarksView({ cars }: { cars: CarSummary[] }) {
   const { bookmarks } = useAppData();
   const hydrated = useHydrated();
   if (!hydrated) return <p className="mt-4 text-steel">Ładowanie…</p>;
@@ -34,7 +30,7 @@ export function BookmarksView() {
           <Link href={b.href} className="flex-1 hover:text-red">
             <span className="block">{b.title}</span>
             <span className="block text-xs text-steel">
-              {BOOK_LABEL[b.book]} · dodano{" "}
+              {carName(cars, b.car)} · {bookName(cars, b.car, b.book)} · dodano{" "}
               {new Date(b.createdAt).toLocaleDateString("pl-PL")}
             </span>
           </Link>

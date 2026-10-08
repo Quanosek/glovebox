@@ -1,7 +1,9 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { usePathname } from "next/navigation";
 import { resolveProfile, type VehicleProfile } from "@/config/vehicle";
+import type { CarSummary } from "@/lib/cars";
 import { EMPTY_DATA, type AppData } from "./schema";
 import { getStore } from "./store";
 
@@ -31,4 +33,25 @@ export function useVehicleProfile(): VehicleProfile {
 
 export function updateData(fn: (data: AppData) => AppData): void {
   getStore().update(fn);
+}
+
+/**
+ * Car currently in use: the car of the open `/auto/<car>` page, otherwise
+ * the one chosen on the profile page. Null before hydration.
+ */
+export function useActiveCar(cars: CarSummary[]): CarSummary | null {
+  const pathname = usePathname();
+  const { settings } = useAppData();
+  const hydrated = useHydrated();
+  const fromPath = /^\/auto\/([^/]+)/.exec(pathname)?.[1];
+  const id = fromPath ?? (hydrated ? settings.activeCar : null);
+  return cars.find((c) => c.id === id) ?? null;
+}
+
+export function setActiveCar(id: string | null): void {
+  updateData((d) =>
+    d.settings.activeCar === id
+      ? d
+      : { ...d, settings: { ...d.settings, activeCar: id } },
+  );
 }

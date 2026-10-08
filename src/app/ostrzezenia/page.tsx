@@ -1,13 +1,18 @@
 import type { Metadata } from "next";
-import { BOOKS, blockToText, getAllWarnings, getBookInfo } from "@/lib/content";
+import { blockToText, getAllWarnings, listCarSummaries } from "@/lib/content";
 import { WarningsList, type WarningItem } from "./WarningsList";
 
 export const metadata: Metadata = { title: "Ostrzeżenia" };
 
-export default function WarningsPage() {
+export default async function WarningsPage({
+  searchParams,
+}: PageProps<"/ostrzezenia">) {
+  const { car } = await searchParams;
+  const cars = listCarSummaries();
   const items: WarningItem[] = getAllWarnings().map((w) => ({
-    id: `${w.book}:${w.section.id}:${w.block.id}`,
-    book: getBookInfo(w.book).short,
+    id: `${w.car}:${w.book.id}:${w.section.id}:${w.block.id}`,
+    car: w.car,
+    book: w.book.short,
     kind: w.block.kind,
     title: w.block.title,
     section: w.section.title,
@@ -26,10 +31,18 @@ export default function WarningsPage() {
         Indeks ostrzeżeń
       </h1>
       <p className="mt-3 text-sm text-graphite">
-        Wszystkie ostrzeżenia, przestrogi i uwagi z {BOOKS.length} ksiąg, z
-        odnośnikami do miejsca w instrukcji.
+        Wszystkie ostrzeżenia, przestrogi i uwagi z instrukcji, z odnośnikami do
+        miejsca w tekście.
       </p>
-      <WarningsList items={items} />
+      <WarningsList
+        items={items}
+        cars={cars.map((c) => ({ id: c.id, label: c.label }))}
+        initialCar={
+          typeof car === "string" && cars.some((c) => c.id === car)
+            ? car
+            : undefined
+        }
+      />
     </main>
   );
 }

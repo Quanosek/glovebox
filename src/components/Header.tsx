@@ -3,21 +3,26 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import type { CarSummary } from "@/lib/cars";
+import { useActiveCar } from "@/lib/storage/hooks";
 import { Logo } from "./Logo";
 
-const NAV = [
-  { href: "/instrukcja", label: "Instrukcja obsługi" },
-  { href: "/navi-950", label: "Navi 950" },
-  { href: "/twoje-auto", label: "Twoje auto" },
-  { href: "/ostrzezenia", label: "Ostrzeżenia" },
-  { href: "/komentarze", label: "Komentarze" },
-  { href: "/zakladki", label: "Zakładki" },
-  { href: "/notatnik", label: "Notatnik" },
-  { href: "/ustawienia", label: "Ustawienia" },
-];
-
-export function Header() {
+export function Header({ cars }: { cars: CarSummary[] }) {
   const pathname = usePathname();
+  const car = useActiveCar(cars);
+  const nav = [
+    { href: "/", label: "Profil", exact: true },
+    car
+      ? { href: car.href, label: `${car.brand} ${car.model}` }
+      : { href: "/auta", label: "Wybierz auto" },
+    ...(car?.hasProfile ? [{ href: "/twoje-auto", label: "Wyposażenie" }] : []),
+    { href: "/ostrzezenia", label: "Ostrzeżenia" },
+    { href: "/komentarze", label: "Komentarze" },
+    { href: "/zakladki", label: "Zakładki" },
+    { href: "/notatnik", label: "Notatnik" },
+    { href: "/dodaj-auto", label: "Dodaj auto" },
+    { href: "/ustawienia", label: "Ustawienia" },
+  ];
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -55,11 +60,11 @@ export function Header() {
         >
           <Logo size={34} />
           <span className="hidden leading-tight sm:block">
-            <span className="block text-sm font-semibold tracking-wide">
-              OPEL CASCADA
+            <span className="block text-sm font-semibold tracking-wide uppercase">
+              {car ? `${car.brand} ${car.model}` : "Moje instrukcje"}
             </span>
             <span className="block text-[0.6875rem] tracking-[0.12em] text-steel uppercase">
-              Instrukcja · MY16
+              {car ? `Instrukcja · ${car.year}` : "Profil lokalny"}
             </span>
           </span>
         </Link>
@@ -72,7 +77,11 @@ export function Header() {
           <input
             type="search"
             className="field h-9 min-w-0 border-r-0"
-            placeholder="Szukaj w instrukcjach…"
+            placeholder={
+              car
+                ? `Szukaj: ${car.brand} ${car.model}…`
+                : "Szukaj w instrukcjach…"
+            }
             aria-label="Szukaj w instrukcjach"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -113,9 +122,10 @@ export function Header() {
         className={`${open ? "block" : "hidden"} border-t border-line bg-white xl:block xl:bg-transparent`}
       >
         <ul className="flex flex-col xl:flex-row xl:px-3">
-          {NAV.map((item) => {
+          {nav.map((item) => {
             const active =
-              pathname === item.href || pathname.startsWith(`${item.href}/`);
+              pathname === item.href ||
+              (!("exact" in item) && pathname.startsWith(`${item.href}/`));
             return (
               <li key={item.href}>
                 <Link

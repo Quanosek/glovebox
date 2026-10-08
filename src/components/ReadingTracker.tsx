@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import type { BookId } from "@/content/types";
 import { updateData } from "@/lib/storage/hooks";
 
 /** sessionStorage key set by "Kontynuuj czytanie" to restore the scroll position. */
@@ -9,12 +8,14 @@ export const RESTORE_SCROLL_KEY = "opel-cascada-manual:restore-scroll";
 
 /** Remembers the last read section and scroll position. */
 export function ReadingTracker({
+  car,
   book,
   sectionId,
   title,
   href,
 }: {
-  book: BookId;
+  car: string;
+  book: string;
   sectionId: string;
   title: string;
   href: string;
@@ -24,6 +25,7 @@ export function ReadingTracker({
       updateData((d) => ({
         ...d,
         lastRead: {
+          car,
           book,
           sectionId,
           title,
@@ -59,7 +61,7 @@ export function ReadingTracker({
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("pagehide", save);
     };
-  }, [book, sectionId, title, href]);
+  }, [car, book, sectionId, title, href]);
 
   return null;
 }

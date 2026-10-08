@@ -1,18 +1,23 @@
 import type { Metadata } from "next";
 import { VEHICLE_SUMMARY } from "@/config/vehicle";
-import { getFeatureSections } from "@/lib/content";
+import { notFound } from "next/navigation";
+import { CASCADA_CAR_ID } from "@/lib/cars";
+import { getCar, getFeatureSections } from "@/lib/content";
 import { VehicleView } from "./VehicleView";
 
-export const metadata: Metadata = { title: "Twoje auto" };
+export const metadata: Metadata = { title: "Wyposażenie — Opel Cascada" };
 
+/** Equipment profile of the Opel Cascada MY16 (the only profiled car). */
 export default function VehiclePage() {
+  const car = getCar(CASCADA_CAR_ID);
+  if (!car) notFound();
   return (
     <main
       id="main"
       className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 sm:px-8"
     >
       <h1 className="border-b-2 border-red pb-2 text-2xl font-semibold">
-        Twoje auto
+        Twoje auto — wyposażenie
       </h1>
       <dl className="mt-4 grid gap-px border border-line bg-line text-sm sm:grid-cols-2">
         {[
@@ -50,7 +55,7 @@ export default function VehiclePage() {
         </div>
       </section>
 
-      <VehicleView featureSections={getFeatureSections()} />
+      <VehicleView featureSections={getFeatureSections(car)} />
     </main>
   );
 }

@@ -35,10 +35,11 @@ const highlight = (
   updatedAt = "2026-01-01T00:00:00.000Z",
 ): Highlight => ({
   id,
+  car: "opel-cascada-2016",
   book: "manual",
   sectionId: "kluczyki/kluczyki-zamki",
   sectionTitle: "Kluczyki, zamki",
-  href: "/instrukcja/kluczyki/kluczyki-zamki",
+  href: "/auto/opel-cascada-2016/instrukcja/kluczyki/kluczyki-zamki",
   anchor: { exact: "kluczyk", prefix: "", suffix: "", start: 0, end: 7 },
   color: "red",
   comment: "",
@@ -69,6 +70,47 @@ describe("migrate", () => {
     expect(data.notebook.pages[0].body).toBe("true");
   });
 
+  it("moves v1 (single car) data to the Cascada car", () => {
+    const { car: _car, ...v1 } = highlight("a");
+    void _car;
+    const data = migrate({
+      version: 1,
+      highlights: {
+        a: { ...v1, href: "/navi-950/radio#b3" },
+      },
+      lastRead: {
+        book: "manual",
+        sectionId: "x",
+        title: "X",
+        href: "/instrukcja/x",
+        scrollY: 10,
+        at: "2026-01-01T00:00:00.000Z",
+      },
+      settings: { fontSize: "large" },
+    });
+    expect(data.highlights.a.car).toBe("opel-cascada-2016");
+    expect(data.highlights.a.href).toBe(
+      "/auto/opel-cascada-2016/navi-950/radio#b3",
+    );
+    expect(data.lastRead?.car).toBe("opel-cascada-2016");
+    expect(data.lastRead?.href).toBe("/auto/opel-cascada-2016/instrukcja/x");
+    expect(data.settings.activeCar).toBe("opel-cascada-2016");
+    expect(data.settings.fontSize).toBe("large");
+  });
+
+  it("leaves no active car for empty v1 data", () => {
+    expect(migrate({ version: 1 }).settings.activeCar).toBeNull();
+  });
+
+  it("validates settings of the current version", () => {
+    const data = migrate({
+      version: SCHEMA_VERSION,
+      settings: { activeCar: "../x", profileName: "Jan" },
+    });
+    expect(data.settings.activeCar).toBeNull();
+    expect(data.settings.profileName).toBe("Jan");
+  });
+
   it("rejects data from a newer app version", () => {
     expect(() => migrate({ version: SCHEMA_VERSION + 1 })).toThrow(
       UnsupportedVersionError,
@@ -81,7 +123,7 @@ describe("migrate", () => {
       highlights: {
         ok: highlight("ok"),
         bad: { book: "manual" },
-        wrongBook: { ...highlight("x"), book: "other" },
+        wrongBook: { ...highlight("x"), book: "../etc" },
       },
       bookmarks: [
         { book: "manual", sectionId: "a", title: "A", href: "/instrukcja/a" },
@@ -98,7 +140,8 @@ describe("migrate", () => {
     });
     expect(Object.keys(data.highlights)).toEqual(["ok"]);
     expect(data.bookmarks).toHaveLength(1);
-    expect(data.bookmarks[0].id).toBe("manual:a");
+    expect(data.bookmarks[0].id).toBe("opel-cascada-2016:manual:a");
+    expect(data.bookmarks[0].href).toBe("/auto/opel-cascada-2016/instrukcja/a");
     expect(data.settings.fontSize).toBe("normal");
     expect(data.settings.showUnavailable).toBe(true);
     expect(data.settings.vehicle).toEqual({
