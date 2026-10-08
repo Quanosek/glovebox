@@ -22,7 +22,9 @@ for (const book of config.books) {
     try {
       const s = await stat(target);
       if (s.size > 0) {
-        console.log(`✓ ${book.file} already exists (use --force to re-download)`);
+        console.log(
+          `✓ ${book.file} already exists (use --force to re-download)`,
+        );
         continue;
       }
     } catch {
@@ -33,7 +35,9 @@ for (const book of config.books) {
   const tmp = `${target}.part`;
   try {
     const res = await fetch(book.url, {
-      headers: { "user-agent": "Mozilla/5.0 (opel-cascada-manual fetch script)" },
+      headers: {
+        "user-agent": "Mozilla/5.0 (opel-cascada-manual fetch script)",
+      },
     });
     if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
     await pipeline(Readable.fromWeb(res.body), createWriteStream(tmp));

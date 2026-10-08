@@ -18,11 +18,16 @@ export default function WarningsPage() {
   }));
 
   return (
-    <main id="main" className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 sm:px-8">
-      <h1 className="border-b-2 border-red pb-2 text-2xl font-semibold">Indeks ostrzeżeń</h1>
+    <main
+      id="main"
+      className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 sm:px-8"
+    >
+      <h1 className="border-b-2 border-red pb-2 text-2xl font-semibold">
+        Indeks ostrzeżeń
+      </h1>
       <p className="mt-3 text-sm text-graphite">
-        Wszystkie ostrzeżenia, przestrogi i uwagi z {BOOKS.length} ksiąg, z odnośnikami do miejsca w
-        instrukcji.
+        Wszystkie ostrzeżenia, przestrogi i uwagi z {BOOKS.length} ksiąg, z
+        odnośnikami do miejsca w instrukcji.
       </p>
       <WarningsList items={items} />
     </main>

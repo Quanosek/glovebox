@@ -31,7 +31,12 @@
 :root {
   --header-h: 3.5rem;
   --reader-font-size: 1rem;
-  --silver-gradient: linear-gradient(180deg, #ffffff 0%, #eceef0 55%, #d9dcdf 100%);
+  --silver-gradient: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    #eceef0 55%,
+    #d9dcdf 100%
+  );
   --silver-gradient-hover: linear-gradient(180deg, #ffffff 0%, #e3e5e8 100%);
   color-scheme: light;
 }

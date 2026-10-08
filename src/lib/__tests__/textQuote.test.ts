@@ -11,7 +11,9 @@ suite("textQuote.describe", () => {
     expect(a.exact).toBe("ponownie");
     expect(a.start).toBe(start);
     expect(a.end).toBe(start + 8);
-    expect(TEXT.endsWith(a.suffix) || TEXT.includes(a.prefix + a.exact + a.suffix)).toBe(true);
+    expect(
+      TEXT.endsWith(a.suffix) || TEXT.includes(a.prefix + a.exact + a.suffix),
+    ).toBe(true);
   });
 
   it("normalises reversed and out-of-bounds offsets", () => {

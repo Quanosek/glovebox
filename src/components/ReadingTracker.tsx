@@ -23,7 +23,14 @@ export function ReadingTracker({
     const save = () =>
       updateData((d) => ({
         ...d,
-        lastRead: { book, sectionId, title, href, scrollY: Math.round(window.scrollY), at: new Date().toISOString() },
+        lastRead: {
+          book,
+          sectionId,
+          title,
+          href,
+          scrollY: Math.round(window.scrollY),
+          at: new Date().toISOString(),
+        },
       }));
 
     let restore: string | null = null;
@@ -35,7 +42,8 @@ export function ReadingTracker({
     }
     if (restore && !window.location.hash) {
       const y = Number(restore);
-      if (Number.isFinite(y)) requestAnimationFrame(() => window.scrollTo({ top: y }));
+      if (Number.isFinite(y))
+        requestAnimationFrame(() => window.scrollTo({ top: y }));
     }
     save();
 

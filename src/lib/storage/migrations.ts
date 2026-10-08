@@ -18,7 +18,9 @@ import {
  * `MIGRATIONS[n]` converts data of version `n` into version `n + 1`.
  * Add an entry whenever `SCHEMA_VERSION` is bumped.
  */
-export type Migration = (data: Record<string, unknown>) => Record<string, unknown>;
+export type Migration = (
+  data: Record<string, unknown>,
+) => Record<string, unknown>;
 
 export const MIGRATIONS: Record<number, Migration> = {
   // Data written before versioning existed (no `version` field) is treated
@@ -42,7 +44,8 @@ export class InvalidDataError extends Error {
 
 const isObject = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
-const str = (v: unknown, fallback = ""): string => (typeof v === "string" ? v : fallback);
+const str = (v: unknown, fallback = ""): string =>
+  typeof v === "string" ? v : fallback;
 const num = (v: unknown, fallback = 0): number =>
   typeof v === "number" && Number.isFinite(v) ? v : fallback;
 
@@ -87,35 +90,41 @@ export function sanitize(data: Record<string, unknown>): AppData {
     out.notebook.pages = notebook.pages
       .filter(isObject)
       .filter((p) => typeof p.id === "string")
-      .map(
-        (p): NotePage => ({
-          id: str(p.id),
-          title: str(p.title, "Bez tytułu"),
-          body: str(p.body),
-          createdAt: str(p.createdAt, new Date(0).toISOString()),
-          updatedAt: str(p.updatedAt, str(p.createdAt, new Date(0).toISOString())),
-        }),
-      );
+      .map((p): NotePage => ({
+        id: str(p.id),
+        title: str(p.title, "Bez tytułu"),
+        body: str(p.body),
+        createdAt: str(p.createdAt, new Date(0).toISOString()),
+        updatedAt: str(
+          p.updatedAt,
+          str(p.createdAt, new Date(0).toISOString()),
+        ),
+      }));
   }
 
   if (Array.isArray(data.bookmarks)) {
     out.bookmarks = data.bookmarks
       .filter(isObject)
-      .filter((b) => typeof b.sectionId === "string" && BOOKS.includes(b.book as never))
-      .map(
-        (b): Bookmark => ({
-          id: str(b.id, `${str(b.book)}:${str(b.sectionId)}`),
-          book: b.book as Bookmark["book"],
-          sectionId: str(b.sectionId),
-          title: str(b.title),
-          href: str(b.href),
-          createdAt: str(b.createdAt, new Date(0).toISOString()),
-        }),
-      );
+      .filter(
+        (b) =>
+          typeof b.sectionId === "string" && BOOKS.includes(b.book as never),
+      )
+      .map((b): Bookmark => ({
+        id: str(b.id, `${str(b.book)}:${str(b.sectionId)}`),
+        book: b.book as Bookmark["book"],
+        sectionId: str(b.sectionId),
+        title: str(b.title),
+        href: str(b.href),
+        createdAt: str(b.createdAt, new Date(0).toISOString()),
+      }));
   }
 
   const lr = data.lastRead;
-  if (isObject(lr) && typeof lr.href === "string" && BOOKS.includes(lr.book as never)) {
+  if (
+    isObject(lr) &&
+    typeof lr.href === "string" &&
+    BOOKS.includes(lr.book as never)
+  ) {
     out.lastRead = {
       book: lr.book as LastRead["book"],
       sectionId: str(lr.sectionId),
@@ -128,16 +137,23 @@ export function sanitize(data: Record<string, unknown>): AppData {
 
   const s = isObject(data.settings) ? data.settings : {};
   const settings: Settings = { ...DEFAULT_SETTINGS, vehicle: {} };
-  if (FONT_SIZES.includes(s.fontSize as FontSize)) settings.fontSize = s.fontSize as FontSize;
-  if (typeof s.showUnavailable === "boolean") settings.showUnavailable = s.showUnavailable;
+  if (FONT_SIZES.includes(s.fontSize as FontSize))
+    settings.fontSize = s.fontSize as FontSize;
+  if (typeof s.showUnavailable === "boolean")
+    settings.showUnavailable = s.showUnavailable;
   if (isObject(s.vehicle)) {
     for (const [id, state] of Object.entries(s.vehicle)) {
       if (
         isObject(state) &&
         (state.status === "has" || state.status === "no") &&
-        (state.certainty === "confirmed" || state.certainty === "verify" || state.certainty === "probable")
+        (state.certainty === "confirmed" ||
+          state.certainty === "verify" ||
+          state.certainty === "probable")
       ) {
-        settings.vehicle[id] = { status: state.status, certainty: state.certainty };
+        settings.vehicle[id] = {
+          status: state.status,
+          certainty: state.certainty,
+        };
       }
     }
   }
@@ -147,7 +163,8 @@ export function sanitize(data: Record<string, unknown>): AppData {
 
 function sanitizeHighlight(id: string, h: unknown): Highlight | null {
   if (!isObject(h) || !isObject(h.anchor)) return null;
-  if (!BOOKS.includes(h.book as never) || typeof h.sectionId !== "string") return null;
+  if (!BOOKS.includes(h.book as never) || typeof h.sectionId !== "string")
+    return null;
   const a = h.anchor;
   if (typeof a.exact !== "string" || !a.exact) return null;
   return {
@@ -163,7 +180,9 @@ function sanitizeHighlight(id: string, h: unknown): Highlight | null {
       start: num(a.start),
       end: num(a.end, num(a.start) + a.exact.length),
     },
-    color: COLORS.includes(h.color as HighlightColor) ? (h.color as HighlightColor) : "silver",
+    color: COLORS.includes(h.color as HighlightColor)
+      ? (h.color as HighlightColor)
+      : "silver",
     comment: str(h.comment),
     createdAt: str(h.createdAt, new Date(0).toISOString()),
     updatedAt: str(h.updatedAt, str(h.createdAt, new Date(0).toISOString())),
@@ -208,7 +227,8 @@ export function mergeData(current: AppData, incoming: AppData): AppData {
     if (!bookmarks.some((x) => x.id === b.id)) bookmarks.push(b);
   }
   const lastRead =
-    !current.lastRead || (incoming.lastRead && incoming.lastRead.at > current.lastRead.at)
+    !current.lastRead ||
+    (incoming.lastRead && incoming.lastRead.at > current.lastRead.at)
       ? incoming.lastRead
       : current.lastRead;
   return {

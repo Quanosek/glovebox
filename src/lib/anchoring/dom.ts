@@ -31,7 +31,11 @@ export function containerText(root: Node): string {
 }
 
 /** Converts a DOM boundary point into a text offset (or null if outside). */
-export function offsetOf(root: Node, node: Node, offset: number): number | null {
+export function offsetOf(
+  root: Node,
+  node: Node,
+  offset: number,
+): number | null {
   if (!root.contains(node)) return null;
   const nodes = textNodes(root);
   let total = 0;
@@ -46,7 +50,8 @@ export function offsetOf(root: Node, node: Node, offset: number): number | null 
   // Element boundary: the position before child `offset`.
   const child = node.childNodes[offset] ?? null;
   for (const t of nodes) {
-    if (child && (child === t || child.contains(t) || precedes(child, t))) return total;
+    if (child && (child === t || child.contains(t) || precedes(child, t)))
+      return total;
     if (!child && !node.contains(t) && precedes(node, t)) return total;
     total += t.data.length;
   }
@@ -54,7 +59,9 @@ export function offsetOf(root: Node, node: Node, offset: number): number | null 
 }
 
 function precedes(a: Node, b: Node): boolean {
-  return Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+  return Boolean(
+    a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING,
+  );
 }
 
 function snapAfter(root: Node, nodes: Text[], node: Node): number {
@@ -67,7 +74,11 @@ function snapAfter(root: Node, nodes: Text[], node: Node): number {
 }
 
 /** Creates a DOM Range for text offsets [start, end). */
-export function rangeFromOffsets(root: Node, start: number, end: number): Range | null {
+export function rangeFromOffsets(
+  root: Node,
+  start: number,
+  end: number,
+): Range | null {
   const nodes = textNodes(root);
   const doc = root.ownerDocument ?? (root as Document);
   let total = 0;
@@ -91,7 +102,10 @@ export function rangeFromOffsets(root: Node, start: number, end: number): Range 
 }
 
 /** Text offsets of a DOM range relative to `root`, or null if outside. */
-export function offsetsOfRange(root: Node, range: Range): { start: number; end: number } | null {
+export function offsetsOfRange(
+  root: Node,
+  range: Range,
+): { start: number; end: number } | null {
   const start = offsetOf(root, range.startContainer, range.startOffset);
   const end = offsetOf(root, range.endContainer, range.endOffset);
   if (start == null || end == null || end <= start) return null;

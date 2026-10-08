@@ -18,8 +18,17 @@ export function NotebookView() {
 
   const create = () => {
     const now = new Date().toISOString();
-    const page: NotePage = { id: newId(), title: `Kartka ${pages.length + 1}`, body: "", createdAt: now, updatedAt: now };
-    updateData((d) => ({ ...d, notebook: { pages: [...d.notebook.pages, page] } }));
+    const page: NotePage = {
+      id: newId(),
+      title: `Kartka ${pages.length + 1}`,
+      body: "",
+      createdAt: now,
+      updatedAt: now,
+    };
+    updateData((d) => ({
+      ...d,
+      notebook: { pages: [...d.notebook.pages, page] },
+    }));
     setSelectedId(page.id);
   };
 
@@ -34,8 +43,16 @@ export function NotebookView() {
     });
 
   const remove = (page: NotePage) => {
-    if (!confirm(`Usunąć kartkę „${page.title || "bez tytułu"}”? Tej operacji nie można cofnąć.`)) return;
-    updateData((d) => ({ ...d, notebook: { pages: d.notebook.pages.filter((p) => p.id !== page.id) } }));
+    if (
+      !confirm(
+        `Usunąć kartkę „${page.title || "bez tytułu"}”? Tej operacji nie można cofnąć.`,
+      )
+    )
+      return;
+    updateData((d) => ({
+      ...d,
+      notebook: { pages: d.notebook.pages.filter((p) => p.id !== page.id) },
+    }));
     if (selectedId === page.id) setSelectedId(null);
   };
 
@@ -47,23 +64,40 @@ export function NotebookView() {
         </div>
         <ul className="divide-y divide-line">
           {pages.map((p, i) => (
-            <li key={p.id} className={`flex items-stretch ${selected?.id === p.id ? "border-l-2 border-red bg-paper" : "border-l-2 border-transparent"}`}>
+            <li
+              key={p.id}
+              className={`flex items-stretch ${selected?.id === p.id ? "border-l-2 border-red bg-paper" : "border-l-2 border-transparent"}`}
+            >
               <button
                 type="button"
                 className="min-w-0 flex-1 px-3 py-2 text-left text-sm"
                 aria-current={selected?.id === p.id ? "true" : undefined}
                 onClick={() => setSelectedId(p.id)}
               >
-                <span className="block truncate">{p.title || "Bez tytułu"}</span>
+                <span className="block truncate">
+                  {p.title || "Bez tytułu"}
+                </span>
                 <span className="block text-xs text-steel">
                   {new Date(p.updatedAt).toLocaleString("pl-PL")}
                 </span>
               </button>
               <div className="flex flex-col border-l border-line">
-                <button type="button" className="px-2 text-xs text-steel hover:text-ink disabled:opacity-30" disabled={i === 0} aria-label="Przenieś wyżej" onClick={() => move(p.id, -1)}>
+                <button
+                  type="button"
+                  className="px-2 text-xs text-steel hover:text-ink disabled:opacity-30"
+                  disabled={i === 0}
+                  aria-label="Przenieś wyżej"
+                  onClick={() => move(p.id, -1)}
+                >
                   ▲
                 </button>
-                <button type="button" className="px-2 text-xs text-steel hover:text-ink disabled:opacity-30" disabled={i === pages.length - 1} aria-label="Przenieś niżej" onClick={() => move(p.id, 1)}>
+                <button
+                  type="button"
+                  className="px-2 text-xs text-steel hover:text-ink disabled:opacity-30"
+                  disabled={i === pages.length - 1}
+                  aria-label="Przenieś niżej"
+                  onClick={() => move(p.id, 1)}
+                >
                   ▼
                 </button>
               </div>
@@ -71,19 +105,30 @@ export function NotebookView() {
           ))}
         </ul>
         <div className="border-t border-line p-2">
-          <button type="button" className="btn btn-primary w-full justify-center" onClick={create}>
+          <button
+            type="button"
+            className="btn btn-primary w-full justify-center"
+            onClick={create}
+          >
             + Nowa kartka
           </button>
         </div>
       </aside>
 
       {selected ? (
-        <NoteEditor key={selected.id} page={selected} onDelete={() => remove(selected)} />
+        <NoteEditor
+          key={selected.id}
+          page={selected}
+          onDelete={() => remove(selected)}
+        />
       ) : (
         <div className="panel flex min-h-80 items-center justify-center p-6 text-center text-steel">
           <div>
             <p>Notatnik jest pusty.</p>
-            <p className="mt-1 text-sm">Utwórz pierwszą kartkę, aby zapisywać własne notatki poza tekstem instrukcji.</p>
+            <p className="mt-1 text-sm">
+              Utwórz pierwszą kartkę, aby zapisywać własne notatki poza tekstem
+              instrukcji.
+            </p>
           </div>
         </div>
       )}
@@ -91,7 +136,13 @@ export function NotebookView() {
   );
 }
 
-function NoteEditor({ page, onDelete }: { page: NotePage; onDelete: () => void }) {
+function NoteEditor({
+  page,
+  onDelete,
+}: {
+  page: NotePage;
+  onDelete: () => void;
+}) {
   const [title, setTitle] = useState(page.title);
   const [body, setBody] = useState(page.body);
   const [status, setStatus] = useState<"saved" | "pending">("saved");
@@ -167,7 +218,8 @@ function NoteEditor({ page, onDelete }: { page: NotePage; onDelete: () => void }
         }}
       />
       <p className="border-t border-line px-3 py-1.5 text-xs text-steel">
-        Notatki zapisują się automatycznie w tej przeglądarce. Znaki: {body.length}
+        Notatki zapisują się automatycznie w tej przeglądarce. Znaki:{" "}
+        {body.length}
       </p>
     </section>
   );

@@ -53,7 +53,10 @@ export function getBook(id: BookId): BookIndex {
   return index;
 }
 
-export function getSection(id: BookId, slug: string[]): SectionMeta | undefined {
+export function getSection(
+  id: BookId,
+  slug: string[],
+): SectionMeta | undefined {
   const key = slug.map((s) => decodeURIComponent(s)).join("/");
   return getBook(id).sections.find((s) => s.id === key);
 }
@@ -71,11 +74,17 @@ export function getBlocks(id: BookId, section: SectionMeta): Block[] {
   return chapter.sections[section.id] ?? [];
 }
 
-export function sectionHref(id: BookId, section: Pick<SectionMeta, "slug">): string {
+export function sectionHref(
+  id: BookId,
+  section: Pick<SectionMeta, "slug">,
+): string {
   return `/${getBookInfo(id).route}/${section.slug.join("/")}`;
 }
 
-export function getChildren(id: BookId, section: SectionMeta | null): SectionMeta[] {
+export function getChildren(
+  id: BookId,
+  section: SectionMeta | null,
+): SectionMeta[] {
   const parentId = section ? section.id : null;
   return getBook(id).sections.filter((s) => s.parentId === parentId);
 }
@@ -103,11 +112,15 @@ export function getPrevNext(id: BookId, section: SectionMeta) {
 }
 
 /** Features of a section, including the ones inherited from its ancestors. */
-export function getSectionFeatures(id: BookId, section: SectionMeta): FeatureId[] {
+export function getSectionFeatures(
+  id: BookId,
+  section: SectionMeta,
+): FeatureId[] {
   const chain = [...getAncestors(id, section), section];
   const out: FeatureId[] = [];
   for (const s of chain) {
-    for (const f of matchFeatures(id, s.title)) if (!out.includes(f)) out.push(f);
+    for (const f of matchFeatures(id, s.title))
+      if (!out.includes(f)) out.push(f);
   }
   return out;
 }
@@ -161,7 +174,8 @@ function getPageMap(id: BookId): Map<number, string> {
     const href = sectionHref(id, s);
     if (s.page != null && !map.has(s.page)) map.set(s.page, href);
     for (const b of getBlocks(id, s)) {
-      if (b.page != null && !map.has(b.page)) map.set(b.page, `${href}#${b.id}`);
+      if (b.page != null && !map.has(b.page))
+        map.set(b.page, `${href}#${b.id}`);
     }
   }
   pageMaps.set(id, map);
@@ -170,7 +184,9 @@ function getPageMap(id: BookId): Map<number, string> {
 
 export function runsToText(runs: Run[]): string {
   return runs
-    .map((r) => (typeof r === "string" ? r : "page" in r ? `str. ${r.page}` : r.t))
+    .map((r) =>
+      typeof r === "string" ? r : "page" in r ? `str. ${r.page}` : r.t,
+    )
     .join("");
 }
 
@@ -205,7 +221,13 @@ export function getAllWarnings(): WarningEntry[] {
       const features = getSectionFeatures(book.id, s);
       for (const b of getBlocks(book.id, s)) {
         if (b.type === "warning") {
-          out.push({ book: book.id, section: s, href: `${sectionHref(book.id, s)}#${b.id}`, block: b, features });
+          out.push({
+            book: book.id,
+            section: s,
+            href: `${sectionHref(book.id, s)}#${b.id}`,
+            block: b,
+            features,
+          });
         }
       }
     }
@@ -257,7 +279,11 @@ export function getFeatureSections(): Record<string, FeatureSectionLink[]> {
   for (const book of BOOKS) {
     for (const s of getBook(book.id).sections) {
       for (const f of matchFeatures(book.id, s.title)) {
-        (out[f] ??= []).push({ book: book.id, title: s.title, href: sectionHref(book.id, s) });
+        (out[f] ??= []).push({
+          book: book.id,
+          title: s.title,
+          href: sectionHref(book.id, s),
+        });
       }
     }
   }

@@ -42,5 +42,8 @@ sizes.forEach((size, i) => {
   offset += images[i].length;
   entries.push(e);
 });
-await writeFile(path.join(appDir, "favicon.ico"), Buffer.concat([header, ...entries, ...images]));
+await writeFile(
+  path.join(appDir, "favicon.ico"),
+  Buffer.concat([header, ...entries, ...images]),
+);
 console.log("✓ apple-icon.png, favicon.ico generated from src/app/icon.svg");

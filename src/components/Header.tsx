@@ -28,7 +28,10 @@ export function Header() {
     const el = ref.current;
     if (!el) return;
     const apply = () =>
-      document.documentElement.style.setProperty("--header-h", `${el.offsetHeight}px`);
+      document.documentElement.style.setProperty(
+        "--header-h",
+        `${el.offsetHeight}px`,
+      );
     apply();
     const ro = new ResizeObserver(apply);
     ro.observe(el);
@@ -45,17 +48,27 @@ export function Header() {
   return (
     <header ref={ref} className="silver-bar sticky top-0 z-40 print:hidden">
       <div className="flex h-14 items-center gap-3 border-t-4 border-red px-3 lg:px-5">
-        <Link href="/" className="flex shrink-0 items-center gap-2.5 text-black" aria-label="Strona główna">
+        <Link
+          href="/"
+          className="flex shrink-0 items-center gap-2.5 text-black"
+          aria-label="Strona główna"
+        >
           <Logo size={34} />
           <span className="hidden leading-tight sm:block">
-            <span className="block text-sm font-semibold tracking-wide">OPEL CASCADA</span>
+            <span className="block text-sm font-semibold tracking-wide">
+              OPEL CASCADA
+            </span>
             <span className="block text-[0.6875rem] tracking-[0.12em] text-steel uppercase">
               Instrukcja · MY16
             </span>
           </span>
         </Link>
 
-        <form onSubmit={onSearch} role="search" className="ml-auto flex max-w-sm min-w-0 flex-1">
+        <form
+          onSubmit={onSearch}
+          role="search"
+          className="ml-auto flex max-w-sm min-w-0 flex-1"
+        >
           <input
             type="search"
             className="field h-9 min-w-0 border-r-0"
@@ -66,8 +79,19 @@ export function Header() {
           />
           <button type="submit" className="btn h-9" aria-label="Szukaj">
             <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
-              <circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
-              <path d="M12.6 12.6 17 17" stroke="currentColor" strokeWidth="1.8" />
+              <circle
+                cx="8.5"
+                cy="8.5"
+                r="5.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              />
+              <path
+                d="M12.6 12.6 17 17"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              />
             </svg>
           </button>
         </form>
@@ -90,7 +114,8 @@ export function Header() {
       >
         <ul className="flex flex-col xl:flex-row xl:px-3">
           {NAV.map((item) => {
-            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const active =
+              pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
               <li key={item.href}>
                 <Link

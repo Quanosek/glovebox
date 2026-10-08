@@ -47,12 +47,20 @@ export function resolve(text: string, anchor: TextAnchor): TextRange | null {
   return resolveNormalized(text, anchor);
 }
 
-function pickBest(text: string, anchor: TextAnchor, positions: number[], length: number): number {
+function pickBest(
+  text: string,
+  anchor: TextAnchor,
+  positions: number[],
+  length: number,
+): number {
   let best = positions[0];
   let bestScore = -Infinity;
   for (const pos of positions) {
     const prefix = text.slice(Math.max(0, pos - anchor.prefix.length), pos);
-    const suffix = text.slice(pos + length, pos + length + anchor.suffix.length);
+    const suffix = text.slice(
+      pos + length,
+      pos + length + anchor.suffix.length,
+    );
     const score =
       commonSuffix(prefix, anchor.prefix) +
       commonPrefix(suffix, anchor.suffix) -
@@ -70,7 +78,11 @@ function resolveNormalized(text: string, anchor: TextAnchor): TextRange | null {
   const exact = normalizeWithMap(anchor.exact).normalized.trim();
   if (!exact) return null;
   const positions: number[] = [];
-  for (let i = normalized.indexOf(exact); i !== -1; i = normalized.indexOf(exact, i + 1)) {
+  for (
+    let i = normalized.indexOf(exact);
+    i !== -1;
+    i = normalized.indexOf(exact, i + 1)
+  ) {
     positions.push(i);
   }
   if (!positions.length) return null;
@@ -88,7 +100,10 @@ function resolveNormalized(text: string, anchor: TextAnchor): TextRange | null {
 }
 
 /** Collapses whitespace runs to one space; `map[i]` = index in original. */
-export function normalizeWithMap(text: string): { normalized: string; map: number[] } {
+export function normalizeWithMap(text: string): {
+  normalized: string;
+  map: number[];
+} {
   let normalized = "";
   const map: number[] = [];
   let prevSpace = false;
@@ -115,6 +130,11 @@ function commonPrefix(a: string, b: string): number {
 
 function commonSuffix(a: string, b: string): number {
   let i = 0;
-  while (i < a.length && i < b.length && a[a.length - 1 - i] === b[b.length - 1 - i]) i++;
+  while (
+    i < a.length &&
+    i < b.length &&
+    a[a.length - 1 - i] === b[b.length - 1 - i]
+  )
+    i++;
   return i;
 }

@@ -12,7 +12,11 @@ export function ClientEffects() {
   }, [settings.fontSize]);
 
   useEffect(() => {
-    if (process.env.NODE_ENV !== "production" || !("serviceWorker" in navigator)) return;
+    if (
+      process.env.NODE_ENV !== "production" ||
+      !("serviceWorker" in navigator)
+    )
+      return;
     navigator.serviceWorker.register("/sw.js").catch((err) => {
       console.warn("Nie udało się zarejestrować service workera", err);
     });

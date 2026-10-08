@@ -39,7 +39,9 @@ try {
   process.exit(1);
 }
 
-const files = (await walk(outDir)).filter((f) => !SKIP.has(path.relative(outDir, f)));
+const files = (await walk(outDir)).filter(
+  (f) => !SKIP.has(path.relative(outDir, f)),
+);
 const hash = createHash("sha256");
 let bytes = 0;
 const urls = [];
@@ -56,7 +58,10 @@ if (!sw.includes(PLACEHOLDER)) {
   console.error(`Placeholder ${PLACEHOLDER} not found in out/sw.js`);
   process.exit(1);
 }
-await writeFile(swFile, sw.replace(`${PLACEHOLDER} ||`, `${JSON.stringify(manifest)} ||`));
+await writeFile(
+  swFile,
+  sw.replace(`${PLACEHOLDER} ||`, `${JSON.stringify(manifest)} ||`),
+);
 console.log(
   `✓ Service worker precache: ${urls.length} files, ${(bytes / 1024 / 1024).toFixed(1)} MB, version ${manifest.version}`,
 );

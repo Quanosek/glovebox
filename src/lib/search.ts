@@ -20,7 +20,10 @@ export function excerpt(text: string, terms: string[], radius = 90): string {
     if (i >= 0 && (pos < 0 || i < pos)) pos = i;
   }
   const flat = (s: string) => s.replace(/\s+/g, " ").trim();
-  if (pos < 0) return flat(text.slice(0, radius * 2)) + (text.length > radius * 2 ? "…" : "");
+  if (pos < 0)
+    return (
+      flat(text.slice(0, radius * 2)) + (text.length > radius * 2 ? "…" : "")
+    );
   const start = Math.max(0, pos - radius);
   const end = Math.min(text.length, pos + radius);
   return `${start > 0 ? "…" : ""}${flat(text.slice(start, end))}${end < text.length ? "…" : ""}`;

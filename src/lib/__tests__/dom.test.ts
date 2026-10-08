@@ -1,6 +1,11 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
-import { containerText, offsetOf, offsetsOfRange, rangeFromOffsets } from "@/lib/anchoring/dom";
+import {
+  containerText,
+  offsetOf,
+  offsetsOfRange,
+  rangeFromOffsets,
+} from "@/lib/anchoring/dom";
 
 let root: HTMLElement;
 
@@ -33,7 +38,9 @@ describe("anchoring/dom", () => {
     const p = root.querySelector("p")!;
     const text = containerText(root);
     expect(offsetOf(root, p, 1)).toBe(text.indexOf("przycisk"));
-    expect(offsetOf(root, p, p.childNodes.length)).toBe(text.indexOf(" na pilocie.") + " na pilocie.".length);
+    expect(offsetOf(root, p, p.childNodes.length)).toBe(
+      text.indexOf(" na pilocie.") + " na pilocie.".length,
+    );
   });
 
   it("returns null for nodes outside the container", () => {

@@ -7,7 +7,11 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { SearchDoc } from "@/lib/content";
 import { getAvailability } from "@/lib/availability";
 import { excerpt, normalizeText } from "@/lib/search";
-import { useAppData, useHydrated, useVehicleProfile } from "@/lib/storage/hooks";
+import {
+  useAppData,
+  useHydrated,
+  useVehicleProfile,
+} from "@/lib/storage/hooks";
 
 type BookFilter = "all" | "manual" | "infotainment";
 
@@ -38,7 +42,10 @@ export function SearchView() {
         return r.json() as Promise<SearchDoc[]>;
       })
       .then((d) => !cancelled && setDocs(d))
-      .catch((e: unknown) => !cancelled && setError(e instanceof Error ? e.message : String(e)));
+      .catch(
+        (e: unknown) =>
+          !cancelled && setError(e instanceof Error ? e.message : String(e)),
+      );
     return () => {
       cancelled = true;
     };
@@ -50,13 +57,21 @@ export function SearchView() {
       fields: ["title", "path", "text"],
       storeFields: ["id"],
       processTerm: (term) => normalizeText(term) || null,
-      searchOptions: { prefix: true, fuzzy: 0.15, boost: { title: 4, path: 1.5 }, combineWith: "AND" },
+      searchOptions: {
+        prefix: true,
+        fuzzy: 0.15,
+        boost: { title: 4, path: 1.5 },
+        combineWith: "AND",
+      },
     });
     ms.addAll(docs);
     return ms;
   }, [docs]);
 
-  const byId = useMemo(() => new Map((docs ?? []).map((d) => [d.id, d])), [docs]);
+  const byId = useMemo(
+    () => new Map((docs ?? []).map((d) => [d.id, d])),
+    [docs],
+  );
 
   const results = useMemo(() => {
     const q = query.trim();
@@ -75,7 +90,11 @@ export function SearchView() {
 
   return (
     <div className="mt-4">
-      <form onSubmit={onSubmit} className="flex flex-col gap-2 sm:flex-row" role="search">
+      <form
+        onSubmit={onSubmit}
+        className="flex flex-col gap-2 sm:flex-row"
+        role="search"
+      >
         <input
           type="search"
           className="field"
@@ -97,11 +116,18 @@ export function SearchView() {
         </select>
       </form>
       <p className="mt-2 text-xs text-steel">
-        Wielkość liter i polskie znaki nie mają znaczenia (np. „swiatla” znajdzie „światła”).
+        Wielkość liter i polskie znaki nie mają znaczenia (np. „swiatla”
+        znajdzie „światła”).
       </p>
 
-      {error && <p className="mt-4 text-red">Nie udało się wczytać indeksu wyszukiwania: {error}</p>}
-      {!docs && !error && <p className="mt-4 text-steel">Wczytywanie indeksu…</p>}
+      {error && (
+        <p className="mt-4 text-red">
+          Nie udało się wczytać indeksu wyszukiwania: {error}
+        </p>
+      )}
+      {!docs && !error && (
+        <p className="mt-4 text-steel">Wczytywanie indeksu…</p>
+      )}
 
       {docs && query.trim().length >= 2 && (
         <p className="mt-6 text-sm text-graphite">
@@ -111,10 +137,15 @@ export function SearchView() {
 
       <ul className="mt-2 border-t border-line">
         {results.map(({ result, doc }) => {
-          const missing = hydrated && getAvailability(doc.features, profile).kind === "missing";
+          const missing =
+            hydrated &&
+            getAvailability(doc.features, profile).kind === "missing";
           if (missing && !settings.showUnavailable && results.length > 1) {
             return (
-              <li key={doc.id} className="border-b border-line px-3 py-2 text-sm text-steel">
+              <li
+                key={doc.id}
+                className="border-b border-line px-3 py-2 text-sm text-steel"
+              >
                 <Link href={doc.href} className="hover:text-red">
                   {doc.title}
                 </Link>{" "}
@@ -131,10 +162,15 @@ export function SearchView() {
                 </span>
                 <span className="mt-0.5 flex flex-wrap items-center gap-2 font-semibold">
                   <Marked text={doc.title} terms={result.terms} />
-                  {missing && <span className="badge badge-red">Brak w Twoim aucie</span>}
+                  {missing && (
+                    <span className="badge badge-red">Brak w Twoim aucie</span>
+                  )}
                 </span>
                 <span className="mt-1 block text-sm text-graphite">
-                  <Marked text={excerpt(doc.text, result.terms)} terms={result.terms} />
+                  <Marked
+                    text={excerpt(doc.text, result.terms)}
+                    terms={result.terms}
+                  />
                 </span>
               </Link>
             </li>

@@ -1,17 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { FEATURE_GROUPS, FEATURES, type FeatureGroupId } from "@/config/vehicle";
+import {
+  FEATURE_GROUPS,
+  FEATURES,
+  type FeatureGroupId,
+} from "@/config/vehicle";
 import type { FeatureSectionLink } from "@/lib/content";
 import { useHydrated, useVehicleProfile } from "@/lib/storage/hooks";
 
-const CERTAINTY_LABEL = { confirmed: "", verify: "do weryfikacji", probable: "prawdopodobnie" } as const;
+const CERTAINTY_LABEL = {
+  confirmed: "",
+  verify: "do weryfikacji",
+  probable: "prawdopodobnie",
+} as const;
 
-export function VehicleView({ featureSections }: { featureSections: Record<string, FeatureSectionLink[]> }) {
+export function VehicleView({
+  featureSections,
+}: {
+  featureSections: Record<string, FeatureSectionLink[]>;
+}) {
   const profile = useVehicleProfile();
   const hydrated = useHydrated();
   const groups = Object.keys(FEATURE_GROUPS) as FeatureGroupId[];
-  const toVerify = FEATURES.filter((f) => profile[f.id].certainty !== "confirmed");
+  const toVerify = FEATURES.filter(
+    (f) => profile[f.id].certainty !== "confirmed",
+  );
 
   return (
     <>
@@ -20,10 +34,14 @@ export function VehicleView({ featureSections }: { featureSections: Record<strin
           <h2 className="panel-title">Do weryfikacji ({toVerify.length})</h2>
           <ul className="divide-y divide-line text-sm">
             {toVerify.map((f) => (
-              <li key={f.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2">
+              <li
+                key={f.id}
+                className="flex flex-wrap items-center justify-between gap-2 px-4 py-2"
+              >
                 <span>{f.label}</span>
                 <span className="badge">
-                  {profile[f.id].status === "has" ? "mam" : "nie mam"} · {CERTAINTY_LABEL[profile[f.id].certainty]}
+                  {profile[f.id].status === "has" ? "mam" : "nie mam"} ·{" "}
+                  {CERTAINTY_LABEL[profile[f.id].certainty]}
                 </span>
               </li>
             ))}
@@ -43,7 +61,10 @@ export function VehicleView({ featureSections }: { featureSections: Record<strin
               const has = state.status === "has";
               const links = featureSections[f.id] ?? [];
               return (
-                <li key={f.id} className={`px-4 py-2 ${has ? "" : "text-steel"}`}>
+                <li
+                  key={f.id}
+                  className={`px-4 py-2 ${has ? "" : "text-steel"}`}
+                >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="flex items-center gap-2">
                       <span
@@ -54,27 +75,41 @@ export function VehicleView({ featureSections }: { featureSections: Record<strin
                     </span>
                     {hydrated && (
                       <span className="flex gap-1">
-                        <span className={`badge ${has ? "badge-dark" : "badge-red"}`}>
+                        <span
+                          className={`badge ${has ? "badge-dark" : "badge-red"}`}
+                        >
                           {has ? "Twoje auto" : "Brak w Twoim aucie"}
                         </span>
                         {state.certainty !== "confirmed" && (
-                          <span className="badge">{CERTAINTY_LABEL[state.certainty]}</span>
+                          <span className="badge">
+                            {CERTAINTY_LABEL[state.certainty]}
+                          </span>
                         )}
                       </span>
                     )}
                   </div>
-                  {"note" in f && f.note && <p className="mt-1 text-xs text-graphite">{f.note}</p>}
+                  {"note" in f && f.note && (
+                    <p className="mt-1 text-xs text-graphite">{f.note}</p>
+                  )}
                   {links.length > 0 && (
                     <p className="mt-1 text-xs">
                       {links.slice(0, 8).map((l, i) => (
                         <span key={l.href}>
                           {i > 0 && " · "}
-                          <Link href={l.href} className="text-graphite underline decoration-silver hover:text-red">
+                          <Link
+                            href={l.href}
+                            className="text-graphite underline decoration-silver hover:text-red"
+                          >
                             {l.title}
                           </Link>
                         </span>
                       ))}
-                      {links.length > 8 && <span className="text-steel"> · +{links.length - 8}</span>}
+                      {links.length > 8 && (
+                        <span className="text-steel">
+                          {" "}
+                          · +{links.length - 8}
+                        </span>
+                      )}
                     </p>
                   )}
                 </li>

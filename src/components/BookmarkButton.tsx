@@ -24,11 +24,26 @@ export function BookmarkButton({
       ...d,
       bookmarks: d.bookmarks.some((b) => b.id === id)
         ? d.bookmarks.filter((b) => b.id !== id)
-        : [...d.bookmarks, { id, book, sectionId, title, href, createdAt: new Date().toISOString() }],
+        : [
+            ...d.bookmarks,
+            {
+              id,
+              book,
+              sectionId,
+              title,
+              href,
+              createdAt: new Date().toISOString(),
+            },
+          ],
     }));
 
   return (
-    <button type="button" className="btn" aria-pressed={active} onClick={toggle}>
+    <button
+      type="button"
+      className="btn"
+      aria-pressed={active}
+      onClick={toggle}
+    >
       <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
         <path
           d="M3.5 1.5h9v13L8 11l-4.5 3.5Z"

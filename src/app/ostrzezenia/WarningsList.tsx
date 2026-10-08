@@ -4,7 +4,11 @@ import Link from "next/link";
 import { useState } from "react";
 import type { WarningKind } from "@/content/types";
 import { getAvailability } from "@/lib/availability";
-import { useAppData, useHydrated, useVehicleProfile } from "@/lib/storage/hooks";
+import {
+  useAppData,
+  useHydrated,
+  useVehicleProfile,
+} from "@/lib/storage/hooks";
 
 export interface WarningItem {
   id: string;
@@ -34,18 +38,31 @@ export function WarningsList({ items }: { items: WarningItem[] }) {
 
   const visible = items.filter((w) => {
     if (kind !== "all" && w.kind !== kind) return false;
-    if (hydrated && !settings.showUnavailable && getAvailability(w.features, profile).kind === "missing") {
+    if (
+      hydrated &&
+      !settings.showUnavailable &&
+      getAvailability(w.features, profile).kind === "missing"
+    ) {
       return false;
     }
     return true;
   });
-  const hiddenCount = items.filter((w) => kind === "all" || w.kind === kind).length - visible.length;
+  const hiddenCount =
+    items.filter((w) => kind === "all" || w.kind === kind).length -
+    visible.length;
 
   return (
     <>
-      <div className="mt-4 flex flex-wrap gap-1" role="group" aria-label="Rodzaj">
+      <div
+        className="mt-4 flex flex-wrap gap-1"
+        role="group"
+        aria-label="Rodzaj"
+      >
         {KINDS.map((k) => {
-          const count = k.id === "all" ? items.length : items.filter((w) => w.kind === k.id).length;
+          const count =
+            k.id === "all"
+              ? items.length
+              : items.filter((w) => w.kind === k.id).length;
           return (
             <button
               key={k.id}
@@ -61,12 +78,14 @@ export function WarningsList({ items }: { items: WarningItem[] }) {
       </div>
       {hiddenCount > 0 && (
         <p className="mt-3 text-xs text-steel">
-          Ukryto {hiddenCount} pozycji dotyczących wyposażenia, którego nie ma Twoje auto (zmień w
-          Ustawieniach: „Pokaż wszystko”).
+          Ukryto {hiddenCount} pozycji dotyczących wyposażenia, którego nie ma
+          Twoje auto (zmień w Ustawieniach: „Pokaż wszystko”).
         </p>
       )}
       {items.length === 0 && (
-        <p className="mt-6 text-steel">Brak ostrzeżeń — treść instrukcji nie została jeszcze wygenerowana.</p>
+        <p className="mt-6 text-steel">
+          Brak ostrzeżeń — treść instrukcji nie została jeszcze wygenerowana.
+        </p>
       )}
       <ul className="mt-4 flex flex-col gap-2">
         {visible.map((w) => (
@@ -74,13 +93,17 @@ export function WarningsList({ items }: { items: WarningItem[] }) {
             <Link
               href={w.href}
               className={`block border-y border-r border-l-4 border-y-line border-r-line px-4 py-2 hover:bg-paper ${
-                w.kind === "danger" || w.kind === "warning" ? "border-l-red" : "border-l-silver"
+                w.kind === "danger" || w.kind === "warning"
+                  ? "border-l-red"
+                  : "border-l-silver"
               }`}
             >
               <span className="flex flex-wrap items-baseline justify-between gap-2 text-xs">
                 <span
                   className={`font-bold tracking-[0.08em] uppercase ${
-                    w.kind === "danger" || w.kind === "warning" ? "text-red" : "text-graphite"
+                    w.kind === "danger" || w.kind === "warning"
+                      ? "text-red"
+                      : "text-graphite"
                   }`}
                 >
                   {w.title}

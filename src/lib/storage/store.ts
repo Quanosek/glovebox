@@ -1,10 +1,19 @@
-import { STORAGE_KEY, EXPORT_APP_ID, createEmptyData, type AppData, type ExportFile } from "./schema";
+import {
+  STORAGE_KEY,
+  EXPORT_APP_ID,
+  createEmptyData,
+  type AppData,
+  type ExportFile,
+} from "./schema";
 import { mergeData, migrate, parseImport } from "./migrations";
 
 type Listener = () => void;
 
 /** Minimal subset of the Web Storage API (eases testing). */
-export type KeyValueStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+export type KeyValueStorage = Pick<
+  Storage,
+  "getItem" | "setItem" | "removeItem"
+>;
 
 /**
  * In-memory snapshot of the app data, persisted to localStorage on every
@@ -132,6 +141,7 @@ function safeLocalStorage(): Storage | null {
 }
 
 export function newId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto)
+    return crypto.randomUUID();
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }

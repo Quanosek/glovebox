@@ -36,12 +36,16 @@ async function load(params: PageProps<"/[book]/[...slug]">["params"]) {
   return { info, section };
 }
 
-export async function generateMetadata({ params }: PageProps<"/[book]/[...slug]">): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps<"/[book]/[...slug]">): Promise<Metadata> {
   const { section } = await load(params);
   return { title: section.title };
 }
 
-export default async function SectionPage({ params }: PageProps<"/[book]/[...slug]">) {
+export default async function SectionPage({
+  params,
+}: PageProps<"/[book]/[...slug]">) {
   const { info, section } = await load(params);
   const index = getBook(info.id);
   const href = sectionHref(info.id, section);
@@ -53,7 +57,12 @@ export default async function SectionPage({ params }: PageProps<"/[book]/[...slu
 
   return (
     <article>
-      <ReadingTracker book={info.id} sectionId={section.id} title={section.title} href={href} />
+      <ReadingTracker
+        book={info.id}
+        sectionId={section.id}
+        title={section.title}
+        href={href}
+      />
       <nav aria-label="Ścieżka" className="mb-4 text-xs text-steel">
         <ol className="flex flex-wrap gap-x-1.5">
           <li>
@@ -74,21 +83,37 @@ export default async function SectionPage({ params }: PageProps<"/[book]/[...slu
 
       <header className="border-b-2 border-red pb-2">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <h1 className="text-2xl leading-tight font-semibold">{section.title}</h1>
+          <h1 className="text-2xl leading-tight font-semibold">
+            {section.title}
+          </h1>
           <div className="flex items-center gap-2 print:hidden">
-            {section.page != null && <span className="text-xs text-steel">str. {section.page}</span>}
-            <BookmarkButton book={info.id} sectionId={section.id} title={section.title} href={href} />
+            {section.page != null && (
+              <span className="text-xs text-steel">str. {section.page}</span>
+            )}
+            <BookmarkButton
+              book={info.id}
+              sectionId={section.id}
+              title={section.title}
+              href={href}
+            />
           </div>
         </div>
       </header>
       <AvailabilityBadges features={features} />
 
       <SectionGate features={features}>
-        <HighlightLayer book={info.id} sectionId={section.id} sectionTitle={section.title} href={href}>
+        <HighlightLayer
+          book={info.id}
+          sectionId={section.id}
+          sectionTitle={section.title}
+          href={href}
+        >
           {blocks.length > 0 ? (
             <BlockRenderer book={info.id} blocks={blocks} />
           ) : (
-            children.length === 0 && <p className="text-steel">Ta sekcja nie zawiera treści.</p>
+            children.length === 0 && (
+              <p className="text-steel">Ta sekcja nie zawiera treści.</p>
+            )
           )}
         </HighlightLayer>
       </SectionGate>
@@ -110,9 +135,15 @@ export default async function SectionPage({ params }: PageProps<"/[book]/[...slu
         </section>
       )}
 
-      <nav aria-label="Nawigacja między sekcjami" className="mt-10 grid gap-2 sm:grid-cols-2 print:hidden">
+      <nav
+        aria-label="Nawigacja między sekcjami"
+        className="mt-10 grid gap-2 sm:grid-cols-2 print:hidden"
+      >
         {prev ? (
-          <Link href={sectionHref(info.id, prev)} className="btn h-auto flex-col items-start py-2 whitespace-normal">
+          <Link
+            href={sectionHref(info.id, prev)}
+            className="btn h-auto flex-col items-start py-2 whitespace-normal"
+          >
             <span className="text-xs text-steel">‹ Poprzednia</span>
             <span>{prev.title}</span>
           </Link>

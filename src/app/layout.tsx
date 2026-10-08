@@ -36,8 +36,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <ClientEffects />
         {children}
         <footer className="mt-auto border-t border-line bg-paper px-5 py-3 text-xs text-steel print:hidden">
-          Treść instrukcji © Opel / Stellantis — wyłącznie do prywatnego użytku. Notatki są zapisywane
-          tylko w tej przeglądarce.
+          Treść instrukcji © Opel / Stellantis — wyłącznie do prywatnego użytku.
+          Notatki są zapisywane tylko w tej przeglądarce.
         </footer>
       </body>
     </html>

@@ -30,7 +30,9 @@ function findPython() {
   ].filter(Boolean);
   for (const cmd of candidates) {
     if (cmd.includes(path.sep) && !existsSync(cmd)) continue;
-    const r = spawnSync(cmd, ["-c", "import pymupdf, PIL"], { stdio: "ignore" });
+    const r = spawnSync(cmd, ["-c", "import pymupdf, PIL"], {
+      stdio: "ignore",
+    });
     if (r.status === 0) return cmd;
   }
   return null;
@@ -54,19 +56,28 @@ for (const book of config.books) {
   if (only && book.id !== only) continue;
   const pdf = path.join(root, book.file);
   if (!existsSync(pdf)) {
-    console.error(`✗ ${book.file} missing — run \`npm run fetch-manuals\` first.`);
+    console.error(
+      `✗ ${book.file} missing — run \`npm run fetch-manuals\` first.`,
+    );
     failed = true;
     continue;
   }
   const args = [
     path.join(root, "scripts/extract.py"),
-    "--book", book.id,
-    "--pdf", pdf,
-    "--out", path.join(root, book.out),
-    "--assets", path.join(root, book.assets),
-    "--assets-url", book.assetsUrl,
-    "--title", book.title,
-    "--source-url", book.url,
+    "--book",
+    book.id,
+    "--pdf",
+    pdf,
+    "--out",
+    path.join(root, book.out),
+    "--assets",
+    path.join(root, book.assets),
+    "--assets-url",
+    book.assetsUrl,
+    "--title",
+    book.title,
+    "--source-url",
+    book.url,
     ...(book.args ?? []),
     ...argv,
   ];

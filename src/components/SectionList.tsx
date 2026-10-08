@@ -21,7 +21,9 @@ export function SectionList({ items }: { items: SectionListItem[] }) {
   return (
     <ul className="border-t border-line">
       {items.map((item) => {
-        const kind = hydrated ? getAvailability(item.features, profile).kind : "neutral";
+        const kind = hydrated
+          ? getAvailability(item.features, profile).kind
+          : "neutral";
         const missing = kind === "missing";
         return (
           <li key={item.id} className="border-b border-line">
@@ -31,12 +33,24 @@ export function SectionList({ items }: { items: SectionListItem[] }) {
             >
               <span className="flex flex-wrap items-center gap-2">
                 <span>{item.title}</span>
-                {kind === "yours" && <span className="badge badge-dark">Twoje auto</span>}
-                {kind === "verify" && <span className="badge">Do weryfikacji</span>}
-                {kind === "probable" && <span className="badge">Prawdopodobnie</span>}
-                {missing && <span className="badge badge-red">Brak w Twoim aucie</span>}
+                {kind === "yours" && (
+                  <span className="badge badge-dark">Twoje auto</span>
+                )}
+                {kind === "verify" && (
+                  <span className="badge">Do weryfikacji</span>
+                )}
+                {kind === "probable" && (
+                  <span className="badge">Prawdopodobnie</span>
+                )}
+                {missing && (
+                  <span className="badge badge-red">Brak w Twoim aucie</span>
+                )}
               </span>
-              {item.page != null && <span className="shrink-0 text-xs text-steel">str. {item.page}</span>}
+              {item.page != null && (
+                <span className="shrink-0 text-xs text-steel">
+                  str. {item.page}
+                </span>
+              )}
             </Link>
           </li>
         );

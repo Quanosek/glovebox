@@ -6,7 +6,10 @@ import { HIGHLIGHT_COLORS } from "@/lib/highlightColors";
 import type { Highlight } from "@/lib/storage/schema";
 import { updateData, useAppData, useHydrated } from "@/lib/storage/hooks";
 
-const BOOK_LABEL = { manual: "Instrukcja obsługi", infotainment: "Navi 950" } as const;
+const BOOK_LABEL = {
+  manual: "Instrukcja obsługi",
+  infotainment: "Navi 950",
+} as const;
 
 export function CommentsView() {
   const data = useAppData();
@@ -18,7 +21,12 @@ export function CommentsView() {
   const all = Object.values(data.highlights);
   const list = all
     .filter((h) => !onlyComments || h.comment.trim())
-    .sort((a, b) => a.book.localeCompare(b.book) || a.href.localeCompare(b.href) || a.anchor.start - b.anchor.start);
+    .sort(
+      (a, b) =>
+        a.book.localeCompare(b.book) ||
+        a.href.localeCompare(b.href) ||
+        a.anchor.start - b.anchor.start,
+    );
 
   const groups = new Map<string, Highlight[]>();
   for (const h of list) {
@@ -53,7 +61,8 @@ export function CommentsView() {
 
       {list.length === 0 && (
         <p className="mt-6 text-steel">
-          Brak zaznaczeń. Zaznacz fragment tekstu w instrukcji, aby wyróżnić go kolorem i dodać komentarz.
+          Brak zaznaczeń. Zaznacz fragment tekstu w instrukcji, aby wyróżnić go
+          kolorem i dodać komentarz.
         </p>
       )}
 
@@ -71,11 +80,22 @@ export function CommentsView() {
                 <span
                   aria-hidden="true"
                   className="mt-1 h-4 w-4 shrink-0 border border-steel"
-                  style={{ background: HIGHLIGHT_COLORS.find((c) => c.id === h.color)?.swatch }}
+                  style={{
+                    background: HIGHLIGHT_COLORS.find((c) => c.id === h.color)
+                      ?.swatch,
+                  }}
                 />
                 <div className="min-w-0 flex-1">
-                  <q className="block">{h.anchor.exact.length > 240 ? `${h.anchor.exact.slice(0, 239)}…` : h.anchor.exact}</q>
-                  {h.comment.trim() && <p className="mt-1 whitespace-pre-wrap text-graphite">{h.comment}</p>}
+                  <q className="block">
+                    {h.anchor.exact.length > 240
+                      ? `${h.anchor.exact.slice(0, 239)}…`
+                      : h.anchor.exact}
+                  </q>
+                  {h.comment.trim() && (
+                    <p className="mt-1 whitespace-pre-wrap text-graphite">
+                      {h.comment}
+                    </p>
+                  )}
                   <p className="mt-1 text-xs text-steel">
                     {new Date(h.updatedAt).toLocaleString("pl-PL")}
                   </p>
@@ -88,7 +108,8 @@ export function CommentsView() {
                     type="button"
                     className="btn h-7 py-0"
                     onClick={() => {
-                      if (confirm("Usunąć to zaznaczenie wraz z komentarzem?")) remove(h.id);
+                      if (confirm("Usunąć to zaznaczenie wraz z komentarzem?"))
+                        remove(h.id);
                     }}
                   >
                     Usuń

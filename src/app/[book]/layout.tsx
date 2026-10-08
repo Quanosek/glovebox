@@ -9,7 +9,10 @@ export function generateStaticParams() {
   return BOOKS.map((b) => ({ book: b.route }));
 }
 
-export default async function BookLayout({ children, params }: LayoutProps<"/[book]">) {
+export default async function BookLayout({
+  children,
+  params,
+}: LayoutProps<"/[book]">) {
   const { book } = await params;
   if (!getBookByRoute(book)) notFound();
   return (

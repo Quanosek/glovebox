@@ -15,14 +15,19 @@ export function ContinueReading() {
       <div className="flex flex-wrap items-center justify-between gap-3 p-4">
         <div>
           <p className="font-semibold">{lastRead.title}</p>
-          <p className="text-xs text-steel">{new Date(lastRead.at).toLocaleString("pl-PL")}</p>
+          <p className="text-xs text-steel">
+            {new Date(lastRead.at).toLocaleString("pl-PL")}
+          </p>
         </div>
         <Link
           href={lastRead.href}
           className="btn btn-primary"
           onClick={() => {
             try {
-              sessionStorage.setItem(RESTORE_SCROLL_KEY, String(lastRead.scrollY));
+              sessionStorage.setItem(
+                RESTORE_SCROLL_KEY,
+                String(lastRead.scrollY),
+              );
             } catch {
               // ignore
             }

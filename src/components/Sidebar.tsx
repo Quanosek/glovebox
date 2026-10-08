@@ -4,7 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { getAvailability } from "@/lib/availability";
-import { useAppData, useHydrated, useVehicleProfile } from "@/lib/storage/hooks";
+import {
+  useAppData,
+  useHydrated,
+  useVehicleProfile,
+} from "@/lib/storage/hooks";
 import type { VehicleProfile } from "@/config/vehicle";
 
 export interface SidebarNode {
@@ -22,7 +26,13 @@ export interface SidebarBook {
 }
 
 /** Table of contents of both manuals ("books"). */
-export function Sidebar({ books, current }: { books: SidebarBook[]; current: string }) {
+export function Sidebar({
+  books,
+  current,
+}: {
+  books: SidebarBook[];
+  current: string;
+}) {
   const pathname = decodeURIComponent(usePathname());
   const [open, setOpen] = useState(false);
   const profile = useVehicleProfile();
@@ -54,12 +64,23 @@ export function Sidebar({ books, current }: { books: SidebarBook[]; current: str
         className={`${open ? "block" : "hidden"} max-h-[70vh] overflow-y-auto py-2 lg:block lg:h-full lg:max-h-none`}
       >
         {books.map((book) => (
-          <details key={book.href} open={book.href === current} className="group/book">
+          <details
+            key={book.href}
+            open={book.href === current}
+            className="group/book"
+          >
             <summary className="silver-bar flex cursor-pointer list-none items-center justify-between px-4 py-2 text-xs font-semibold tracking-[0.08em] text-graphite uppercase">
-              <Link href={book.href} className="hover:text-red" onClick={() => setOpen(false)}>
+              <Link
+                href={book.href}
+                className="hover:text-red"
+                onClick={() => setOpen(false)}
+              >
                 {book.title}
               </Link>
-              <span aria-hidden="true" className="text-steel group-open/book:rotate-90">
+              <span
+                aria-hidden="true"
+                className="text-steel group-open/book:rotate-90"
+              >
                 ›
               </span>
             </summary>
@@ -102,7 +123,9 @@ function TocItem({
   const inPath = active || pathname.startsWith(`${node.href}/`);
   const [expanded, setExpanded] = useState<boolean | null>(null);
   const isOpen = expanded ?? inPath;
-  const missing = profile ? getAvailability(node.features ?? [], profile).kind === "missing" : false;
+  const missing = profile
+    ? getAvailability(node.features ?? [], profile).kind === "missing"
+    : false;
   const hasChildren = (node.children?.length ?? 0) > 0;
 
   return (
@@ -136,7 +159,10 @@ function TocItem({
             aria-expanded={isOpen}
             onClick={() => setExpanded(!isOpen)}
           >
-            <span aria-hidden="true" className={`inline-block ${isOpen ? "rotate-90" : ""}`}>
+            <span
+              aria-hidden="true"
+              className={`inline-block ${isOpen ? "rotate-90" : ""}`}
+            >
               ›
             </span>
           </button>

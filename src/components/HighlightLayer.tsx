@@ -1,11 +1,30 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { containerText, offsetOf, offsetsOfRange, rangeFromOffsets } from "@/lib/anchoring/dom";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import {
+  containerText,
+  offsetOf,
+  offsetsOfRange,
+  rangeFromOffsets,
+} from "@/lib/anchoring/dom";
 import { describe, resolve, type TextRange } from "@/lib/anchoring/textQuote";
-import { ALL_HIGHLIGHT_NAMES, HIGHLIGHT_COLORS, highlightName } from "@/lib/highlightColors";
+import {
+  ALL_HIGHLIGHT_NAMES,
+  HIGHLIGHT_COLORS,
+  highlightName,
+} from "@/lib/highlightColors";
 import type { BookId } from "@/content/types";
-import type { Highlight as StoredHighlight, HighlightColor } from "@/lib/storage/schema";
+import type {
+  Highlight as StoredHighlight,
+  HighlightColor,
+} from "@/lib/storage/schema";
 import { updateData, useAppData, useHydrated } from "@/lib/storage/hooks";
 import { newId } from "@/lib/storage/store";
 
@@ -28,19 +47,28 @@ interface PendingSelection extends Point {
   below: boolean;
 }
 
-const supportsHighlights = () => typeof CSS !== "undefined" && "highlights" in CSS;
+const supportsHighlights = () =>
+  typeof CSS !== "undefined" && "highlights" in CSS;
 
 /**
  * Wraps the section text: lets the user highlight any text fragment, paints
  * stored highlights (CSS Custom Highlight API, no DOM mutation) and manages
  * the comments attached to them.
  */
-export function HighlightLayer({ book, sectionId, sectionTitle, href, children }: Props) {
+export function HighlightLayer({
+  book,
+  sectionId,
+  sectionTitle,
+  href,
+  children,
+}: Props) {
   const data = useAppData();
   const hydrated = useHydrated();
   const [root, setRoot] = useState<HTMLDivElement | null>(null);
   const [pending, setPending] = useState<PendingSelection | null>(null);
-  const [editing, setEditing] = useState<{ id: string; at: Point } | null>(null);
+  const [editing, setEditing] = useState<{ id: string; at: Point } | null>(
+    null,
+  );
   const [activeId, setActiveId] = useState<string | null>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
@@ -97,7 +125,8 @@ export function HighlightLayer({ book, sectionId, sectionTitle, href, children }
   useEffect(
     () => () => {
       if (!supportsHighlights()) return;
-      for (const name of [...ALL_HIGHLIGHT_NAMES, "hl-active"]) CSS.highlights.delete(name);
+      for (const name of [...ALL_HIGHLIGHT_NAMES, "hl-active"])
+        CSS.highlights.delete(name);
     },
     [],
   );
@@ -109,7 +138,10 @@ export function HighlightLayer({ book, sectionId, sectionTitle, href, children }
       const range = rangeFromOffsets(root, r.start, r.end);
       if (!range) return false;
       const rect = range.getBoundingClientRect();
-      window.scrollTo({ top: window.scrollY + rect.top - window.innerHeight / 3, behavior: "smooth" });
+      window.scrollTo({
+        top: window.scrollY + rect.top - window.innerHeight / 3,
+        behavior: "smooth",
+      });
       setActiveId(id);
       return true;
     },
@@ -134,7 +166,11 @@ export function HighlightLayer({ book, sectionId, sectionTitle, href, children }
   useEffect(() => {
     if (!root) return;
     const check = (event?: Event) => {
-      if (event?.target instanceof Node && toolbarRef.current?.contains(event.target)) return;
+      if (
+        event?.target instanceof Node &&
+        toolbarRef.current?.contains(event.target)
+      )
+        return;
       const sel = window.getSelection();
       if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
         setPending(null);
@@ -146,7 +182,8 @@ export function HighlightLayer({ book, sectionId, sectionTitle, href, children }
         return;
       }
       if (!root.contains(range.startContainer)) range.setStart(root, 0);
-      if (!root.contains(range.endContainer)) range.setEnd(root, root.childNodes.length);
+      if (!root.contains(range.endContainer))
+        range.setEnd(root, root.childNodes.length);
       const offsets = offsetsOfRange(root, range);
       const full = containerText(root);
       if (!offsets) {
@@ -161,7 +198,12 @@ export function HighlightLayer({ book, sectionId, sectionTitle, href, children }
         return;
       }
       const rect = range.getBoundingClientRect();
-      const header = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-h")) || 56;
+      const header =
+        parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue(
+            "--header-h",
+          ),
+        ) || 56;
       const below = rect.top < header + 56;
       setPending({
         start,
@@ -194,7 +236,8 @@ export function HighlightLayer({ book, sectionId, sectionTitle, href, children }
   useEffect(() => {
     if (!editing) return;
     const onDown = (e: PointerEvent) => {
-      if (e.target instanceof Node && editorRef.current?.contains(e.target)) return;
+      if (e.target instanceof Node && editorRef.current?.contains(e.target))
+        return;
       setEditing(null);
       setActiveId(null);
     };
@@ -231,7 +274,10 @@ export function HighlightLayer({ book, sectionId, sectionTitle, href, children }
     window.getSelection()?.removeAllRanges();
     setPending(null);
     if (withComment) {
-      setEditing({ id: h.id, at: { x: pending.x, y: pending.below ? pending.y : pending.y + 8 } });
+      setEditing({
+        id: h.id,
+        at: { x: pending.x, y: pending.below ? pending.y : pending.y + 8 },
+      });
       setActiveId(h.id);
     }
   };
@@ -261,7 +307,12 @@ export function HighlightLayer({ book, sectionId, sectionTitle, href, children }
 
   return (
     <>
-      <div ref={setRoot} onClick={onRootClick} className="prose-manual" data-highlight-root>
+      <div
+        ref={setRoot}
+        onClick={onRootClick}
+        className="prose-manual"
+        data-highlight-root
+      >
         {children}
       </div>
 
@@ -289,7 +340,11 @@ export function HighlightLayer({ book, sectionId, sectionTitle, href, children }
               onClick={() => create(c.id, false)}
             />
           ))}
-          <button type="button" className="btn ml-1 h-7 py-0" onClick={() => create("silver", true)}>
+          <button
+            type="button"
+            className="btn ml-1 h-7 py-0"
+            onClick={() => create("silver", true)}
+          >
             Komentarz
           </button>
         </div>
@@ -307,20 +362,25 @@ export function HighlightLayer({ book, sectionId, sectionTitle, href, children }
         />
       )}
 
-      <section className="panel mt-10 print:hidden" aria-labelledby="comments-title">
+      <section
+        className="panel mt-10 print:hidden"
+        aria-labelledby="comments-title"
+      >
         <h2 id="comments-title" className="panel-title">
           Zaznaczenia i komentarze w tej sekcji ({highlights.length})
         </h2>
         <div className="p-3 text-sm">
           {unsupported && (
             <p className="mb-2 border-l-2 border-red bg-paper px-3 py-1.5 text-graphite">
-              Ta przeglądarka nie obsługuje podświetlania tekstu (CSS Custom Highlight API). Zaznaczenia i
-              komentarze są zapisane, ale nie są widoczne w treści.
+              Ta przeglądarka nie obsługuje podświetlania tekstu (CSS Custom
+              Highlight API). Zaznaczenia i komentarze są zapisane, ale nie są
+              widoczne w treści.
             </p>
           )}
           {highlights.length === 0 ? (
             <p className="text-steel">
-              Zaznacz fragment tekstu powyżej, aby go wyróżnić kolorem lub dodać komentarz.
+              Zaznacz fragment tekstu powyżej, aby go wyróżnić kolorem lub dodać
+              komentarz.
             </p>
           ) : (
             <ul className="divide-y divide-line">
@@ -331,24 +391,37 @@ export function HighlightLayer({ book, sectionId, sectionTitle, href, children }
                     <span
                       aria-hidden="true"
                       className="mt-1 h-4 w-4 shrink-0 border border-steel"
-                      style={{ background: HIGHLIGHT_COLORS.find((c) => c.id === h.color)?.swatch }}
+                      style={{
+                        background: HIGHLIGHT_COLORS.find(
+                          (c) => c.id === h.color,
+                        )?.swatch,
+                      }}
                     />
                     <div className="min-w-0 flex-1">
-                      <q className="block text-ink">{truncate(h.anchor.exact, 180)}</q>
+                      <q className="block text-ink">
+                        {truncate(h.anchor.exact, 180)}
+                      </q>
                       {h.comment.trim() ? (
-                        <p className="mt-1 whitespace-pre-wrap text-graphite">{h.comment}</p>
+                        <p className="mt-1 whitespace-pre-wrap text-graphite">
+                          {h.comment}
+                        </p>
                       ) : (
                         <p className="mt-1 text-steel">Brak komentarza</p>
                       )}
                       {!found && (
                         <p className="mt-1 text-xs text-red">
-                          Nie odnaleziono tego fragmentu w bieżącej treści (treść mogła zostać zmieniona).
+                          Nie odnaleziono tego fragmentu w bieżącej treści
+                          (treść mogła zostać zmieniona).
                         </p>
                       )}
                     </div>
                     <div className="flex shrink-0 flex-col gap-1 sm:flex-row sm:items-start">
                       {found && (
-                        <button type="button" className="btn h-7 py-0" onClick={() => scrollToHighlight(h.id)}>
+                        <button
+                          type="button"
+                          className="btn h-7 py-0"
+                          onClick={() => scrollToHighlight(h.id)}
+                        >
                           Pokaż
                         </button>
                       )}
@@ -357,7 +430,10 @@ export function HighlightLayer({ book, sectionId, sectionTitle, href, children }
                         className="btn h-7 py-0"
                         onClick={(e) => {
                           const rect = e.currentTarget.getBoundingClientRect();
-                          setEditing({ id: h.id, at: { x: rect.left, y: rect.bottom + 4 } });
+                          setEditing({
+                            id: h.id,
+                            at: { x: rect.left, y: rect.bottom + 4 },
+                          });
                           setActiveId(h.id);
                         }}
                       >
@@ -398,7 +474,11 @@ function HighlightEditor({
         ...d,
         highlights: {
           ...d.highlights,
-          [highlight.id]: { ...current, ...changes, updatedAt: new Date().toISOString() },
+          [highlight.id]: {
+            ...current,
+            ...changes,
+            updatedAt: new Date().toISOString(),
+          },
         },
       };
     });
@@ -422,12 +502,19 @@ function HighlightEditor({
     >
       <div className="panel-title flex items-center justify-between">
         Zaznaczenie
-        <button type="button" className="text-steel hover:text-red" aria-label="Zamknij" onClick={onClose}>
+        <button
+          type="button"
+          className="text-steel hover:text-red"
+          aria-label="Zamknij"
+          onClick={onClose}
+        >
           ✕
         </button>
       </div>
       <div className="flex flex-col gap-2 p-3">
-        <q className="line-clamp-3 text-sm text-graphite">{highlight.anchor.exact}</q>
+        <q className="line-clamp-3 text-sm text-graphite">
+          {highlight.anchor.exact}
+        </q>
         <div className="flex gap-1" role="radiogroup" aria-label="Kolor">
           {HIGHLIGHT_COLORS.map((c) => (
             <button
@@ -438,14 +525,19 @@ function HighlightEditor({
               title={c.label}
               aria-label={c.label}
               className={`h-7 w-7 border ${
-                highlight.color === c.id ? "border-2 border-ink" : "border-steel"
+                highlight.color === c.id
+                  ? "border-2 border-ink"
+                  : "border-steel"
               }`}
               style={{ background: c.swatch }}
               onClick={() => patch({ color: c.id })}
             />
           ))}
         </div>
-        <label className="text-xs font-semibold tracking-wide text-graphite uppercase" htmlFor="hl-comment">
+        <label
+          className="text-xs font-semibold tracking-wide text-graphite uppercase"
+          htmlFor="hl-comment"
+        >
           Komentarz
         </label>
         <textarea
@@ -471,7 +563,10 @@ function HighlightEditor({
 
 function offsetFromPoint(root: Node, x: number, y: number): number | null {
   const doc = document as Document & {
-    caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null;
+    caretPositionFromPoint?: (
+      x: number,
+      y: number,
+    ) => { offsetNode: Node; offset: number } | null;
     caretRangeFromPoint?: (x: number, y: number) => Range | null;
   };
   const pos = doc.caretPositionFromPoint?.(x, y);

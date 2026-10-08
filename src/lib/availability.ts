@@ -5,7 +5,8 @@ import { FEATURE_BY_ID, type VehicleProfile } from "@/config/vehicle";
  * section's feature tags and the (possibly user-edited) vehicle profile.
  * Client-safe: no Node APIs.
  */
-export type AvailabilityKind = "neutral" | "yours" | "verify" | "probable" | "missing";
+export type AvailabilityKind =
+  "neutral" | "yours" | "verify" | "probable" | "missing";
 
 export interface Availability {
   kind: AvailabilityKind;
@@ -29,7 +30,10 @@ export const AVAILABILITY_LABEL: Record<AvailabilityKind, string> = {
   missing: "Brak w Twoim aucie",
 };
 
-export function getAvailability(features: readonly string[], profile: VehicleProfile): Availability {
+export function getAvailability(
+  features: readonly string[],
+  profile: VehicleProfile,
+): Availability {
   const a: Availability = {
     kind: "neutral",
     missing: [],
