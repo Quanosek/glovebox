@@ -7,13 +7,8 @@ export const metadata: Metadata = { title: "Szukaj" };
 
 export default function SearchPage() {
   return (
-    <main
-      id="main"
-      className="page-shell"
-    >
-      <h1 className="page-title">
-        Szukaj w instrukcjach
-      </h1>
+    <main id="main" className="page-shell">
+      <h1 className="page-title">Szukaj w instrukcjach</h1>
       <Suspense fallback={<p className="mt-4 text-steel">Ładowanie…</p>}>
         <SearchView
           cars={listCarSummaries().map((c) => ({

@@ -8,13 +8,8 @@ export default async function NotebookPage({
 }: PageProps<"/notatnik">) {
   const { kartka } = await searchParams;
   return (
-    <main
-      id="main"
-      className="page-shell"
-    >
-      <h1 className="page-title">
-        Notatnik
-      </h1>
+    <main id="main" className="page-shell">
+      <h1 className="page-title">Notatnik</h1>
       <NotebookView
         initialPage={typeof kartka === "string" ? kartka : undefined}
       />

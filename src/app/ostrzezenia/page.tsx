@@ -23,13 +23,8 @@ export default async function WarningsPage({
   }));
 
   return (
-    <main
-      id="main"
-      className="page-shell"
-    >
-      <h1 className="page-title">
-        Ostrzeżenia z instrukcji
-      </h1>
+    <main id="main" className="page-shell">
+      <h1 className="page-title">Ostrzeżenia z instrukcji</h1>
       <p className="mt-3 text-sm text-graphite">
         Wszystkie ostrzeżenia, przestrogi i uwagi z instrukcji, z linkami do
         miejsca w tekście.
