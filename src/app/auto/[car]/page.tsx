@@ -48,7 +48,7 @@ export default async function CarPage({ params }: Props) {
   return (
     <main
       id="main"
-      className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-8"
+      className="page-shell"
     >
       <nav aria-label="Ścieżka" className="mb-4 text-xs text-steel">
         <Link href="/" className="hover:text-red">
