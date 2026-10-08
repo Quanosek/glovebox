@@ -38,6 +38,9 @@
     #d9dcdf 100%
   );
   --silver-gradient-hover: linear-gradient(180deg, #ffffff 0%, #e3e5e8 100%);
+  /* Pressed button: the gradient flips, like a physical key pushed in. */
+  --silver-gradient-active: linear-gradient(180deg, #dfe2e5 0%, #f1f2f4 100%);
+  --ease-ui: cubic-bezier(0.2, 0, 0.2, 1);
   color-scheme: light;
 }
 
@@ -76,6 +79,19 @@ body {
   outline-offset: 1px;
 }
 
+/* Soft colour fades on every link and button hover (utilities may override). */
+@layer base {
+  a,
+  button,
+  summary,
+  [role="button"] {
+    transition-property:
+      color, background-color, border-color, text-decoration-color;
+    transition-duration: 160ms;
+    transition-timing-function: cubic-bezier(0.2, 0, 0.2, 1);
+  }
+}
+
 @layer components {
   .silver-bar {
     background: var(--silver-gradient);
@@ -94,10 +110,24 @@ body {
     line-height: 1.25rem;
     cursor: pointer;
     white-space: nowrap;
+    user-select: none;
+    box-shadow: 0 1px 0 rgba(43, 46, 49, 0.06);
+    transition:
+      background-color 160ms var(--ease-ui),
+      border-color 160ms var(--ease-ui),
+      color 160ms var(--ease-ui),
+      box-shadow 120ms var(--ease-ui),
+      transform 80ms var(--ease-ui);
   }
   .btn:hover {
     background: var(--silver-gradient-hover);
     border-color: var(--color-steel);
+  }
+  /* Very subtle "pushed in" feel: 1px down, inner shadow, flipped gradient. */
+  .btn:active:not(:disabled) {
+    transform: translateY(1px);
+    background: var(--silver-gradient-active);
+    box-shadow: inset 0 1px 2px rgba(43, 46, 49, 0.18);
   }
   .btn:disabled {
     opacity: 0.5;
@@ -112,13 +142,22 @@ body {
     background: var(--color-red-bright);
     border-color: var(--color-red-bright);
   }
+  .btn-primary:active:not(:disabled) {
+    background: var(--color-red);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
   .btn-ghost {
     background: transparent;
     border-color: transparent;
+    box-shadow: none;
   }
   .btn-ghost:hover {
     background: var(--color-paper);
     border-color: var(--color-line);
+  }
+  .btn-ghost:active:not(:disabled) {
+    background: var(--color-line);
+    box-shadow: inset 0 1px 2px rgba(43, 46, 49, 0.12);
   }
 
   .field {
@@ -128,11 +167,61 @@ body {
     padding: 0.45rem 0.6rem;
     font-size: 0.9375rem;
     color: var(--color-ink);
+    transition: border-color 160ms var(--ease-ui);
   }
-  .field:focus {
+  .field:hover {
+    border-color: var(--color-steel);
+  }
+  /* One calm focus indicator only: the border turns graphite. */
+  .field:focus,
+  .field:focus-visible {
     outline: none;
-    border-color: var(--color-red);
-    box-shadow: inset 0 -2px 0 var(--color-red);
+    border-color: var(--color-graphite);
+  }
+
+  /* Interactive list rows / tiles: gentle background fade on hover. */
+  .hover-row {
+    transition: background-color 160ms var(--ease-ui);
+  }
+  .hover-row:hover {
+    background-color: var(--color-paper);
+  }
+  .hover-tile {
+    transition:
+      border-color 160ms var(--ease-ui),
+      box-shadow 160ms var(--ease-ui),
+      transform 160ms var(--ease-ui);
+  }
+  .hover-tile:hover {
+    border-color: var(--color-steel);
+    box-shadow: 0 2px 6px rgba(43, 46, 49, 0.1);
+  }
+  .hover-tile:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 2px rgba(43, 46, 49, 0.08);
+  }
+
+  /* Centred modal dialog (src/components/Dialog.tsx). */
+  .app-dialog {
+    margin: auto;
+    width: min(30rem, calc(100vw - 2rem));
+    max-height: calc(100dvh - 2rem);
+    padding: 0;
+    border: 1px solid var(--color-silver);
+    background: var(--color-white);
+    color: var(--color-ink);
+    box-shadow: 0 12px 32px rgba(43, 46, 49, 0.22);
+  }
+  .app-dialog[open] {
+    animation: dialog-in 160ms var(--ease-ui);
+  }
+  .app-dialog::backdrop {
+    background: rgba(43, 46, 49, 0.28);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
+  .app-dialog[open]::backdrop {
+    animation: backdrop-in 160ms var(--ease-ui);
   }
 
   .panel {
@@ -341,6 +430,32 @@ body {
   }
   .prose-note del {
     color: var(--color-steel);
+  }
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after,
+  ::backdrop {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+  .btn:active,
+  .hover-tile:active {
+    transform: none !important;
   }
 }
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Downloads the source PDF manuals listed in scripts/manuals.config.json
-// into ./manuals (ignored by git). Usage: npm run fetch-manuals [-- --force]
+// into ./manuals (ignored by git). Usage: pnpm fetch-manuals [--force]
 import { createWriteStream } from "node:fs";
 import { mkdir, readFile, rename, stat, unlink } from "node:fs/promises";
 import path from "node:path";

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { ClientEffects } from "@/components/ClientEffects";
+import { DialogHost } from "@/components/Dialog";
 import { Header } from "@/components/Header";
 import { listCarSummaries } from "@/lib/content";
 import "./globals.css";
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Header cars={listCarSummaries()} />
         <ClientEffects />
         {children}
+        <DialogHost />
         <footer className="mt-auto border-t border-line bg-paper px-5 py-3 text-xs text-steel print:hidden">
           Treść instrukcji © ich producentów (m.in. Opel / Stellantis) —
           wyłącznie do prywatnego użytku. Notatki są zapisywane tylko w tej

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { matchFeatures } from "@/config/featureRules";
@@ -395,6 +396,39 @@ export function getCarUrls(car: CarFile): string[] {
     }
   }
   return [...urls];
+}
+
+/**
+ * Fingerprint of everything a car's offline copy depends on: the JSON files
+ * of the car and the current app build (new builds change asset names).
+ * Clients re-save a car for offline use when this value changes.
+ */
+export function getCarVersion(car: CarFile): string {
+  const hash = createHash("sha1");
+  const carDir = path.join(getDatabaseDir(), car.id);
+  const stamp = (file: string) => {
+    try {
+      const st = fs.statSync(file);
+      hash.update(`${file}:${st.size}:${st.mtimeMs};`);
+    } catch {
+      hash.update(`${file}:-;`);
+    }
+  };
+  stamp(path.join(carDir, "car.json"));
+  for (const ctx of bookCtxs(car)) {
+    const dir = bookDir(ctx);
+    for (const name of fs.readdirSync(dir).sort()) {
+      if (name.endsWith(".json")) stamp(path.join(dir, name));
+    }
+  }
+  try {
+    hash.update(
+      fs.readFileSync(path.join(process.cwd(), ".next", "BUILD_ID"), "utf8"),
+    );
+  } catch {
+    hash.update("dev");
+  }
+  return hash.digest("hex").slice(0, 16);
 }
 
 function collectImages(block: Block, urls: Set<string>) {

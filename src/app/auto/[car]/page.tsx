@@ -91,7 +91,7 @@ export default async function CarPage({ params }: Props) {
             <Link
               key={b.id}
               href={b.href}
-              className="panel group block hover:border-silver"
+              className="panel hover-tile group block"
             >
               <div className="panel-title">Księga</div>
               <div className="p-5">
@@ -125,16 +125,19 @@ export default async function CarPage({ params }: Props) {
       <div className="mt-6 grid gap-4 md:grid-cols-[1fr_1fr]">
         <CarActions carId={car.id} label={car.label} builtIn={car.builtIn} />
         <div className="panel">
-          <div className="panel-title">Gdzie są dane</div>
+          <div className="panel-title">Twoje dane</div>
           <div className="space-y-2 p-4 text-sm text-graphite">
             <p>
-              Treść instrukcji: <code>database/{car.id}/</code> (pliki JSON i
-              ilustracje WebP). Folder jest częścią repozytorium — po
-              zatwierdzeniu go w git auto będzie dostępne na każdym urządzeniu.
+              Instrukcje tego auta są zapisane w aplikacji — widać je na każdym
+              urządzeniu, które z niej korzysta, bez ponownego dodawania plików.
             </p>
             <p>
-              Twoje zaznaczenia, komentarze i notatki są tylko w tej
-              przeglądarce.
+              Twoje zaznaczenia, komentarze i notatki zostają tylko w tej
+              przeglądarce. Kopię zapasową zrobisz w{" "}
+              <Link href="/ustawienia" className="text-red hover:underline">
+                Ustawieniach
+              </Link>
+              .
             </p>
           </div>
         </div>

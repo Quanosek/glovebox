@@ -102,7 +102,7 @@ export interface BookIndex {
   formatVersion: number;
   id: BookId;
   title: string;
-  /** True for the committed placeholder shown before `npm run extract`. */
+  /** True for the committed placeholder shown before `pnpm extract`. */
   placeholder?: boolean;
   source: {
     url: string;

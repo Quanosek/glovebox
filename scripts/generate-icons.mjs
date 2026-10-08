@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Renders src/app/icon.svg into apple-icon.png (180×180) and favicon.ico
-// (16/32/48 px PNG-in-ICO). Usage: npm run icons
+// (16/32/48 px PNG-in-ICO). Usage: pnpm icons
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

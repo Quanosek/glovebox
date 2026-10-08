@@ -3,5 +3,5 @@ out
 node_modules
 public
 database
-package-lock.json
+pnpm-lock.yaml
 manuals

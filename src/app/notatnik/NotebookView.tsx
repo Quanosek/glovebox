@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { confirmDialog } from "@/components/Dialog";
 import { Markdown } from "@/components/Markdown";
 import {
   markdownToText,
@@ -51,13 +52,14 @@ export function NotebookView({ initialPage }: { initialPage?: string }) {
       return { ...d, notebook: { pages: list } };
     });
 
-  const remove = (page: NotePage) => {
-    if (
-      !confirm(
-        `Usunąć kartkę „${page.title || "bez tytułu"}”? Tej operacji nie można cofnąć.`,
-      )
-    )
-      return;
+  const remove = async (page: NotePage) => {
+    const ok = await confirmDialog({
+      title: "Usunąć kartkę?",
+      message: `Kartka „${page.title || "bez tytułu"}” zostanie usunięta razem z całą treścią. Tej operacji nie można cofnąć.`,
+      confirmLabel: "Usuń kartkę",
+      danger: true,
+    });
+    if (!ok) return;
     updateData((d) => ({
       ...d,
       notebook: { pages: d.notebook.pages.filter((p) => p.id !== page.id) },
@@ -133,7 +135,7 @@ export function NotebookView({ initialPage }: { initialPage?: string }) {
         <NoteEditor
           key={selected.id}
           page={selected}
-          onDelete={() => remove(selected)}
+          onDelete={() => void remove(selected)}
         />
       ) : (
         <div className="panel flex min-h-80 items-center justify-center p-6 text-center text-steel">
@@ -230,7 +232,7 @@ function NoteEditor({
     <section className="panel flex min-h-112 flex-col">
       <div className="silver-bar flex flex-wrap items-center gap-2 px-3 py-2">
         <input
-          className="field min-w-0 flex-1 border-transparent bg-transparent text-lg font-semibold focus:bg-white"
+          className="field min-w-0 flex-1 border-transparent bg-transparent text-lg font-semibold hover:border-line focus:border-silver focus:bg-white"
           value={title}
           aria-label="Tytuł kartki"
           placeholder="Tytuł kartki"
@@ -248,7 +250,7 @@ function NoteEditor({
       </div>
       <div
         role="toolbar"
-        aria-label="Formatowanie Markdown"
+        aria-label="Formatowanie tekstu"
         className="flex flex-wrap items-center gap-px border-b border-line bg-paper px-2 py-1"
       >
         {TOOLS.map((t, i) =>
@@ -295,7 +297,7 @@ function NoteEditor({
             ref={area}
             className="min-h-96 w-full flex-1 resize-y bg-[linear-gradient(transparent_calc(1.75rem-1px),var(--color-line)_1.75rem)] bg-size-[100%_1.75rem] bg-local px-4 py-[0.4rem] font-mono text-[0.95rem] leading-7 outline-none"
             value={body}
-            aria-label="Treść notatki (Markdown)"
+            aria-label="Treść notatki"
             placeholder={PLACEHOLDER}
             onKeyDown={onKeyDown}
             onChange={(e) => {
@@ -315,9 +317,9 @@ function NoteEditor({
         )}
       </div>
       <p className="border-t border-line px-3 py-1.5 text-xs text-steel">
-        Notatki zapisują się automatycznie w tej przeglądarce. Formatowanie:
-        Markdown (**pogrubienie**, *kursywa*, # nagłówek, - lista, - [ ]
-        zadanie, &gt; cytat). Znaki: {body.length}
+        Notatki zapisują się same w tej przeglądarce. Użyj przycisków powyżej
+        albo znaków: **pogrubienie**, *kursywa*, # nagłówek, - lista, - [ ]
+        zadanie, &gt; cytat. Znaki: {body.length}
       </p>
     </section>
   );
@@ -331,7 +333,7 @@ const MODES: { id: Mode; label: string }[] = [
   { id: "split", label: "Obok siebie" },
 ];
 
-const PLACEHOLDER = `Pisz tutaj… Możesz używać Markdown, np.:
+const PLACEHOLDER = `Pisz tutaj… Możesz formatować tekst, np.:
 ## Nagłówek
 **pogrubienie**, *kursywa*
 - lista

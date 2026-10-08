@@ -169,7 +169,7 @@ async function prepareJob(req: ImportRequest): Promise<ImportJob> {
   const python = (await findPython()).best;
   if (!python)
     throw new ImportError(
-      "Brak Pythona 3 z bibliotekami PyMuPDF i Pillow — wróć do kroku „Wymagania”.",
+      "Ten komputer nie jest jeszcze przygotowany do odczytu plików PDF (opis w README, rozdział „Dodawanie aut”).",
       503,
     );
 
@@ -269,7 +269,7 @@ async function processJob(
         doc.state = "error";
         doc.error =
           lastLines(r.stderr) || "Nie udało się przetworzyć dokumentu.";
-        throw new Error(`Błąd przetwarzania „${doc.name}”.`);
+        throw new Error(`Nie udało się odczytać pliku „${doc.name}”.`);
       }
       doc.sections = Number(stats[1]);
       doc.images = Number(stats[2]);

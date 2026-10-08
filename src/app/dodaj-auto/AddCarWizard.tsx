@@ -12,6 +12,7 @@ import {
 } from "react";
 import { CAR_CATALOG, CATALOG_BRANDS } from "@/config/carCatalog";
 import { carHref, type CarSummary } from "@/lib/cars";
+import { useOnline } from "@/lib/offline";
 import { renderPdfPreview } from "@/lib/pdfPreview";
 import { slugify } from "@/lib/slug";
 import { setActiveCar } from "@/lib/storage/hooks";
@@ -67,13 +68,16 @@ interface PickedDoc {
   previewState: "loading" | "done" | "error";
 }
 
-type Step = 1 | 2 | 3 | 4;
+type Step = 1 | 2 | 3;
 
-const STEPS: { n: Step; label: string }[] = [
-  { n: 1, label: "Wymagania" },
-  { n: 2, label: "Auto i dokumenty" },
-  { n: 3, label: "Przetwarzanie" },
-  { n: 4, label: "Gotowe" },
+const STEPS: { n: Step; label: string; hint: string }[] = [
+  {
+    n: 1,
+    label: "Auto i instrukcje",
+    hint: "marka, model, rocznik i pliki PDF",
+  },
+  { n: 2, label: "Odczytywanie", hint: "aplikacja czyta instrukcje" },
+  { n: 3, label: "Gotowe", hint: "auto pojawia się na liście" },
 ];
 
 const OTHER = "__other__";
@@ -106,8 +110,9 @@ export function AddCarWizard({
   const [system, setSystem] = useState<SystemStatus | null>(null);
   const [systemError, setSystemError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
+  const online = useOnline();
 
-  // Step 2 form.
+  // Step 1 form.
   const [brandChoice, setBrandChoice] = useState("");
   const [brandOther, setBrandOther] = useState("");
   const [modelChoice, setModelChoice] = useState("");
@@ -118,7 +123,7 @@ export function AddCarWizard({
   const [notice, setNotice] = useState<string[]>([]);
   const [dragging, setDragging] = useState(false);
 
-  // Steps 3–4.
+  // Steps 2–3.
   const [upload, setUpload] = useState<number | null>(null);
   const [job, setJob] = useState<Job | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -142,7 +147,7 @@ export function AddCarWizard({
       )
     : undefined;
 
-  /* ---- step 1: environment check */
+  /* ---- background check: can this app read PDFs right now? */
 
   const check = useCallback(async () => {
     setChecking(true);
@@ -152,6 +157,7 @@ export function AddCarWizard({
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       setSystem((await r.json()) as SystemStatus);
     } catch (e) {
+      setSystem(null);
       setSystemError(e instanceof Error ? e.message : String(e));
     } finally {
       setChecking(false);
@@ -163,7 +169,7 @@ export function AddCarWizard({
     void check();
   }, [check]);
 
-  /* ---- step 2: documents */
+  /* ---- step 1: documents */
 
   const previewQueue = useRef<Promise<void>>(Promise.resolve());
   const removed = useRef(new Set<string>());
@@ -199,7 +205,7 @@ export function AddCarWizard({
         );
       } else if (docs.length + next.length >= maxDocs) {
         messages.push(
-          `Pominięto „${file.name}” — limit to ${maxDocs} dokumentów na jedno auto.`,
+          `Pominięto „${file.name}” — jedno auto może mieć najwyżej ${maxDocs} plików.`,
         );
       } else {
         known.add(key);
@@ -274,15 +280,15 @@ export function AddCarWizard({
   if (!year) formErrors.push("Wybierz rocznik.");
   if (docs.length === 0) formErrors.push("Dodaj co najmniej jeden plik PDF.");
   if (docs.some((d) => !d.title.trim()))
-    formErrors.push("Każdy dokument musi mieć tytuł.");
+    formErrors.push("Każda instrukcja musi mieć nazwę.");
 
-  /* ---- step 3: upload + polling */
+  /* ---- step 2: upload + polling */
 
   const submit = () => {
     setSubmitError(null);
     setJob(null);
     setUpload(0);
-    setStep(3);
+    setStep(2);
     const form = new FormData();
     form.set("brand", brand);
     form.set("model", model);
@@ -302,11 +308,15 @@ export function AddCarWizard({
       setUpload(100);
       const body = xhr.response as { job?: Job; error?: string } | null;
       if (xhr.status === 202 && body?.job) setJob(body.job);
-      else setSubmitError(body?.error ?? `Błąd serwera (HTTP ${xhr.status}).`);
+      else
+        setSubmitError(
+          body?.error ??
+            `Coś poszło nie tak (kod ${xhr.status}). Spróbuj ponownie za chwilę.`,
+        );
     };
     xhr.onerror = () =>
       setSubmitError(
-        "Nie udało się wysłać plików — czy serwer aplikacji działa?",
+        "Nie udało się wysłać plików. Sprawdź połączenie i spróbuj ponownie.",
       );
     xhr.send(form);
   };
@@ -323,7 +333,7 @@ export function AddCarWizard({
         const body = (await r.json()) as { job?: Job; error?: string };
         if (stop) return;
         if (!r.ok || !body.job) {
-          setSubmitError(body.error ?? `HTTP ${r.status}`);
+          setSubmitError(body.error ?? `Coś poszło nie tak (kod ${r.status}).`);
           return;
         }
         setJob(body.job);
@@ -344,7 +354,7 @@ export function AddCarWizard({
   useEffect(() => {
     if (jobState !== "done") return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- job finished
-    setStep(4);
+    setStep(3);
     // Reload server components so the new car appears in the header and lists.
     router.refresh();
   }, [jobState, router]);
@@ -360,7 +370,7 @@ export function AddCarWizard({
     });
     setUpload(100);
     setSubmitError(null);
-    setStep(3);
+    setStep(2);
   };
 
   const reset = () => {
@@ -375,11 +385,12 @@ export function AddCarWizard({
     setJob(null);
     setUpload(null);
     setNotice([]);
-    setStep(2);
+    setStep(1);
     void check();
   };
 
   const ready =
+    online &&
     !!system &&
     system.pythonReady &&
     system.extractor &&
@@ -394,7 +405,7 @@ export function AddCarWizard({
 
   return (
     <div className="mt-6">
-      <ol className="grid grid-cols-2 border border-line bg-white text-sm sm:grid-cols-4">
+      <ol className="grid border border-line bg-white text-sm sm:grid-cols-3">
         {STEPS.map((s) => (
           <li
             key={s.n}
@@ -418,26 +429,30 @@ export function AddCarWizard({
             >
               {step > s.n ? "✓" : s.n}
             </span>
-            {s.label}
+            <span className="min-w-0">
+              <span className="block">{s.label}</span>
+              <span className="block text-xs font-normal text-steel">
+                {s.hint}
+              </span>
+            </span>
           </li>
         ))}
       </ol>
 
       {step === 1 && (
-        <StepRequirements
+        <Availability
+          online={online}
           system={system}
           error={systemError}
           checking={checking}
-          ready={ready}
           onCheck={check}
           onResume={resume}
-          onNext={() => setStep(2)}
         />
       )}
 
-      {step === 2 && (
+      {step === 1 && (
         <section className="mt-6">
-          <h2 className="sr-only">Auto i dokumenty</h2>
+          <h2 className="sr-only">Auto i instrukcje</h2>
           <div className="grid gap-3 sm:grid-cols-3">
             <Field label="1. Marka" htmlFor="car-brand">
               <select
@@ -549,8 +564,8 @@ export function AddCarWizard({
           </Field>
           {duplicate && (
             <p className="mt-2 border-l-4 border-red bg-paper px-3 py-2 text-sm">
-              W bazie jest już auto „{duplicate.label}”. Nowe dokumenty zostaną
-              zapisane jako osobne auto (z dopiskiem w nazwie folderu).
+              Auto „{duplicate.label}” jest już na liście. Nowe instrukcje
+              zostaną dodane jako osobne auto.
             </p>
           )}
 
@@ -567,7 +582,7 @@ export function AddCarWizard({
           >
             <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
               <p>
-                <strong>Dokumenty PDF</strong>{" "}
+                <strong>Instrukcje w PDF</strong>{" "}
                 <span className="text-steel">
                   ({docs.length}/{maxDocs}) — przeciągnij pliki tutaj albo
                 </span>
@@ -600,8 +615,8 @@ export function AddCarWizard({
             )}
             {docs.length === 0 ? (
               <p className="py-12 text-center text-sm text-steel">
-                Upuść tutaj do {maxDocs} instrukcji w PDF (np. instrukcja
-                obsługi, instrukcja multimediów, książka serwisowa).
+                Upuść tutaj do {maxDocs} plików PDF (np. instrukcja obsługi,
+                instrukcja radia i nawigacji, książka serwisowa).
               </p>
             ) : (
               <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -634,7 +649,7 @@ export function AddCarWizard({
                         className="field h-8 px-2 text-sm"
                         value={d.title}
                         maxLength={120}
-                        aria-label={`Tytuł dokumentu ${i + 1}`}
+                        aria-label={`Nazwa instrukcji ${i + 1}`}
                         onChange={(e) =>
                           setDocs((prev) =>
                             prev.map((x) =>
@@ -689,20 +704,12 @@ export function AddCarWizard({
             )}
           </div>
 
-          <div className="mt-4 border border-line bg-paper px-4 py-3 text-sm text-graphite">
-            <p>
-              Folder docelowy:{" "}
-              <code className="text-ink">
-                database/{targetId || "<marka-model-rocznik>"}/
-              </code>
-            </p>
-            <p className="mt-1">
-              Z każdego PDF powstanie osobna księga (tytuł z karty powyżej).
-              Pliki PDF są używane tylko podczas przetwarzania i zostaną{" "}
-              <strong>usunięte</strong> — zapisane zostaną wyłącznie pliki JSON
-              i obrazy WebP.
-            </p>
-          </div>
+          <p className="mt-4 border border-line bg-paper px-4 py-3 text-sm text-graphite">
+            Każdy plik stanie się osobną instrukcją o nazwie wpisanej na karcie.
+            Pliki PDF są potrzebne tylko na czas odczytywania — potem aplikacja
+            je <strong className="text-ink">usuwa</strong>, a instrukcje zostają
+            już na stałe.
+          </p>
 
           {formErrors.length > 0 && (
             <ul className="mt-3 text-xs text-steel">
@@ -711,29 +718,29 @@ export function AddCarWizard({
               ))}
             </ul>
           )}
-          <div className="mt-4 flex flex-wrap justify-between gap-2">
-            <button type="button" className="btn" onClick={() => setStep(1)}>
-              ← Wymagania
-            </button>
+          <div className="mt-4 flex flex-wrap justify-end gap-2">
             <button
               type="button"
               className="btn btn-primary"
               disabled={formErrors.length > 0 || !ready}
               onClick={submit}
             >
-              Zapisz auto i przetwórz
-              {docs.length > 0 ? ` (${docs.length})` : ""}
+              Dodaj auto
+              {docs.length > 0
+                ? ` i ${docs.length} ${docs.length === 1 ? "instrukcję" : docs.length < 5 ? "instrukcje" : "instrukcji"}`
+                : ""}{" "}
+              →
             </button>
           </div>
-          {!ready && (
+          {!ready && formErrors.length === 0 && (
             <p className="mt-2 text-right text-xs text-red">
-              Środowisko nie jest gotowe — wróć do kroku „Wymagania”.
+              Dodawanie jest teraz niedostępne — zobacz komunikat na górze.
             </p>
           )}
         </section>
       )}
 
-      {step === 3 && (
+      {step === 2 && (
         <StepProcessing
           upload={upload}
           job={job}
@@ -742,13 +749,13 @@ export function AddCarWizard({
             setSubmitError(null);
             setJob(null);
             setUpload(null);
-            setStep(docs.length ? 2 : 1);
+            setStep(1);
             void check();
           }}
         />
       )}
 
-      {step === 4 && job && (
+      {step === 3 && job && (
         <StepDone
           job={job}
           onOpen={() => {
@@ -788,229 +795,91 @@ function Field({
   );
 }
 
-function Check({
-  ok,
-  label,
-  children,
-}: {
-  ok: boolean;
-  label: string;
-  children?: ReactNode;
-}) {
-  return (
-    <li className="flex gap-3 border-b border-line px-4 py-2 last:border-b-0">
-      <span
-        aria-label={ok ? "spełnione" : "niespełnione"}
-        className={`flex h-5 w-5 shrink-0 items-center justify-center border text-xs text-white ${
-          ok ? "border-graphite bg-graphite" : "border-red bg-red"
-        }`}
-      >
-        {ok ? "✓" : "✗"}
-      </span>
-      <span className="min-w-0">
-        <span className="font-semibold">{label}</span>
-        {children && (
-          <span className="block text-xs text-graphite">{children}</span>
-        )}
-      </span>
-    </li>
-  );
-}
-
-function Cmd({ children }: { children: string }) {
-  return (
-    <pre className="mt-1 overflow-x-auto border border-line bg-paper px-3 py-2 text-xs text-ink">
-      <code>{children}</code>
-    </pre>
-  );
-}
-
-function StepRequirements({
+/**
+ * Plain-language status shown above the form when cars cannot be added right
+ * now (no connection, another import running, PDF reader not installed …).
+ * Technical details are deliberately left to the README.
+ */
+function Availability({
+  online,
   system,
   error,
   checking,
-  ready,
   onCheck,
   onResume,
-  onNext,
 }: {
+  online: boolean;
   system: SystemStatus | null;
   error: string | null;
   checking: boolean;
-  ready: boolean;
   onCheck: () => void;
   onResume: (id: string) => void;
-  onNext: () => void;
 }) {
-  const py = system?.python;
+  let title: string;
+  let text: ReactNode;
+  let action: ReactNode = (
+    <button type="button" className="btn" onClick={onCheck} disabled={checking}>
+      {checking ? "Sprawdzanie…" : "Sprawdź ponownie"}
+    </button>
+  );
   const running = system?.runningJob;
-  const isWindows = system?.platform === "win32";
+  if (!online || error) {
+    title = "Brak połączenia";
+    text =
+      "Dodawanie instrukcji wymaga połączenia z aplikacją. Zapisane auta możesz dalej czytać — wróć tutaj, gdy połączenie wróci.";
+  } else if (!system) {
+    return checking ? (
+      <p className="mt-4 text-sm text-steel">Sprawdzanie gotowości…</p>
+    ) : null;
+  } else if (running) {
+    title = "Trwa dodawanie innego auta";
+    text = `Aplikacja odczytuje właśnie instrukcje auta ${running.label || "dodanego przed chwilą"}. Nowe auto dodasz, gdy to się zakończy.`;
+    action = (
+      <button
+        type="button"
+        className="btn btn-primary"
+        onClick={() => onResume(running.id)}
+      >
+        Pokaż postęp
+      </button>
+    );
+  } else if (!system.localAccess) {
+    title = "Dodawanie tylko na komputerze z aplikacją";
+    text =
+      "Ze względów bezpieczeństwa nowe auta można dodawać wyłącznie na komputerze, na którym działa aplikacja. Czytanie instrukcji działa na wszystkich urządzeniach.";
+  } else if (
+    !system.pythonReady ||
+    !system.extractor ||
+    !system.database.writable
+  ) {
+    title = "Ten komputer nie jest jeszcze gotowy";
+    text = (
+      <>
+        Aplikacja nie potrafi tu jeszcze odczytywać plików PDF. Poproś osobę,
+        która ją uruchomiła, o jednorazowe przygotowanie — opis znajdzie w
+        instrukcji aplikacji (plik README, rozdział „Dodawanie aut”).
+      </>
+    );
+  } else {
+    return null;
+  }
   return (
-    <section className="mt-6 grid gap-6 lg:grid-cols-[3fr_2fr]">
-      <div>
-        <div className="panel">
-          <h2 className="panel-title flex items-center justify-between">
-            Sprawdzenie środowiska
-            <button
-              type="button"
-              className="btn h-7 py-0 normal-case"
-              onClick={onCheck}
-              disabled={checking}
-            >
-              {checking ? "Sprawdzanie…" : "Sprawdź ponownie"}
-            </button>
-          </h2>
-          {error && (
-            <p className="px-4 py-3 text-sm text-red">
-              Nie udało się połączyć z serwerem aplikacji ({error}). Kreator
-              działa tylko przy uruchomionym serwerze (<code>npm run dev</code>{" "}
-              lub <code>npm start</code>).
-            </p>
-          )}
-          {!system && !error && (
-            <p className="px-4 py-3 text-sm text-steel">Sprawdzanie…</p>
-          )}
-          {system && (
-            <ul className="text-sm">
-              <Check ok label="Serwer aplikacji (Node.js)">
-                {system.node} — działa lokalnie na tym komputerze.
-              </Check>
-              <Check ok={!!py} label="Python 3">
-                {py
-                  ? `${py.version} (${py.command})`
-                  : "Nie znaleziono interpretera Pythona 3."}
-              </Check>
-              <Check ok={!!py?.pymupdf} label="Biblioteka PyMuPDF (odczyt PDF)">
-                {py?.pymupdf
-                  ? `wersja ${py.pymupdf}`
-                  : "Brak — zainstaluj (polecenia obok)."}
-              </Check>
-              <Check ok={!!py?.pillow} label="Biblioteka Pillow (obrazy WebP)">
-                {py?.pillow
-                  ? `wersja ${py.pillow}`
-                  : "Brak — zainstaluj (polecenia obok)."}
-              </Check>
-              <Check ok={system.extractor} label="Skrypt scripts/extract.py">
-                {system.extractor
-                  ? "Na miejscu."
-                  : "Brak pliku — pobierz pełne repozytorium."}
-              </Check>
-              <Check
-                ok={system.database.writable}
-                label={`Zapis do folderu ${system.database.path}/`}
-              >
-                {system.database.writable
-                  ? "Folder bazy jest zapisywalny."
-                  : "Brak uprawnień do zapisu w folderze bazy."}
-              </Check>
-              <Check
-                ok={system.localAccess}
-                label="Otwarte na komputerze z serwerem"
-              >
-                {system.localAccess
-                  ? "Adres lokalny (localhost)."
-                  : "Auta można dodawać tylko pod adresem http://localhost na komputerze, na którym działa serwer."}
-              </Check>
-              <Check ok={!running} label="Brak trwającego importu">
-                {running ? (
-                  <>
-                    Trwa przetwarzanie: {running.label || "nowe auto"}.{" "}
-                    {running.id && (
-                      <button
-                        type="button"
-                        className="font-semibold text-red underline"
-                        onClick={() => onResume(running.id)}
-                      >
-                        Pokaż postęp
-                      </button>
-                    )}
-                  </>
-                ) : (
-                  "Można zacząć."
-                )}
-              </Check>
-            </ul>
-          )}
-        </div>
-        <div className="mt-4 flex justify-end">
-          <button
-            type="button"
-            className="btn btn-primary"
-            disabled={!ready}
-            onClick={onNext}
-          >
-            Dalej: auto i dokumenty →
-          </button>
-        </div>
+    <div
+      role="status"
+      className="mt-4 flex flex-col gap-3 border-l-4 border-red bg-paper px-4 py-3 text-sm sm:flex-row sm:items-center"
+    >
+      <div className="flex-1">
+        <p className="font-semibold">{title}</p>
+        <p className="mt-0.5 text-graphite">{text}</p>
       </div>
-
-      <div className="flex flex-col gap-4 text-sm">
-        <div className="panel">
-          <h2 className="panel-title">Jak to działa — krok po kroku</h2>
-          <ol className="flex list-decimal flex-col gap-2 py-3 pr-4 pl-8 text-graphite">
-            <li>
-              <strong className="text-ink">Wymagania</strong> — serwer sprawdza,
-              czy ma Pythona z bibliotekami do odczytu PDF.
-            </li>
-            <li>
-              <strong className="text-ink">Auto i dokumenty</strong> — wybierasz
-              markę, model i rocznik, a potem dodajesz do{" "}
-              {system?.limits.maxDocuments ?? 10} plików PDF z instrukcjami (z
-              podglądem pierwszej strony).
-            </li>
-            <li>
-              <strong className="text-ink">Przetwarzanie</strong> — lokalny
-              serwer wyodrębnia tekst, rozdziały, ostrzeżenia, tabele i
-              ilustracje. Nic nie jest wysyłane do internetu.
-            </li>
-            <li>
-              <strong className="text-ink">Gotowe</strong> — w folderze{" "}
-              <code>database/&lt;auto&gt;/</code> powstają pliki JSON i obrazy
-              WebP, a pliki PDF są usuwane.
-            </li>
-          </ol>
-          <p className="border-t border-line px-4 py-2 text-xs text-steel">
-            Folder <code>database/</code> jest częścią repozytorium — po
-            zatwierdzeniu go w git auto będzie dostępne na każdym urządzeniu, na
-            którym uruchomisz aplikację, bez ponownego wgrywania PDF.
-          </p>
-        </div>
-        {system && !system.pythonReady && (
-          <div className="panel">
-            <h2 className="panel-title">Instalacja wymagań</h2>
-            <div className="p-4">
-              <p className="text-graphite">
-                W katalogu projektu utwórz środowisko <code>.venv</code> (serwer
-                wykryje je automatycznie), a potem kliknij „Sprawdź ponownie”:
-              </p>
-              {isWindows ? (
-                <Cmd>
-                  {
-                    "py -3 -m venv .venv\n.venv\\Scripts\\python -m pip install -r scripts\\requirements.txt"
-                  }
-                </Cmd>
-              ) : (
-                <Cmd>
-                  {
-                    "python3 -m venv .venv\n.venv/bin/python -m pip install -r scripts/requirements.txt"
-                  }
-                </Cmd>
-              )}
-              <p className="mt-2 text-xs text-steel">
-                Inny interpreter wskażesz zmienną środowiskową{" "}
-                <code>PYTHON</code> przy uruchamianiu serwera.
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-    </section>
+      <div className="shrink-0">{action}</div>
+    </div>
   );
 }
 
 const DOC_STATE: Record<JobDoc["state"], string> = {
-  queued: "W kolejce",
-  running: "Przetwarzanie…",
+  queued: "Czeka",
+  running: "Odczytywanie…",
   done: "Gotowe",
   error: "Błąd",
 };
@@ -1034,40 +903,39 @@ function StepProcessing({
     <section className="mt-6 flex flex-col gap-4">
       <div className="panel">
         <h2 className="panel-title">
-          {job?.label
-            ? `Przetwarzanie: ${job.label}`
-            : "Wysyłanie plików na lokalny serwer"}
+          {job?.label ? `Odczytywanie: ${job.label}` : "Przesyłanie plików"}
         </h2>
         <div className="p-4 text-sm">
           <Progress
             label={
               uploading
-                ? `Wysyłanie plików: ${upload ?? 0}%`
-                : `Dokumenty: ${done}/${total}`
+                ? `Przesyłanie plików: ${upload ?? 0}%`
+                : `Gotowe instrukcje: ${done} z ${total}`
             }
             value={uploading ? (upload ?? 0) : total ? (done / total) * 100 : 0}
           />
           {uploading && upload === 100 && (
-            <p className="mt-2 text-steel">Zapisywanie plików tymczasowych…</p>
+            <p className="mt-2 text-steel">Przygotowywanie…</p>
           )}
           {job?.state === "running" && !error && (
             <p className="mt-2 text-graphite">
-              Nie zatrzymuj serwera. Możesz zamknąć tę kartę — postęp zobaczysz
-              po powrocie do kreatora (krok „Wymagania” → „Pokaż postęp”).
+              To może potrwać kilka minut przy dużych instrukcjach. Możesz
+              zamknąć tę kartę — postęp zobaczysz po ponownym otwarciu „Dodaj
+              auto”. Nie wyłączaj tylko komputera, na którym działa aplikacja.
             </p>
           )}
           {failed && (
             <div className="mt-3 border-l-4 border-red bg-paper px-3 py-2">
-              <p className="font-semibold text-red">Import nie powiódł się</p>
+              <p className="font-semibold text-red">Nie udało się dodać auta</p>
               <p className="mt-1">{error ?? job?.error}</p>
-              {job?.pdfsDeleted && (
-                <p className="mt-1 text-xs text-graphite">
-                  Tymczasowe pliki PDF zostały usunięte; w bazie nic nie
-                  zapisano.
-                </p>
-              )}
+              <p className="mt-1 text-xs text-graphite">
+                Nic nie zostało zapisane
+                {job?.pdfsDeleted ? ", a przesłane pliki PDF usunięto" : ""}.
+                Upewnij się, że pliki to instrukcje w PDF (nie zdjęcia ani
+                skany) i spróbuj ponownie.
+              </p>
               <button type="button" className="btn mt-2" onClick={onBack}>
-                ← Wróć i spróbuj ponownie
+                ← Wróć do formularza
               </button>
             </div>
           )}
@@ -1108,15 +976,25 @@ function StepProcessing({
                 </p>
                 {d.state === "done" && (
                   <p className="mt-1">
-                    Sekcje: <strong>{d.sections ?? "?"}</strong> · obrazy:{" "}
+                    Rozdziały i podrozdziały:{" "}
+                    <strong>{d.sections ?? "?"}</strong> · ilustracje:{" "}
                     <strong>{d.images ?? "?"}</strong>
                   </p>
                 )}
-                {d.error && <p className="mt-1 text-red">{d.error}</p>}
-                {d.log.length > 0 && d.state !== "done" && (
-                  <pre className="mt-1 max-h-24 overflow-auto bg-paper px-2 py-1 text-[11px] whitespace-pre-wrap">
-                    {d.log.slice(-4).join("\n")}
-                  </pre>
+                {d.error && (
+                  <p className="mt-1 text-red">
+                    Nie udało się odczytać tego pliku.
+                  </p>
+                )}
+                {d.state === "error" && (d.error || d.log.length > 0) && (
+                  <details className="mt-1">
+                    <summary className="cursor-pointer text-steel">
+                      Szczegóły (dla osoby technicznej)
+                    </summary>
+                    <pre className="mt-1 max-h-24 overflow-auto bg-paper px-2 py-1 text-[11px] whitespace-pre-wrap">
+                      {[d.error, ...d.log.slice(-4)].filter(Boolean).join("\n")}
+                    </pre>
+                  </details>
                 )}
               </div>
             </li>
@@ -1157,11 +1035,10 @@ function StepDone({
   onOpen: () => void;
   onAgain: () => void;
 }) {
-  const dir = `database/${job.carId}`;
   return (
     <section className="mt-6 grid gap-6 lg:grid-cols-[3fr_2fr]">
       <div className="panel">
-        <h2 className="panel-title">Zapisano: {job.label}</h2>
+        <h2 className="panel-title">Dodano: {job.label}</h2>
         <div className="p-4 text-sm">
           <ul className="border-t border-line">
             {job.docs.map((d) => (
@@ -1171,17 +1048,17 @@ function StepDone({
               >
                 <span className="font-semibold">{d.title}</span>
                 <span className="text-graphite">
-                  {d.pages ?? "?"} str. · {d.sections ?? "?"} sekcji ·{" "}
-                  {d.images ?? "?"} obrazów
+                  {d.pages ?? "?"} str. · {d.sections ?? "?"} rozdziałów ·{" "}
+                  {d.images ?? "?"} ilustracji
                 </span>
               </li>
             ))}
           </ul>
           <p className="mt-3">
-            Treść zapisano w <code>{dir}/</code>.{" "}
+            Instrukcje są gotowe do czytania.{" "}
             {job.pdfsDeleted
-              ? "Przesłane pliki PDF zostały usunięte."
-              : "Uwaga: nie udało się potwierdzić usunięcia plików PDF."}
+              ? "Przesłane pliki PDF zostały usunięte — nie są już potrzebne."
+              : "Uwaga: nie udało się potwierdzić usunięcia przesłanych plików PDF."}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <button type="button" className="btn btn-primary" onClick={onOpen}>
@@ -1197,19 +1074,20 @@ function StepDone({
         </div>
       </div>
       <div className="panel text-sm">
-        <h2 className="panel-title">Na innych urządzeniach</h2>
-        <div className="p-4">
-          <p className="text-graphite">
-            Zatwierdź nowy folder w repozytorium, a potem pobierz zmiany na
-            innym komputerze — auto będzie od razu dostępne:
-          </p>
-          <Cmd>{`git add ${dir}\ngit commit -m "Add ${job.label.replace(/["`$\\]/g, "")}"\ngit push`}</Cmd>
-          <p className="mt-2 text-xs text-steel">
-            Na drugim urządzeniu: <code>git pull</code>, a następnie{" "}
-            <code>npm run dev</code> lub <code>npm run build</code> i{" "}
-            <code>npm start</code>.
-          </p>
-        </div>
+        <h2 className="panel-title">Co dalej?</h2>
+        <ul className="flex list-[square] flex-col gap-2 py-3 pr-4 pl-8 text-graphite marker:text-red">
+          <li>
+            Auto jest już na liście aut — dla każdego, kto korzysta z tej
+            aplikacji, także na innych urządzeniach.
+          </li>
+          <li>
+            Po otwarciu auta jego instrukcje zapiszą się same, aby działały też
+            bez internetu.
+          </li>
+          <li>
+            W instrukcji możesz zaznaczać tekst, dodawać komentarze i zakładki.
+          </li>
+        </ul>
       </div>
     </section>
   );

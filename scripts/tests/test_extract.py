@@ -1,4 +1,4 @@
-"""Tests for scripts/extract.py. Run: npm run test:extract
+"""Tests for scripts/extract.py. Run: pnpm test:extract
 
 Uses a synthetic PDF built by make_sample_pdf.py (the real manuals are
 copyrighted and never committed).

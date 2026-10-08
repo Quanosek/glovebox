@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { confirmDialog } from "@/components/Dialog";
 import { bookName, carName, type CarSummary } from "@/lib/cars";
 import { useState } from "react";
 import { HIGHLIGHT_COLORS } from "@/lib/highlightColors";
@@ -107,8 +108,16 @@ export function CommentsView({ cars }: { cars: CarSummary[] }) {
                   <button
                     type="button"
                     className="btn h-7 py-0"
-                    onClick={() => {
-                      if (confirm("Usunąć to zaznaczenie wraz z komentarzem?"))
+                    onClick={async () => {
+                      if (
+                        await confirmDialog({
+                          title: "Usunąć zaznaczenie?",
+                          message:
+                            "Zaznaczenie zostanie usunięte razem z komentarzem.",
+                          confirmLabel: "Usuń",
+                          danger: true,
+                        })
+                      )
                         remove(h.id);
                     }}
                   >

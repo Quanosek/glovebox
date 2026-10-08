@@ -14,7 +14,7 @@ export function rejectCrossSite(request: Request): Response | null {
   if (!host) return forbidden();
   if (process.env.MANUALS_ALLOW_REMOTE_IMPORT !== "1" && !isLoopbackHost(host))
     return forbidden(
-      "Dodawanie i usuwanie aut jest dostępne tylko na komputerze, na którym działa serwer (http://localhost).",
+      "Dodawanie i usuwanie aut jest dostępne tylko na komputerze, na którym działa aplikacja.",
     );
 
   const site = request.headers.get("sec-fetch-site");

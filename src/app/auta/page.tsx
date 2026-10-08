@@ -22,8 +22,8 @@ export default function CarsPage() {
         Wybór auta
       </h1>
       <p className="mt-3 mb-5 text-sm text-graphite">
-        Auta z folderu <code>database/</code> ({cars.length}). Każde zawiera
-        instrukcje wygenerowane z plików PDF — wybierz swoje albo dodaj nowe.
+        Dostępne auta: {cars.length}. Wybierz swoje, aby czytać jego instrukcje,
+        albo dodaj nowe z plików PDF.
       </p>
       <CarPicker cars={cars} />
     </main>

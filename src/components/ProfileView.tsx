@@ -73,17 +73,17 @@ export function ProfileView({ cars }: { cars: CarSummary[] }) {
       </section>
 
       <p className="mt-4 text-sm text-graphite">
-        Profil działa bez konta i bez bazy danych: zaznaczenia, komentarze,
-        notatki i ustawienia są zapisywane tylko w tej przeglądarce. Instrukcje
-        aut pochodzą z folderu <code>database/</code> w repozytorium, więc są
-        dostępne na każdym urządzeniu, na którym uruchomisz projekt.
+        Nie musisz zakładać konta ani się logować. Twoje zaznaczenia,
+        komentarze, notatki i ustawienia zostają tylko na tym urządzeniu.
+        Wybierz auto, a jego instrukcje zapiszą się tak, by działały także bez
+        internetu.
       </p>
 
       <section
         aria-label="Co chcesz zrobić?"
         className="mt-6 grid gap-4 md:grid-cols-2"
       >
-        <a href="#auta" className="panel group block hover:border-silver">
+        <a href="#auta" className="panel hover-tile group block">
           <div className="panel-title">Wybór auta</div>
           <div className="p-5">
             <h2 className="text-xl font-semibold group-hover:text-red">
@@ -96,10 +96,7 @@ export function ProfileView({ cars }: { cars: CarSummary[] }) {
             </p>
           </div>
         </a>
-        <Link
-          href="/notatnik"
-          className="panel group block hover:border-silver"
-        >
+        <Link href="/notatnik" className="panel hover-tile group block">
           <div className="panel-title">Własny notatnik</div>
           <div className="p-5">
             <h2 className="text-xl font-semibold group-hover:text-red">
@@ -109,7 +106,7 @@ export function ProfileView({ cars }: { cars: CarSummary[] }) {
               {hydrated
                 ? `${data.notebook.pages.length} ${plural(data.notebook.pages.length, "kartka", "kartki", "kartek")} · `
                 : ""}
-              Puste kartki z podstawowym formatowaniem Markdown (nagłówki,
+              Puste kartki na własne notatki z prostym formatowaniem (nagłówki,
               pogrubienie, listy, zadania).
             </p>
           </div>
@@ -193,11 +190,11 @@ export function ProfileView({ cars }: { cars: CarSummary[] }) {
       </section>
 
       <p className="mt-8 text-xs text-steel">
-        Pamiętaj o regularnym eksporcie kopii zapasowej w{" "}
+        Pamiętaj, aby co jakiś czas pobrać kopię zapasową w{" "}
         <Link href="/ustawienia" className="underline">
           Ustawieniach
         </Link>{" "}
-        — wyczyszczenie danych przeglądarki usuwa notatki.
+        — wyczyszczenie historii przeglądarki usuwa notatki.
       </p>
     </>
   );

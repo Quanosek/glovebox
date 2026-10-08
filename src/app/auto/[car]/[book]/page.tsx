@@ -50,10 +50,10 @@ export default async function BookPage({ params }: Props) {
       </h1>
       {index.placeholder && (
         <p className="mt-4 border-l-4 border-red bg-paper px-4 py-3 text-sm">
-          Treść tej księgi nie została jeszcze wygenerowana z oficjalnego pliku
-          PDF. Instrukcję generowania znajdziesz w pliku README.md (polecenia{" "}
-          <code>npm run fetch-manuals</code> i <code>npm run extract</code>)
-          albo dodaj pliki PDF w kreatorze{" "}
+          Pełna treść tej instrukcji nie jest jeszcze gotowa — na razie widzisz
+          tylko krótki wstęp. Osoba, która przygotowała aplikację, może ją
+          uzupełnić (opis w pliku README). Możesz też dodać instrukcję
+          samodzielnie z pliku PDF w kreatorze{" "}
           <Link href="/dodaj-auto" className="text-red underline">
             Dodaj auto
           </Link>

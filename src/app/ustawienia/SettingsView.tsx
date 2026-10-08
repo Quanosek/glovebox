@@ -18,6 +18,8 @@ import {
   useVehicleProfile,
 } from "@/lib/storage/hooks";
 import { getStore } from "@/lib/storage/store";
+import { confirmDialog } from "@/components/Dialog";
+import { resetOfflineStatus } from "@/lib/offline";
 
 const FONT_SIZES: { id: FontSize; label: string }[] = [
   { id: "small", label: "Mała" },
@@ -77,31 +79,39 @@ export function SettingsView() {
       const text = await file.text();
       if (
         importMode === "replace" &&
-        !confirm("Zastąpić wszystkie obecne dane danymi z pliku?")
+        !(await confirmDialog({
+          title: "Zastąpić obecne dane?",
+          message:
+            "Wszystkie obecne zaznaczenia, komentarze, notatki i zakładki zostaną zastąpione zawartością kopii zapasowej.",
+          confirmLabel: "Zastąp",
+          danger: true,
+        }))
       )
         return;
       const next = store.importJson(text, importMode);
       setMessage({
         kind: "ok",
-        text: `Zaimportowano: ${Object.keys(next.highlights).length} zaznaczeń, ${next.notebook.pages.length} kartek, ${next.bookmarks.length} zakładek.`,
+        text: `Wczytano kopię: ${Object.keys(next.highlights).length} zaznaczeń, ${next.notebook.pages.length} kartek, ${next.bookmarks.length} zakładek.`,
       });
     } catch (err) {
       setMessage({
         kind: "error",
-        text: `Import nieudany: ${err instanceof Error ? err.message : String(err)}`,
+        text: `Nie udało się wczytać kopii: ${err instanceof Error ? err.message : String(err)}`,
       });
     } finally {
       if (fileRef.current) fileRef.current.value = "";
     }
   };
 
-  const clearAll = () => {
-    if (
-      !confirm(
-        "Usunąć wszystkie zaznaczenia, komentarze, notatki, zakładki i ustawienia? Tej operacji nie można cofnąć.",
-      )
-    )
-      return;
+  const clearAll = async () => {
+    const ok = await confirmDialog({
+      title: "Usunąć wszystkie dane?",
+      message:
+        "Zostaną usunięte wszystkie zaznaczenia, komentarze, notatki, zakładki i ustawienia z tej przeglądarki. Tej operacji nie można cofnąć — jeśli nie masz pewności, najpierw pobierz kopię zapasową.",
+      confirmLabel: "Usuń wszystko",
+      danger: true,
+    });
+    if (!ok) return;
     store.clear();
     setMessage({ kind: "ok", text: "Wszystkie dane zostały usunięte." });
   };
@@ -114,9 +124,10 @@ export function SettingsView() {
         .filter((k) => k.startsWith("opel-cascada-manual"))
         .map((k) => caches.delete(k)),
     );
+    resetOfflineStatus();
     setMessage({
       kind: "ok",
-      text: "Pamięć offline została wyczyszczona. Zostanie odbudowana przy kolejnym wczytaniu.",
+      text: "Instrukcje zapisane do czytania offline zostały usunięte. Zapiszą się ponownie przy następnym otwarciu auta.",
     });
   };
 
@@ -134,7 +145,7 @@ export function SettingsView() {
       )}
       {store.lastError && (
         <p className="border-l-4 border-red bg-paper px-4 py-2 text-sm text-red">
-          Problem z pamięcią przeglądarki: {store.lastError}
+          Nie udało się zapisać danych w przeglądarce: {store.lastError}
         </p>
       )}
 
@@ -194,8 +205,14 @@ export function SettingsView() {
           <button
             type="button"
             className="btn h-7 py-0 normal-case"
-            onClick={() => {
-              if (confirm("Przywrócić domyślny profil pojazdu?"))
+            onClick={async () => {
+              const ok = await confirmDialog({
+                title: "Przywrócić domyślne wyposażenie?",
+                message:
+                  "Wszystkie Twoje zmiany w liście wyposażenia zostaną cofnięte.",
+                confirmLabel: "Przywróć",
+              });
+              if (ok)
                 updateData((d) => ({
                   ...d,
                   settings: { ...d.settings, vehicle: {} },
@@ -280,9 +297,9 @@ export function SettingsView() {
         <h2 className="panel-title">Kopia zapasowa i dane</h2>
         <div className="flex flex-col gap-4 p-4 text-sm">
           <p className="text-graphite">
-            Wszystkie dane są przechowywane wyłącznie w tej przeglądarce
-            (localStorage). Wyczyszczenie danych przeglądarki usunie je
-            bezpowrotnie — regularnie eksportuj kopię zapasową.
+            Twoje zaznaczenia, komentarze, notatki i zakładki są zapisane tylko
+            w tej przeglądarce. Wyczyszczenie historii przeglądarki usunie je
+            bezpowrotnie — co jakiś czas pobierz kopię zapasową do pliku.
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -290,7 +307,7 @@ export function SettingsView() {
               className="btn btn-primary"
               onClick={exportData}
             >
-              Eksportuj kopię (JSON)
+              Pobierz kopię zapasową
             </button>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -300,13 +317,13 @@ export function SettingsView() {
               onChange={(e) =>
                 setImportMode(e.target.value as "merge" | "replace")
               }
-              aria-label="Tryb importu"
+              aria-label="Sposób wczytania kopii"
             >
               <option value="merge">Scal z obecnymi danymi</option>
               <option value="replace">Zastąp obecne dane</option>
             </select>
             <label className="btn">
-              Importuj z pliku…
+              Wczytaj kopię z pliku…
               <input
                 ref={fileRef}
                 type="file"
@@ -325,9 +342,13 @@ export function SettingsView() {
               className="btn"
               onClick={() => void clearOffline()}
             >
-              Wyczyść pamięć offline
+              Usuń instrukcje zapisane offline
             </button>
-            <button type="button" className="btn text-red" onClick={clearAll}>
+            <button
+              type="button"
+              className="btn text-red"
+              onClick={() => void clearAll()}
+            >
               Usuń wszystkie dane
             </button>
           </div>

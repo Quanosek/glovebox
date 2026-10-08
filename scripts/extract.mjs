@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Runs scripts/extract.py for every book in scripts/manuals.config.json.
-// Usage: npm run extract [-- --book manual] [-- <extra extract.py args>]
+// Usage: pnpm extract [--book manual] [-- <extra extract.py args>]
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
@@ -56,9 +56,7 @@ for (const book of config.books) {
   if (only && book.id !== only) continue;
   const pdf = path.join(root, book.file);
   if (!existsSync(pdf)) {
-    console.error(
-      `✗ ${book.file} missing — run \`npm run fetch-manuals\` first.`,
-    );
+    console.error(`✗ ${book.file} missing — run \`pnpm fetch-manuals\` first.`);
     failed = true;
     continue;
   }
