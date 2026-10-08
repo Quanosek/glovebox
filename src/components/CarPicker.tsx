@@ -112,7 +112,9 @@ export function CarPicker({ cars }: { cars: CarSummary[] }) {
               +
             </span>
             <span className="font-semibold group-hover:text-red">
-              {readableCars.length > 0 ? "Dodaj własne auto" : "Dodaj pierwsze auto"}
+              {readableCars.length > 0
+                ? "Dodaj własne auto"
+                : "Dodaj pierwsze auto"}
             </span>
             <span className="max-w-60 text-sm text-graphite">
               Wpisz markę, model i rocznik, a potem dołącz instrukcje w PDF.

@@ -49,11 +49,11 @@ export interface CarSummary {
       pages: number | null;
       placeholder: boolean;
     }
-
-    export function hasReadableManual(cars: CarSummary[]): boolean {
-      return cars.some((car) => car.books.some((book) => !book.placeholder));
-    }
   >;
+}
+
+export function hasReadableManual(cars: CarSummary[]): boolean {
+  return cars.some((car) => car.books.some((book) => !book.placeholder));
 }
 
 /** Section of a manual that describes an optional feature. */

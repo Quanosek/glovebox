@@ -72,8 +72,8 @@ repozytorium (są w `.gitignore` i są usuwane po imporcie).
 ## Instalacja i uruchomienie
 
 ```bash
-git clone <adres-repozytorium> opel-cascada-manual
-cd opel-cascada-manual
+git clone <adres-repozytorium> car-manual-library
+cd car-manual-library
 pnpm install
 
 # tryb deweloperski: http://localhost:3000
@@ -174,17 +174,17 @@ Dane ze starszej wersji aplikacji są automatycznie przenoszone do aktualnego fo
 
 ## Polecenia
 
-| Polecenie            | Opis                                                 |
-| -------------------- | ---------------------------------------------------- |
-| `pnpm dev`           | serwer deweloperski                                  |
-| `pnpm build`         | wersja produkcyjna (`.next/`)                        |
-| `pnpm start`         | uruchomienie wersji produkcyjnej na :3000            |
-| `pnpm icons`         | wygenerowanie `apple-icon.png` i `favicon.ico` z SVG |
-| `pnpm test`          | testy jednostkowe (Vitest)                           |
-| `pnpm test:extract`  | testy skryptu ekstrakcji (Python)                    |
-| `pnpm lint`          | ESLint                                               |
-| `pnpm typecheck`     | sprawdzenie typów TypeScript                         |
-| `pnpm format`        | formatowanie (Prettier)                              |
+| Polecenie           | Opis                                                 |
+| ------------------- | ---------------------------------------------------- |
+| `pnpm dev`          | serwer deweloperski                                  |
+| `pnpm build`        | wersja produkcyjna (`.next/`)                        |
+| `pnpm start`        | uruchomienie wersji produkcyjnej na :3000            |
+| `pnpm icons`        | wygenerowanie `apple-icon.png` i `favicon.ico` z SVG |
+| `pnpm test`         | testy jednostkowe (Vitest)                           |
+| `pnpm test:extract` | testy skryptu ekstrakcji (Python)                    |
+| `pnpm lint`         | ESLint                                               |
+| `pnpm typecheck`    | sprawdzenie typów TypeScript                         |
+| `pnpm format`       | formatowanie (Prettier)                              |
 
 Pełna kontrola projektu: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:extract && pnpm format:check && pnpm build`.
 
