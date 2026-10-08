@@ -1,0 +1,43 @@
+/*
+ * Highlights painted with the CSS Custom Highlight API (no DOM changes).
+ * Kept outside the bundled CSS because the build's CSS parser does not yet
+ * recognise the ::highlight() pseudo-element. Linked from src/app/layout.tsx.
+ */
+::highlight(hl-light) {
+  background-color: rgba(217, 220, 223, 0.95);
+}
+::highlight(hl-silver) {
+  background-color: rgba(184, 188, 192, 0.7);
+}
+::highlight(hl-graphite) {
+  background-color: rgba(138, 143, 148, 0.5);
+}
+::highlight(hl-red) {
+  background-color: rgba(228, 0, 43, 0.22);
+}
+::highlight(hl-light-c),
+::highlight(hl-silver-c),
+::highlight(hl-graphite-c),
+::highlight(hl-red-c) {
+  text-decoration: underline;
+  text-decoration-color: #c8102e;
+  text-decoration-thickness: 2px;
+}
+::highlight(hl-light-c) {
+  background-color: rgba(217, 220, 223, 0.95);
+}
+::highlight(hl-silver-c) {
+  background-color: rgba(184, 188, 192, 0.7);
+}
+::highlight(hl-graphite-c) {
+  background-color: rgba(138, 143, 148, 0.5);
+}
+::highlight(hl-red-c) {
+  background-color: rgba(228, 0, 43, 0.22);
+}
+::highlight(hl-active) {
+  background-color: rgba(43, 46, 49, 0.18);
+  text-decoration: underline;
+  text-decoration-color: #2b2e31;
+  text-decoration-thickness: 2px;
+}

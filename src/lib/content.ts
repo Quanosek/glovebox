@@ -221,6 +221,7 @@ export interface SearchDoc {
   path: string;
   href: string;
   text: string;
+  features: FeatureId[];
 }
 
 export function getSearchDocs(): SearchDoc[] {
@@ -237,8 +238,28 @@ export function getSearchDocs(): SearchDoc[] {
         path: trail.join(" › "),
         href: sectionHref(book.id, s),
         text: getBlocks(book.id, s).map(blockToText).join("\n"),
+        features: getSectionFeatures(book.id, s),
       });
     }
   }
   return docs;
+}
+
+export interface FeatureSectionLink {
+  book: BookId;
+  title: string;
+  href: string;
+}
+
+/** Sections whose own title is tagged with each feature (not inherited). */
+export function getFeatureSections(): Record<string, FeatureSectionLink[]> {
+  const out: Record<string, FeatureSectionLink[]> = {};
+  for (const book of BOOKS) {
+    for (const s of getBook(book.id).sections) {
+      for (const f of matchFeatures(book.id, s.title)) {
+        (out[f] ??= []).push({ book: book.id, title: s.title, href: sectionHref(book.id, s) });
+      }
+    }
+  }
+  return out;
 }

@@ -1,26 +1,253 @@
 @import "tailwindcss";
 
+/*
+ * Design system (see AGENTS.md → Design rules):
+ * - light theme inspired by the Opel Navi 950 UI
+ * - NO rounded corners anywhere
+ * - palette restricted to white, greys, silver and Opel red
+ */
+@theme {
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-white: #ffffff;
+  --color-paper: #f4f5f6;
+  --color-line: #d9dcdf;
+  --color-silver: #b8bcc0;
+  --color-steel: #8a8f94;
+  --color-graphite: #5c6166;
+  --color-ink: #2b2e31;
+  --color-black: #000000;
+  --color-red: #c8102e;
+  --color-red-bright: #e4002b;
+
+  --radius-*: initial;
+
+  --font-sans:
+    "Segoe UI", "Helvetica Neue", Roboto, "Noto Sans", Arial, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --header-h: 3.5rem;
+  --reader-font-size: 1rem;
+  --silver-gradient: linear-gradient(180deg, #ffffff 0%, #eceef0 55%, #d9dcdf 100%);
+  --silver-gradient-hover: linear-gradient(180deg, #ffffff 0%, #e3e5e8 100%);
+  color-scheme: light;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+html[data-font-size="small"] {
+  --reader-font-size: 0.9375rem;
+}
+html[data-font-size="large"] {
+  --reader-font-size: 1.125rem;
+}
+html[data-font-size="xlarge"] {
+  --reader-font-size: 1.25rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
+}
+
+html {
+  scroll-padding-top: calc(var(--header-h) + 0.75rem);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-white);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: rgba(200, 16, 46, 0.18);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-red);
+  outline-offset: 1px;
+}
+
+@layer components {
+  .silver-bar {
+    background: var(--silver-gradient);
+    border-bottom: 1px solid var(--color-silver);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid var(--color-silver);
+    background: var(--silver-gradient);
+    color: var(--color-ink);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn:hover {
+    background: var(--silver-gradient-hover);
+    border-color: var(--color-steel);
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: var(--color-red);
+    border-color: var(--color-red);
+    color: var(--color-white);
+  }
+  .btn-primary:hover {
+    background: var(--color-red-bright);
+    border-color: var(--color-red-bright);
+  }
+  .btn-ghost {
+    background: transparent;
+    border-color: transparent;
+  }
+  .btn-ghost:hover {
+    background: var(--color-paper);
+    border-color: var(--color-line);
+  }
+
+  .field {
+    width: 100%;
+    border: 1px solid var(--color-silver);
+    background: var(--color-white);
+    padding: 0.45rem 0.6rem;
+    font-size: 0.9375rem;
+    color: var(--color-ink);
+  }
+  .field:focus {
+    outline: none;
+    border-color: var(--color-red);
+    box-shadow: inset 0 -2px 0 var(--color-red);
+  }
+
+  .panel {
+    border: 1px solid var(--color-line);
+    background: var(--color-white);
+  }
+
+  .panel-title {
+    background: var(--silver-gradient);
+    border-bottom: 1px solid var(--color-line);
+    padding: 0.4rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-graphite);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0 0.4rem;
+    border: 1px solid var(--color-silver);
+    background: var(--color-paper);
+    color: var(--color-graphite);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    line-height: 1.25rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .badge-red {
+    border-color: var(--color-red);
+    color: var(--color-red);
+    background: var(--color-white);
+  }
+  .badge-dark {
+    border-color: var(--color-ink);
+    background: var(--color-ink);
+    color: var(--color-white);
+  }
+
+  /* Manual text */
+  .prose-manual {
+    font-size: var(--reader-font-size);
+    line-height: 1.65;
+  }
+  .prose-manual h2 {
+    margin: 2rem 0 0.75rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--color-line);
+    font-size: 1.25em;
+    font-weight: 600;
+  }
+  .prose-manual h3 {
+    margin: 1.5rem 0 0.5rem;
+    font-size: 1.1em;
+    font-weight: 600;
+  }
+  .prose-manual h4 {
+    margin: 1.25rem 0 0.4rem;
+    font-size: 1em;
+    font-weight: 600;
+  }
+  .prose-manual p {
+    margin: 0.6rem 0;
+  }
+  .prose-manual ul,
+  .prose-manual ol {
+    margin: 0.6rem 0;
+    padding-left: 1.5rem;
+  }
+  .prose-manual ul {
+    list-style: square;
+  }
+  .prose-manual ul li::marker {
+    color: var(--color-red);
+  }
+  .prose-manual ol {
+    list-style: decimal;
+  }
+  .prose-manual li {
+    margin: 0.2rem 0;
+  }
+  .prose-manual table {
+    width: 100%;
+    margin: 1rem 0;
+    border-collapse: collapse;
+    font-size: 0.9em;
+  }
+  .prose-manual th,
+  .prose-manual td {
+    border: 1px solid var(--color-line);
+    padding: 0.35rem 0.5rem;
+    text-align: left;
+    vertical-align: top;
+  }
+  .prose-manual th {
+    background: var(--silver-gradient);
+    font-weight: 600;
+  }
+  .prose-manual a.page-ref {
+    color: var(--color-red);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+    white-space: nowrap;
+  }
+  .prose-manual :target {
+    animation: target-flash 2s ease-out;
+  }
+}
+
+@keyframes target-flash {
+  from {
+    background-color: rgba(200, 16, 46, 0.12);
+  }
+  to {
+    background-color: transparent;
+  }
 }
