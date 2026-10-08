@@ -1,0 +1,49 @@
+{
+ "formatVersion": 1,
+ "id": "manual",
+ "title": "Instrukcja obsługi",
+ "placeholder": true,
+ "source": {
+  "url": "https://www.opel.pl/content/dam/opel/poland/owners/manuals/pdf/Cascada/instrukcja_cascada_0815_my16_pl.pdf",
+  "file": "instrukcja_cascada_0815_my16_pl.pdf",
+  "extractedAt": null,
+  "pages": null
+ },
+ "sections": [
+  {
+   "id": "zanim-zaczniesz",
+   "slug": [
+    "zanim-zaczniesz"
+   ],
+   "title": "Zanim zaczniesz",
+   "level": 1,
+   "parentId": null,
+   "page": null,
+   "file": "zanim-zaczniesz.json"
+  },
+  {
+   "id": "zanim-zaczniesz/generowanie-tresci",
+   "slug": [
+    "zanim-zaczniesz",
+    "generowanie-tresci"
+   ],
+   "title": "Generowanie treści instrukcji",
+   "level": 2,
+   "parentId": "zanim-zaczniesz",
+   "page": null,
+   "file": "zanim-zaczniesz.json"
+  },
+  {
+   "id": "zanim-zaczniesz/korzystanie-z-aplikacji",
+   "slug": [
+    "zanim-zaczniesz",
+    "korzystanie-z-aplikacji"
+   ],
+   "title": "Korzystanie z aplikacji",
+   "level": 2,
+   "parentId": "zanim-zaczniesz",
+   "page": null,
+   "file": "zanim-zaczniesz.json"
+  }
+ ]
+}

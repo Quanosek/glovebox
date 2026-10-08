@@ -1,0 +1,498 @@
+@import "tailwindcss";
+
+/*
+ * Design system (see AGENTS.md → Design rules):
+ * - light theme inspired by the Opel Navi 950 UI
+ * - NO rounded corners anywhere
+ * - palette restricted to white, greys, silver and Opel red
+ */
+@theme {
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-white: #ffffff;
+  --color-paper: #f4f5f6;
+  --color-line: #d9dcdf;
+  --color-silver: #b8bcc0;
+  --color-steel: #8a8f94;
+  --color-graphite: #5c6166;
+  --color-ink: #2b2e31;
+  --color-black: #000000;
+  --color-red: #c8102e;
+  --color-red-bright: #e4002b;
+
+  --radius-*: initial;
+
+  /* Widest the whole app gets on large screens (header, reader, footer). */
+  --container-app: 90rem;
+
+  --font-sans:
+    "Segoe UI", "Helvetica Neue", Roboto, "Noto Sans", Arial, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+:root {
+  --header-h: 3.5rem;
+  --reader-font-size: 1rem;
+  --silver-gradient: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    #eceef0 55%,
+    #d9dcdf 100%
+  );
+  --silver-gradient-hover: linear-gradient(180deg, #ffffff 0%, #e3e5e8 100%);
+  /* Pressed button: the gradient flips, like a physical key pushed in. */
+  --silver-gradient-active: linear-gradient(180deg, #dfe2e5 0%, #f1f2f4 100%);
+  --ease-ui: cubic-bezier(0.2, 0, 0.2, 1);
+  color-scheme: light;
+}
+
+html[data-font-size="small"] {
+  --reader-font-size: 0.9375rem;
+}
+html[data-font-size="large"] {
+  --reader-font-size: 1.125rem;
+}
+html[data-font-size="xlarge"] {
+  --reader-font-size: 1.25rem;
+}
+
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
+}
+
+html {
+  scroll-padding-top: calc(var(--header-h) + 0.75rem);
+}
+
+body {
+  background: var(--color-white);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  /*
+   * Long strings without spaces (file names, part numbers, addresses) break
+   * inside the word instead of pushing out of their box. `anywhere` also lets
+   * flex and grid items shrink below the longest word.
+   */
+  overflow-wrap: anywhere;
+}
+
+::selection {
+  background: rgba(200, 16, 46, 0.18);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-red);
+  outline-offset: 1px;
+}
+
+/* Soft colour fades on every link and button hover (utilities may override). */
+@layer base {
+  /* Tables keep whole words; they scroll sideways in a wrapper instead. */
+  table {
+    overflow-wrap: break-word;
+  }
+  /* Even line lengths for headings, no lone last word in paragraphs. */
+  h1,
+  h2,
+  h3,
+  h4,
+  .panel-title {
+    text-wrap: balance;
+  }
+  p,
+  li,
+  dd,
+  blockquote,
+  figcaption {
+    text-wrap: pretty;
+  }
+  a,
+  button,
+  summary,
+  [role="button"] {
+    transition-property:
+      color, background-color, border-color, text-decoration-color;
+    transition-duration: 160ms;
+    transition-timing-function: cubic-bezier(0.2, 0, 0.2, 1);
+  }
+}
+
+@layer components {
+  .silver-bar {
+    background: var(--silver-gradient);
+    border-bottom: 1px solid var(--color-silver);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid var(--color-silver);
+    background: var(--silver-gradient);
+    color: var(--color-ink);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+    box-shadow: 0 1px 0 rgba(43, 46, 49, 0.06);
+    transition:
+      background-color 160ms var(--ease-ui),
+      border-color 160ms var(--ease-ui),
+      color 160ms var(--ease-ui),
+      box-shadow 120ms var(--ease-ui),
+      transform 80ms var(--ease-ui);
+  }
+  .btn:hover {
+    background: var(--silver-gradient-hover);
+    border-color: var(--color-steel);
+  }
+  /* Very subtle "pushed in" feel: 1px down, inner shadow, flipped gradient. */
+  .btn:active:not(:disabled) {
+    transform: translateY(1px);
+    background: var(--silver-gradient-active);
+    box-shadow: inset 0 1px 2px rgba(43, 46, 49, 0.18);
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: var(--color-red);
+    border-color: var(--color-red);
+    color: var(--color-white);
+  }
+  .btn-primary:hover {
+    background: var(--color-red-bright);
+    border-color: var(--color-red-bright);
+  }
+  .btn-primary:active:not(:disabled) {
+    background: var(--color-red);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+  .btn-ghost {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+  }
+  .btn-ghost:hover {
+    background: var(--color-paper);
+    border-color: var(--color-line);
+  }
+  .btn-ghost:active:not(:disabled) {
+    background: var(--color-line);
+    box-shadow: inset 0 1px 2px rgba(43, 46, 49, 0.12);
+  }
+
+  .field {
+    width: 100%;
+    border: 1px solid var(--color-silver);
+    background: var(--color-white);
+    padding: 0.45rem 0.6rem;
+    font-size: 0.9375rem;
+    color: var(--color-ink);
+    transition: border-color 160ms var(--ease-ui);
+  }
+  .field:hover {
+    border-color: var(--color-steel);
+  }
+  /* One calm focus indicator only: the border turns graphite. */
+  .field:focus,
+  .field:focus-visible {
+    outline: none;
+    border-color: var(--color-graphite);
+  }
+
+  /* Interactive list rows / tiles: gentle background fade on hover. */
+  .hover-row {
+    transition: background-color 160ms var(--ease-ui);
+  }
+  .hover-row:hover {
+    background-color: var(--color-paper);
+  }
+  .hover-tile {
+    transition:
+      border-color 160ms var(--ease-ui),
+      box-shadow 160ms var(--ease-ui),
+      transform 160ms var(--ease-ui);
+  }
+  .hover-tile:hover {
+    border-color: var(--color-steel);
+    box-shadow: 0 2px 6px rgba(43, 46, 49, 0.1);
+  }
+  .hover-tile:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 2px rgba(43, 46, 49, 0.08);
+  }
+
+  /* Centred modal dialog (src/components/Dialog.tsx). */
+  .app-dialog {
+    margin: auto;
+    width: min(30rem, calc(100vw - 2rem));
+    max-height: calc(100dvh - 2rem);
+    padding: 0;
+    border: 1px solid var(--color-silver);
+    background: var(--color-white);
+    color: var(--color-ink);
+    box-shadow: 0 12px 32px rgba(43, 46, 49, 0.22);
+  }
+  .app-dialog[open] {
+    animation: dialog-in 160ms var(--ease-ui);
+  }
+  .app-dialog::backdrop {
+    background: rgba(43, 46, 49, 0.28);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
+  .app-dialog[open]::backdrop {
+    animation: backdrop-in 160ms var(--ease-ui);
+  }
+
+  .panel {
+    border: 1px solid var(--color-line);
+    background: var(--color-white);
+  }
+
+  .panel-title {
+    background: var(--silver-gradient);
+    border-bottom: 1px solid var(--color-line);
+    padding: 0.4rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-graphite);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0 0.4rem;
+    border: 1px solid var(--color-silver);
+    background: var(--color-paper);
+    color: var(--color-graphite);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    line-height: 1.25rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .badge-red {
+    border-color: var(--color-red);
+    color: var(--color-red);
+    background: var(--color-white);
+  }
+  .badge-dark {
+    border-color: var(--color-ink);
+    background: var(--color-ink);
+    color: var(--color-white);
+  }
+
+  /* Manual text */
+  .prose-manual {
+    font-size: var(--reader-font-size);
+    line-height: 1.65;
+    hyphens: auto;
+  }
+  .prose-manual h2 {
+    margin: 2rem 0 0.75rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--color-line);
+    font-size: 1.25em;
+    font-weight: 600;
+  }
+  .prose-manual h3 {
+    margin: 1.5rem 0 0.5rem;
+    font-size: 1.1em;
+    font-weight: 600;
+  }
+  .prose-manual h4 {
+    margin: 1.25rem 0 0.4rem;
+    font-size: 1em;
+    font-weight: 600;
+  }
+  .prose-manual p {
+    margin: 0.6rem 0;
+  }
+  .prose-manual ul,
+  .prose-manual ol {
+    margin: 0.6rem 0;
+    padding-left: 1.5rem;
+  }
+  .prose-manual ul {
+    list-style: square;
+  }
+  .prose-manual ul li::marker {
+    color: var(--color-red);
+  }
+  .prose-manual ol {
+    list-style: decimal;
+  }
+  .prose-manual li {
+    margin: 0.2rem 0;
+  }
+  .prose-manual table {
+    width: 100%;
+    margin: 1rem 0;
+    border-collapse: collapse;
+    font-size: 0.9em;
+  }
+  .prose-manual th,
+  .prose-manual td {
+    border: 1px solid var(--color-line);
+    padding: 0.35rem 0.5rem;
+    text-align: left;
+    vertical-align: top;
+  }
+  .prose-manual th {
+    background: var(--silver-gradient);
+    font-weight: 600;
+  }
+  .prose-manual a.page-ref {
+    color: var(--color-red);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+    white-space: nowrap;
+  }
+  .prose-manual :target {
+    animation: target-flash 2s ease-out;
+  }
+
+  /* Notebook Markdown preview */
+  .prose-note {
+    line-height: 1.7;
+    hyphens: auto;
+  }
+  .prose-note > :first-child {
+    margin-top: 0;
+  }
+  .prose-note h2 {
+    margin: 1.4rem 0 0.5rem;
+    padding-bottom: 0.2rem;
+    border-bottom: 1px solid var(--color-line);
+    font-size: 1.4em;
+    font-weight: 600;
+  }
+  .prose-note h3 {
+    margin: 1.2rem 0 0.4rem;
+    font-size: 1.2em;
+    font-weight: 600;
+  }
+  .prose-note h4 {
+    margin: 1rem 0 0.3rem;
+    font-weight: 600;
+  }
+  .prose-note p,
+  .prose-note ul,
+  .prose-note ol,
+  .prose-note pre,
+  .prose-note blockquote {
+    margin: 0.6rem 0;
+  }
+  .prose-note ul,
+  .prose-note ol {
+    padding-left: 1.5rem;
+  }
+  .prose-note ul {
+    list-style: square;
+  }
+  .prose-note ul li::marker {
+    color: var(--color-red);
+  }
+  .prose-note ol {
+    list-style: decimal;
+  }
+  .prose-note ul.task-list {
+    padding-left: 0.25rem;
+    list-style: none;
+  }
+  .prose-note .task-box {
+    display: inline-block;
+    width: 0.85em;
+    height: 0.85em;
+    margin-right: 0.5em;
+    border: 1px solid var(--color-steel);
+    vertical-align: -0.05em;
+  }
+  .prose-note .task-box-on {
+    border-color: var(--color-red);
+    background: var(--color-red);
+    box-shadow: inset 0 0 0 2px var(--color-white);
+  }
+  .prose-note blockquote {
+    border-left: 3px solid var(--color-silver);
+    padding: 0.1rem 0 0.1rem 0.9rem;
+    color: var(--color-graphite);
+  }
+  .prose-note code {
+    background: var(--color-paper);
+    border: 1px solid var(--color-line);
+    padding: 0 0.25em;
+    font-size: 0.9em;
+  }
+  .prose-note pre {
+    overflow-x: auto;
+    background: var(--color-paper);
+    border: 1px solid var(--color-line);
+    padding: 0.6rem 0.8rem;
+  }
+  .prose-note pre code {
+    border: 0;
+    padding: 0;
+  }
+  .prose-note hr {
+    margin: 1.2rem 0;
+    border: 0;
+    border-top: 1px solid var(--color-silver);
+  }
+  .prose-note a {
+    color: var(--color-red);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .prose-note del {
+    color: var(--color-steel);
+  }
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after,
+  ::backdrop {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+  .btn:active,
+  .hover-tile:active {
+    transform: none !important;
+  }
+}
+
+@keyframes target-flash {
+  from {
+    background-color: rgba(200, 16, 46, 0.12);
+  }
+  to {
+    background-color: transparent;
+  }
+}

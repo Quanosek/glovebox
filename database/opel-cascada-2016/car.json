@@ -1,0 +1,25 @@
+{
+  "formatVersion": 1,
+  "id": "opel-cascada-2016",
+  "brand": "Opel",
+  "model": "Cascada",
+  "year": 2016,
+  "variant": "MY16 · 1.6 Turbo 170 KM · automat · Navi 950 Europe",
+  "profile": "opel-cascada-my16",
+  "builtIn": true,
+  "createdAt": "2026-10-08T00:00:00.000Z",
+  "books": [
+    {
+      "id": "manual",
+      "route": "instrukcja",
+      "title": "Instrukcja obsługi",
+      "short": "Instrukcja obsługi"
+    },
+    {
+      "id": "infotainment",
+      "route": "navi-950",
+      "title": "System multimedialny Navi 950",
+      "short": "Navi 950"
+    }
+  ]
+}

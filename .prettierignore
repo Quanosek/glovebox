@@ -1,0 +1,7 @@
+.next
+out
+node_modules
+public
+database
+pnpm-lock.yaml
+manuals
