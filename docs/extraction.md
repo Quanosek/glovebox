@@ -6,7 +6,7 @@ served as `/media/<car>/<book>/...`), which are committed.
 
 Two entry points use the same `scripts/extract.py`:
 
-- `npm run extract` regenerates the built-in Opel Cascada books listed in
+- `pnpm extract` regenerates the built-in Opel Cascada books listed in
   `scripts/manuals.config.json` (this document);
 - the "Dodaj auto" wizard runs it for uploaded PDFs (see `docs/import.md`).
 
@@ -16,9 +16,9 @@ Two entry points use the same `scripts/extract.py`:
 
 ```bash
 python3 -m pip install -r scripts/requirements.txt   # PyMuPDF >= 1.26, Pillow >= 12.3
-npm run fetch-manuals                                 # -> manuals/*.pdf (validated %PDF-)
-npm run extract                                       # both books
-npm run extract -- --book infotainment --max-pages 20 # one book, debug options passed through
+pnpm fetch-manuals                                 # -> manuals/*.pdf (validated %PDF-)
+pnpm extract                                       # both books
+pnpm extract --book infotainment --max-pages 20 # one book, debug options passed through
 ```
 
 `scripts/extract.mjs` looks for a Python with PyMuPDF (`.venv`, `python3`, `python`) and runs
@@ -52,7 +52,7 @@ The extractor wipes the book's `*.json` and asset directory before writing.
 
 ## Testing
 
-`npm run test:extract` builds a synthetic Opel-like PDF (`scripts/tests/make_sample_pdf.py`:
+`pnpm test:extract` builds a synthetic Opel-like PDF (`scripts/tests/make_sample_pdf.py`:
 two columns, running headers, warnings, lists, a table, an image, page references) and checks
 the output. The heuristics were developed against this sample because the real PDFs could
 not be downloaded in the development sandbox — after the first real extraction review the

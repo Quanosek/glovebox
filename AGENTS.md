@@ -20,6 +20,12 @@ car) and lets the user add more cars from PDF files with a step-by-step wizard.
 - **Manual content is a file database in the repo** (`database/`), served by the local
   Next.js server (`next dev` / `next start`). Committing `database/<car>/` makes a car
   available on every device that runs the repo.
+- **Offline after a car is chosen.** Opening a car saves all its pages, images and scripts
+  to the Cache API in the background; from then on it works with no connection. A
+  connection is only needed to add cars and to refresh the car list (`docs/offline.md`).
+- **Non-technical users.** UI text is plain Polish without jargon (no paths, commands, file
+  formats, "serwer", "JSON", "localStorage" …); technical details belong in `README.md` /
+  `docs/` (`docs/ui.md`).
 - No external API calls and no analytics — keep it that way. PDFs never stay on disk.
 
 ## Language rules (strict)
@@ -31,17 +37,22 @@ car) and lets the user add more cars from PDF files with a step-by-step wizard.
 
 ## Commands
 
+pnpm is the only package manager (`pnpm-lock.yaml`; `pnpm-workspace.yaml` allow-lists
+dependency build scripts). Do not add `package-lock.json` / `yarn.lock`.
+
 ```bash
-npm run dev            # dev server (service worker disabled)
-npm run build          # next build (server output in .next/)
-npm start              # next start on :3000 (needed for database/ and the import wizard)
-npm run lint           # ESLint
-npm run typecheck      # next typegen && tsc --noEmit
-npm test               # Vitest (src/**/*.test.ts)
-npm run test:extract   # Python unittest for scripts/extract.py (needs PyMuPDF)
-npm run fetch-manuals  # download the Cascada PDFs into manuals/ (git-ignored)
-npm run extract        # Cascada PDFs -> database/opel-cascada-2016/**
-npm run icons          # src/app/icon.svg -> apple-icon.png + favicon.ico
+pnpm install           # install from pnpm-lock.yaml (CI: --frozen-lockfile)
+pnpm dev               # dev server (service worker + automatic offline copies disabled)
+pnpm build             # next build (server output in .next/)
+pnpm start             # next start on :3000 (needed for database/ and the import wizard)
+pnpm lint              # ESLint (flat config: next core-web-vitals + typescript)
+pnpm typecheck         # next typegen && tsc --noEmit
+pnpm test              # Vitest (src/**/*.test.ts)
+pnpm format            # Prettier (+ Tailwind class sorting); `pnpm format:check` only checks
+pnpm test:extract      # Python unittest for scripts/extract.py (needs PyMuPDF)
+pnpm fetch-manuals     # download the Cascada PDFs into manuals/ (git-ignored)
+pnpm extract           # Cascada PDFs -> database/opel-cascada-2016/** (extra args pass through)
+pnpm icons             # src/app/icon.svg -> apple-icon.png + favicon.ico
 ```
 
 The importer finds Python via `PYTHON`, then `.venv/bin/python` / `.venv\Scripts\python.exe`,
@@ -58,23 +69,25 @@ database/                       manual content (committed; JSON + WebP, never PD
 scripts/                        extraction pipeline (Python + Node wrappers), icon generator
   extract.py                    PDF -> JSON blocks + WebP images (PyMuPDF, Pillow)
   extract.mjs / manuals.config.json   regenerates the built-in Cascada books
-public/sw.js                    service worker (runtime caching, see docs/offline.md)
+public/sw.js                    service worker (shell precache + runtime caching, docs/offline.md)
 src/
   app/
     page.tsx                    profile (ProfileView): car choice / notebook / continue reading
     auta/                       car list (CarPicker)
-    auto/[car]/                 car overview (books, offline save, delete)
+    auto/[car]/                 car overview (books, offline status, delete); layout runs
+                                ActiveCarTracker (active car + automatic offline copy)
     auto/[car]/[book]/          book index + sidebar layout; [...slug]/ section pages
-    dodaj-auto/                 import wizard (AddCarWizard: 4 steps)
+    dodaj-auto/                 import wizard (AddCarWizard: 3 steps, plain-language status)
     api/system                  GET environment check (Python, PyMuPDF, Pillow, writable db)
     api/cars                    GET list · POST multipart import (202 {job})
     api/cars/[car]              GET · DELETE (not built-in, not while importing)
-    api/cars/[car]/offline      GET all page + image URLs of a car
+    api/cars/[car]/offline      GET { version, urls } for the offline copy of a car
     api/jobs/[id]               GET import progress
     api/search-index?car=       GET search corpus of one car
     media/[...path]             GET images from database/<car>/assets (webp/png/jpg only)
     szukaj, ostrzezenia, komentarze, zakladki, notatnik, ustawienia, twoje-auto
   components/                   UI (server: BlockRenderer; the rest are client components)
+  components/Dialog.tsx         confirmDialog()/alertDialog() + DialogHost (root layout)
   config/vehicle.ts             Cascada feature definitions + defaults
   config/featureRules.ts        title-based rules tagging Cascada sections with features
   config/carCatalog.ts          brand -> model suggestions for the wizard
@@ -86,6 +99,7 @@ src/
   lib/anchoring/                text-quote/position anchoring + DOM helpers
   lib/markdown.ts               safe Markdown subset parser (notebook)
   lib/pdfPreview.ts             first-page preview with pdfjs-dist (wizard only)
+  lib/offline.ts                offline car copies (Cache API), status store, useOnline()
 ```
 
 - The app runs as a **local Node server**; pages are `force-dynamic` (root layout) so newly
@@ -94,7 +108,7 @@ src/
 - Content API (`src/lib/content.ts`) works on a `BookCtx { car, book }`: `getBookCtx(car,
 route)`, `getBook`, `getSection`, `sectionHref`, `getTocTree`, `getPrevNext`,
   `resolvePageRef`, … plus `listCars`, `listCarSummaries`, `getAllWarnings`,
-  `getSearchDocs(car)`, `getCarUrls(car)`. Override the folder with `MANUALS_DATABASE_DIR`.
+  `getSearchDocs(car)`, `getCarUrls(car)`, `getCarVersion(car)`. Override the folder with `MANUALS_DATABASE_DIR`.
 - Ids: car and book ids match `ID_PATTERN` (`/^[a-z0-9][a-z0-9-]{0,79}$/`, `src/lib/slug.ts`);
   this is also what keeps `/media` and imports path-safe. Cascada keeps book ids `manual` /
   `infotainment` (routes `instrukcja` / `navi-950`); imported books use id = route = slug of
@@ -129,7 +143,13 @@ One import at a time; job state lives in memory (`globalThis`) and is polled by 
 - Highlight palette (`src/lib/highlightColors.ts`): `light`, `silver`, `graphite`, `red`.
 - System sans-serif font stack; responsive for phone, tablet and desktop.
 - Favicon: black Opel blitz in a ring on white (`src/app/icon.svg`, original simplified
-  drawing). After editing it run `npm run icons`.
+  drawing). After editing it run `pnpm icons`.
+- **Never use native `window.confirm` / `alert` / `prompt`.** Use `confirmDialog()` /
+  `alertDialog()` from `src/components/Dialog.tsx` (centred `<dialog>` over a blurred
+  backdrop, Esc / backdrop click = cancel, `danger` focuses "Anuluj").
+- Interaction: `.btn` fades on hover and "presses in" on `:active` (1px down + inset shadow);
+  `.field` has exactly one focus cue (graphite border, no ring/underline); `.hover-tile` for
+  clickable cards; everything respects `prefers-reduced-motion`. Details in `docs/ui.md`.
 
 ## Vehicle profile & feature tagging
 
@@ -150,7 +170,7 @@ show all content without availability labels (`CarSummary.hasProfile === false`)
   lists and search, filtered from the warnings index unless "Pokaż wszystko" is on);
   else `verify` / `probable` badges; else "Twoje auto". Collapsed content stays in the DOM
   (`hidden`) so anchoring and in-page links keep working.
-- To add a feature: add it to `FEATURES`, add a rule in `FEATURE_RULES`, run `npm test`.
+- To add a feature: add it to `FEATURES`, add a rule in `FEATURE_RULES`, run `pnpm test`.
 
 ## Content
 
@@ -158,7 +178,7 @@ show all content without availability labels (`CarSummary.hasProfile === false`)
   per top-level chapter). Section ids are slug paths (`chapter/sub`); block ids `b1..bN`
   per section are deep-link targets (`/auto/<car>/<book>/<slug>#b12`). Page references are
   `{ page: n }` runs resolved to links by `resolvePageRef`.
-- Generated content must not be edited by hand (it is overwritten by `npm run extract` or a
+- Generated content must not be edited by hand (it is overwritten by `pnpm extract` or a
   re-import). Fix the extractor or its CLI options in `scripts/manuals.config.json` instead
   (see `docs/extraction.md`).
 - The Cascada placeholder content (`"placeholder": true`, chapter "Zanim zaczniesz") is
@@ -193,9 +213,9 @@ AppData {
   data) in `merge` (newest `updatedAt` wins per id) or `replace` mode.
 - Unreadable stored data is copied to `opel-cascada-manual:backup-<timestamp>` before reset.
 
-More detail: `docs/import.md`, `docs/highlighting.md`, `docs/comments.md`,
-`docs/notebook.md`, `docs/storage.md`, `docs/offline.md`, `docs/extraction.md`,
-`docs/vehicle-profile.md`.
+More detail: `docs/ui.md`, `docs/import.md`, `docs/offline.md`, `docs/storage.md`,
+`docs/highlighting.md`, `docs/comments.md`, `docs/notebook.md`, `docs/extraction.md`,
+`docs/vehicle-profile.md`. Keep these files in sync with the code in the same change.
 
 ## Conventions
 
@@ -203,4 +223,5 @@ More detail: `docs/import.md`, `docs/highlighting.md`, `docs/comments.md`,
 - Never import `src/lib/content.ts` or `src/lib/server/*` (Node `fs`, `child_process`) from
   client components; pass data as props or fetch the JSON API routes.
 - Every UI string is Polish; every identifier/comment English.
-- Before finishing a change run: `npm run lint && npm run typecheck && npm test && npm run build`.
+- Before finishing a change run:
+  `pnpm lint && pnpm typecheck && pnpm test && pnpm format:check && pnpm build`.

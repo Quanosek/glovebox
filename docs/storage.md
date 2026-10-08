@@ -57,4 +57,13 @@ Migrations run in memory on load; the upgraded shape is written on the next chan
 - Import: export file or bare `AppData`; `merge` mode keeps current data and takes the newer
   entry per id (`updatedAt`/`createdAt`), notebook pages and bookmarks are merged by id;
   `replace` mode overwrites everything.
-- "Usuń wszystkie dane" removes the key; "Wyczyść pamięć offline" deletes the Cache API caches.
+- UI labels: "Pobierz kopię zapasową" (export), "Wczytaj kopię z pliku…" (import).
+- "Usuń wszystkie dane" removes the key; "Usuń instrukcje zapisane offline" deletes the Cache
+  API caches (see `docs/offline.md`). Destructive actions are confirmed with `confirmDialog`
+  (`docs/ui.md`).
+
+## Other keys
+
+- `opel-cascada-manual:offline` — status of offline car copies (`src/lib/offline.ts`). It is
+  derived state (rebuilt on the next car visit), deliberately not part of `AppData`, the
+  export file or the schema version.

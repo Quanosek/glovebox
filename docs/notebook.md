@@ -7,7 +7,7 @@ profile page). The profile (`/`) also shows the three most recently edited pages
 - Data: `AppData.notebook.pages: NotePage[]` — `{ id, title, body, createdAt, updatedAt }`.
   Array order is the user-defined order. `body` is Markdown source.
 - Operations: create ("+ Nowa kartka", default title `Kartka N`), rename (title input),
-  reorder (▲/▼ swaps neighbours), delete (with confirmation).
+  reorder (▲/▼ swaps neighbours), delete (confirmed in an in-app dialog, `confirmDialog`).
 - Editor: `<textarea>` with ruled-paper background. `NoteEditor` is keyed by page id and
   keeps a local draft; changes are saved after 400 ms of inactivity, and flushed immediately
   when switching pages, unmounting or on `pagehide`. Status shows "Zapisywanie…" / "Zapisano".

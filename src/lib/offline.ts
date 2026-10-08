@@ -74,7 +74,8 @@ export function offlineSupported(): boolean {
   return typeof window !== "undefined" && "caches" in window;
 }
 
-const STATIC_ASSET = /(?:src|href)="(\/_next\/static\/[^"?#]+)"/g;
+/** Scripts and styles referenced by a page (HTML and RSC payload). */
+const STATIC_ASSET = /\/_next\/static\/[\w\-./~]+/g;
 
 /**
  * Saves every URL of a car into OFFLINE_CACHE. Skips the download when the
@@ -132,6 +133,8 @@ async function run(carId: string, force: boolean) {
 
   const queue = [...manifest.urls];
   const seen = new Set(queue);
+  // Discovered scripts/styles are best effort: a miss must not block saving.
+  const optional = new Set<string>();
   const progress: OfflineProgress = { done: 0, total: queue.length, failed: 0 };
   const report = () =>
     set({ running: { ...state.running, [carId]: { ...progress } } });
@@ -148,16 +151,17 @@ async function run(carId: string, force: boolean) {
         if ((res.headers.get("Content-Type") ?? "").includes("text/html")) {
           // Pages need their scripts and styles to work offline too.
           const html = await res.clone().text();
-          for (const m of html.matchAll(STATIC_ASSET)) {
-            if (seen.has(m[1])) continue;
-            seen.add(m[1]);
-            queue.push(m[1]);
+          for (const [asset] of html.matchAll(STATIC_ASSET)) {
+            if (seen.has(asset) || asset.endsWith("/")) continue;
+            seen.add(asset);
+            optional.add(asset);
+            queue.push(asset);
             progress.total++;
           }
         }
         await cache.put(url, res);
       } catch {
-        progress.failed++;
+        if (!optional.has(url)) progress.failed++;
       }
       progress.done++;
       report();

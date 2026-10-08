@@ -41,8 +41,11 @@ którym uruchomisz projekt.
 - **Dodaj auto** — kreator krok po kroku (opis niżej).
 - **Wyposażenie Cascady** — profil wyposażenia (edytowalny w Ustawieniach), funkcje do
   weryfikacji, opis nieaktywnych przycisków OnStar.
-- **Offline** — odwiedzone strony są zapamiętywane, a przycisk „Zapisz do użytku offline” na
-  stronie auta zapisuje wszystkie jego strony i ilustracje.
+- **Offline** — po otwarciu auta wszystkie jego strony i ilustracje zapisują się same w tle;
+  potem całe auto działa bez internetu (znaczek „Offline” w nagłówku). Połączenie jest
+  potrzebne tylko do dodawania aut i odświeżenia listy aut.
+- **Proste w obsłudze** — okna potwierdzeń na środku ekranu, czytelne komunikaty po polsku
+  bez technicznego żargonu, wygląd w stylu ekranów radia Opel Navi 950 (jasny motyw).
 - **Prywatność** — brak bazy danych, kont, analityki i zewnętrznych zapytań. Pliki PDF są
   przetwarzane tylko na Twoim komputerze.
 
@@ -55,51 +58,65 @@ repozytorium (są w `.gitignore` i są usuwane po imporcie).
 
 ## Wymagania
 
-- **Node.js 20.9+** (zalecany 22 LTS) i npm
+- **Node.js 20.9+** (zalecany 22 LTS) i **pnpm 10+** (`npm install -g pnpm` albo
+  `corepack enable`) — projekt używa wyłącznie pnpm (`pnpm-lock.yaml`)
 - Do dodawania aut z PDF i (ponownego) generowania treści: **Python 3.10+** oraz pakiety z
-  `scripts/requirements.txt` (PyMuPDF, Pillow) — najprościej w środowisku `.venv` w katalogu
-  projektu, które aplikacja wykrywa sama
+  `scripts/requirements.txt` (PyMuPDF, Pillow) — patrz „Przygotowanie komputera” niżej
 
 ## Instalacja i uruchomienie
 
 ```bash
 git clone <adres-repozytorium> opel-cascada-manual
 cd opel-cascada-manual
-npm install
+pnpm install
 
 # tryb deweloperski: http://localhost:3000
-npm run dev
+pnpm dev
 
 # wersja produkcyjna (szybsza, z obsługą offline)
-npm run build
-npm start          # http://localhost:3000
+pnpm build
+pnpm start         # http://localhost:3000
 ```
 
 Aplikacja działa jako lokalny serwer Next.js (potrzebny do czytania folderu `database/` i do
-kreatora „Dodaj auto”). Tryb offline (service worker) działa tylko w wersji produkcyjnej.
-Inny interpreter Pythona można wskazać zmienną `PYTHON`, np. `PYTHON=/usr/bin/python3 npm start`.
+kreatora „Dodaj auto”). Tryb offline (service worker i automatyczne zapisywanie aut) działa
+tylko w wersji produkcyjnej otwartej pod `http://localhost` (albo przez HTTPS).
 
-## Dodawanie własnego auta (kreator)
+## Dodawanie aut
 
-Menu „Dodaj auto” (lub kafelek „Dodaj własne auto” na profilu) otwiera kreator:
+### Dla użytkownika — kreator „Dodaj auto”
 
-1. **Wymagania** — aplikacja sprawdza Pythona, PyMuPDF, Pillow, skrypt ekstrakcji i prawo
-   zapisu do `database/`. Jeśli czegoś brakuje, pokazuje polecenia instalacji:
-   ```bash
-   python3 -m venv .venv
-   .venv/bin/python -m pip install -r scripts/requirements.txt
-   # Windows: py -3 -m venv .venv && .venv\Scripts\python -m pip install -r scripts\requirements.txt
-   ```
-2. **Auto i dokumenty** — u góry obok siebie: marka → model → rocznik (lista podpowiedzi albo
-   „Inna marka…/Inny model…”), opcjonalnie wersja silnika. Niżej pole do przeciągania plików
-   z siatką dokumentów: podgląd pierwszej strony, liczba stron, edytowalny tytuł, kolejność.
+Menu „Dodaj auto” (lub kafelek „Dodaj własne auto” na profilu) otwiera kreator w trzech
+krokach, bez żadnych technicznych pytań:
+
+1. **Auto i instrukcje** — u góry obok siebie: marka → model → rocznik (lista podpowiedzi
+   albo „Inna marka…/Inny model…”), opcjonalnie wersja silnika. Niżej pole do przeciągania
+   plików z siatką instrukcji: podgląd pierwszej strony, liczba stron, nazwa, kolejność.
    Limit: **10 plików PDF** na auto (do 250 MB każdy).
-3. **Przetwarzanie** — pliki trafiają do lokalnego serwera (do katalogu tymczasowego), a skrypt
-   `scripts/extract.py` wyodrębnia tekst, rozdziały, ostrzeżenia, tabele i ilustracje.
-4. **Gotowe** — powstaje folder `database/<marka-model-rocznik>/` z plikami JSON i obrazami
-   WebP. **Pliki PDF są zawsze usuwane** (także po błędzie).
+2. **Odczytywanie** — aplikacja odczytuje tekst, rozdziały, ostrzeżenia, tabele i ilustracje.
+3. **Gotowe** — auto pojawia się na liście. **Pliki PDF są zawsze usuwane** (także po błędzie).
 
-Aby auto było dostępne na innych urządzeniach, zatwierdź folder w repozytorium:
+Jeśli dodawanie nie jest możliwe (brak połączenia, trwa dodawanie innego auta, komputer nie
+jest przygotowany), kreator pokazuje jeden prosty komunikat zamiast formularza wymagań.
+
+### Przygotowanie komputera (jednorazowo, dla osoby uruchamiającej aplikację)
+
+Odczyt PDF wymaga Pythona z bibliotekami PyMuPDF i Pillow. Najprościej utworzyć środowisko
+`.venv` w katalogu projektu — aplikacja wykryje je sama (bez restartu):
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r scripts/requirements.txt
+# Windows: py -3 -m venv .venv && .venv\Scripts\python -m pip install -r scripts\requirements.txt
+```
+
+Inny interpreter wskażesz zmienną `PYTHON`, np. `PYTHON=/usr/bin/python3 pnpm start`.
+
+### Gdzie trafiają auta i jak je udostępnić
+
+Kreator zapisuje auto w folderze `database/<marka-model-rocznik>/` obok kodu aplikacji
+(pliki JSON i obrazy WebP). Aby auto było dostępne na innych komputerach, zatwierdź folder w
+repozytorium:
 
 ```bash
 git add database/<marka-model-rocznik>
@@ -107,11 +124,11 @@ git commit -m "Add <auto>"
 git push
 ```
 
-Dodawanie i usuwanie aut działa tylko pod adresem `http://localhost` na komputerze, na którym
-działa serwer (czytanie instrukcji jest możliwe także z innych urządzeń w sieci). Na innym
-komputerze wystarczy `git pull` i uruchomienie aplikacji — bez ponownego wgrywania
-PDF. Auto dodane w kreatorze można usunąć na jego stronie („Usuń auto z bazy”); wbudowanej
-Cascady nie można usunąć.
+Na innym komputerze wystarczy `git pull` i uruchomienie aplikacji — bez ponownego wgrywania
+PDF. Dodawanie i usuwanie aut działa tylko pod adresem `http://localhost` na komputerze, na
+którym działa aplikacja (czytanie instrukcji jest możliwe także z innych urządzeń w sieci;
+`MANUALS_ALLOW_REMOTE_IMPORT=1` zdejmuje to ograniczenie w zaufanej sieci). Auto dodane w
+kreatorze można usunąć na jego stronie („Usuń to auto”); wbudowanej Cascady nie można usunąć.
 
 ## Generowanie treści wbudowanej Cascady
 
@@ -126,14 +143,14 @@ source .venv/bin/activate          # Windows: .venv\Scripts\activate
 python3 -m pip install -r scripts/requirements.txt
 
 # 2. pobranie obu plików PDF do katalogu manuals/
-npm run fetch-manuals
+pnpm fetch-manuals
 
 # 3. ekstrakcja tekstu, tabel, ostrzeżeń i obrazów
-npm run extract                    # obie księgi
-npm run extract -- --book manual   # tylko jedna księga (manual | infotainment)
+pnpm extract                 # obie księgi
+pnpm extract --book manual   # tylko jedna księga (manual | infotainment)
 
 # 4. podgląd
-npm run dev
+pnpm dev
 ```
 
 Jeśli pobieranie się nie uda, pobierz pliki ręcznie ze stron:
@@ -157,27 +174,29 @@ przeglądarce (dla wszystkich aut). Wyczyszczenie danych przeglądarki usunie je
 Dane ze starszej wersji aplikacji (tylko Cascada) są automatycznie przenoszone do nowego
 formatu.
 
-- **Eksport:** Ustawienia → „Eksportuj kopię (JSON)” — pobiera plik
+- **Kopia:** Ustawienia → „Pobierz kopię zapasową” — pobiera plik
   `opel-cascada-notatki-RRRR-MM-DD.json`.
-- **Import:** Ustawienia → wybierz tryb („Scal z obecnymi danymi” lub „Zastąp obecne dane”)
-  → „Importuj z pliku…”.
+- **Wczytanie:** Ustawienia → wybierz sposób („Scal z obecnymi danymi” lub „Zastąp obecne
+  dane”) → „Wczytaj kopię z pliku…”.
 - **Przeniesienie na inny komputer / przeglądarkę:** eksport na starym, import na nowym.
 - **Usunięcie wszystkiego:** Ustawienia → „Usuń wszystkie dane”.
+- **Instrukcje offline:** Ustawienia → „Usuń instrukcje zapisane offline” (zapiszą się
+  ponownie przy następnym otwarciu auta).
 
 ## Polecenia
 
-| Polecenie               | Opis                                                 |
-| ----------------------- | ---------------------------------------------------- |
-| `npm run dev`           | serwer deweloperski                                  |
-| `npm run build`         | wersja produkcyjna (`.next/`)                        |
-| `npm start`             | uruchomienie wersji produkcyjnej na :3000            |
-| `npm run fetch-manuals` | pobranie plików PDF do `manuals/`                    |
-| `npm run extract`       | wygenerowanie treści z plików PDF                    |
-| `npm run icons`         | wygenerowanie `apple-icon.png` i `favicon.ico` z SVG |
-| `npm test`              | testy jednostkowe (Vitest)                           |
-| `npm run test:extract`  | testy skryptu ekstrakcji (Python)                    |
-| `npm run lint`          | ESLint                                               |
-| `npm run typecheck`     | sprawdzenie typów TypeScript                         |
-| `npm run format`        | formatowanie (Prettier)                              |
+| Polecenie            | Opis                                                 |
+| -------------------- | ---------------------------------------------------- |
+| `pnpm dev`           | serwer deweloperski                                  |
+| `pnpm build`         | wersja produkcyjna (`.next/`)                        |
+| `pnpm start`         | uruchomienie wersji produkcyjnej na :3000            |
+| `pnpm fetch-manuals` | pobranie plików PDF do `manuals/`                    |
+| `pnpm extract`       | wygenerowanie treści z plików PDF                    |
+| `pnpm icons`         | wygenerowanie `apple-icon.png` i `favicon.ico` z SVG |
+| `pnpm test`          | testy jednostkowe (Vitest)                           |
+| `pnpm test:extract`  | testy skryptu ekstrakcji (Python)                    |
+| `pnpm lint`          | ESLint                                               |
+| `pnpm typecheck`     | sprawdzenie typów TypeScript                         |
+| `pnpm format`        | formatowanie (Prettier)                              |
 
 Dokumentacja techniczna (po angielsku): [`AGENTS.md`](AGENTS.md) i katalog [`docs/`](docs/).

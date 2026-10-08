@@ -7,26 +7,34 @@ shares the car with every other checkout of the repository.
 
 ## Wizard (`src/app/dodaj-auto/AddCarWizard.tsx`)
 
-1. **Wymagania** — `GET /api/system` returns Node version, platform, the detected Python
-   (`command`, `version`, `pymupdf`, `pillow`), whether `scripts/extract.py` exists, whether
-   `database/` is writable, the limits and a running job. Missing requirements show install
-   commands for the detected platform; a running job can be resumed ("Pokaż postęp").
-2. **Auto i dokumenty** — three fields side by side (`sm:grid-cols-3`): brand → model → year.
-   Brand/model come from `src/config/carCatalog.ts` with "Inna marka…" / "Inny model…" free
-   text; each field is disabled until the previous one is set; years run from
+Written for non-technical users: plain Polish, no paths, commands, file formats or install
+instructions in the UI (those live in `README.md`, section "Dodawanie aut"). Three steps:
+
+1. **Auto i instrukcje** — three fields side by side (`sm:grid-cols-3`): brand → model →
+   year. Brand/model come from `src/config/carCatalog.ts` with "Inna marka…" / "Inny model…"
+   free text; each field is disabled until the previous one is set; years run from
    `maxYear()` (current + 1) down to `MIN_YEAR` (1950). Optional variant text.
    Below, a dashed dropzone (drag & drop or file picker) with a card grid: first-page preview
    (`src/lib/pdfPreview.ts`, pdfjs-dist with its worker, rendered sequentially to limit
-   memory), editable title (becomes the book title), page count, size, reorder and remove.
+   memory), editable name (becomes the book title), page count, size, reorder and remove.
    Non-PDFs, duplicates (name + size + mtime), files over the size limit and files beyond the
-   10-document limit are skipped with a message. The target folder
-   (`database/<slug of brand model year>/`) is previewed.
-3. **Przetwarzanie** — `XMLHttpRequest` multipart POST to `/api/cars` (for upload progress),
-   then `GET /api/jobs/<id>` is polled every second; per-document state, counts and the last
-   extractor log lines are shown.
-4. **Gotowe** — summary, "Otwórz instrukcje auta" (sets `settings.activeCar`), "Dodaj kolejne
-   auto", and git commands to share the folder. `router.refresh()` reloads server components so
-   the header and lists include the new car.
+   10-document limit are skipped with a message.
+   `GET /api/system` runs in the background. When adding is impossible, `Availability` shows
+   one plain message above the form and the submit button stays disabled:
+   offline / server unreachable → "Brak połączenia"; running job → "Trwa dodawanie innego
+   auta" + "Pokaż postęp" (resumes polling); `localAccess === false` → "Dodawanie tylko na
+   komputerze z aplikacją"; missing Python/PyMuPDF/Pillow, extractor or writable `database/`
+   → "Ten komputer nie jest jeszcze gotowy" (points to the README). Technical details from
+   `/api/system` are never rendered.
+2. **Odczytywanie** — `XMLHttpRequest` multipart POST to `/api/cars` (for upload progress),
+   then `GET /api/jobs/<id>` is polled every second; per-document state and counts are shown.
+   Extractor errors and log lines are hidden behind "Szczegóły (dla osoby technicznej)".
+3. **Gotowe** — summary, "Otwórz instrukcje auta" (sets `settings.activeCar`, which also
+   starts the automatic offline copy), "Dodaj kolejne auto". `router.refresh()` reloads
+   server components so the header and lists include the new car.
+
+Sharing with other checkouts is a developer task (commit `database/<car>/`), documented in
+`README.md`, not in the UI.
 
 ## API
 
@@ -44,7 +52,7 @@ server has no authentication. A request gets 403 unless:
 
 - `Host` is a loopback name (`localhost`, `127.x.x.x`, `[::1]`) — blocks other devices on
   the network and DNS rebinding; `MANUALS_ALLOW_REMOTE_IMPORT=1` lifts this on trusted
-  networks (`/api/system` reports it as `localAccess`, shown in wizard step 1);
+  networks (`/api/system` reports it as `localAccess`, see the wizard's `Availability`);
 - and it comes from an app page: `Origin` equal to `Host`, or `Sec-Fetch-Site: same-origin`
   when `Origin` is absent. Requests with neither header (curl, scripts) are rejected.
 
@@ -57,7 +65,8 @@ are Polish.
    documents (`MAX_DOCUMENTS`), each non-empty, `.pdf`/`application/pdf`, ≤ 250 MB
    (`MAX_FILE_BYTES`). Titles default to the file name.
 2. Only one job at a time (`runningJob()`; a reservation flag covers the async setup) → 409.
-3. A Python with PyMuPDF and Pillow is required (`findPython`) → 503 otherwise.
+3. A Python with PyMuPDF and Pillow is required (`findPython`) → 503 otherwise (plain
+   Polish message pointing to the README).
 4. Car id = `uniqueSlug(slugify("<brand> <model> <year>"))` against existing folders
    (`-2`, `-3`, … on collision). Book ids = unique slugs of the titles (`assets` reserved).
 5. Each upload must start with `%PDF-` (within the first KB); it is written to
@@ -87,4 +96,5 @@ assets folder. Responses are cacheable (`max-age=3600, stale-while-revalidate=86
   headings by font size, warning boxes, page footers). Scanned PDFs without a text layer
   produce only images.
 - Imported cars have no feature profile; all sections are shown.
-- Re-importing the same car creates a new folder; delete the old one on its car page.
+- Re-importing the same car creates a new folder; delete the old one on its car page
+  ("Usuń to auto", confirmed in an in-app dialog).

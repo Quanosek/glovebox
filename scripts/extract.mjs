@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Runs scripts/extract.py for every book in scripts/manuals.config.json.
-// Usage: pnpm extract [--book manual] [-- <extra extract.py args>]
+// Usage: pnpm extract [--book manual] [<extra extract.py args>]
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
@@ -11,7 +11,8 @@ const config = JSON.parse(
   readFileSync(path.join(root, "scripts/manuals.config.json"), "utf8"),
 );
 
-const argv = process.argv.slice(2);
+// A literal "--" (npm-style separator) would end option parsing in argparse.
+const argv = process.argv.slice(2).filter((a) => a !== "--");
 let only = null;
 const bookFlag = argv.indexOf("--book");
 if (bookFlag !== -1) {

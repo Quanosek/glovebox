@@ -5,9 +5,10 @@
  * runtime:
  * - `/_next/static/*`: cache-first (file names are content hashed);
  * - `/media/*` (manual illustrations): stale-while-revalidate;
- * - pages and the search index: network-first with a cached fallback.
- * "Zapisz do użytku offline" on a car page fills OFFLINE_CACHE with every
- * page and image of that car (see src/components/CarActions.tsx).
+ * - pages and the search index: network-first with a cached fallback;
+ * - the app shell (SHELL) and its scripts/styles are pre-cached on install.
+ * Opening a car fills OFFLINE_CACHE with every page, image and script of
+ * that car in the background (see src/lib/offline.ts).
  * Mutating and status API routes are never cached.
  */
 /* global self, caches, fetch, URL, Response */
@@ -15,17 +16,45 @@
 const PREFIX = "opel-cascada-manual-";
 const CACHE = `${PREFIX}runtime-v2`;
 const OFFLINE_CACHE = `${PREFIX}offline-v1`;
-const SHELL = ["/", "/auta", "/notatnik", "/komentarze", "/zakladki", "/ustawienia"];
+const SHELL = [
+  "/",
+  "/auta",
+  "/notatnik",
+  "/komentarze",
+  "/zakladki",
+  "/ustawienia",
+  "/dodaj-auto",
+];
 
+// Scripts and styles referenced by a page (HTML and RSC payload).
+const STATIC_ASSET = /\/_next\/static\/[\w\-./~]+/g;
+
+// Pre-caches the app shell pages together with the scripts and styles they
+// reference, so every shell page also works offline before it was visited.
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(CACHE);
+      const assets = new Set();
       await Promise.all(
         SHELL.map(async (url) => {
           try {
             const res = await fetch(url, { cache: "no-cache" });
-            if (res.ok && !res.redirected) await cache.put(url, res);
+            if (!res.ok || res.redirected) return;
+            const html = await res.clone().text();
+            for (const [asset] of html.matchAll(STATIC_ASSET)) assets.add(asset);
+            await cache.put(url, res);
+          } catch {
+            // cached on first use instead
+          }
+        }),
+      );
+      await Promise.all(
+        [...assets].map(async (url) => {
+          try {
+            if (await caches.match(url)) return;
+            const res = await fetch(url);
+            if (res.ok) await cache.put(url, res);
           } catch {
             // cached on first use instead
           }
@@ -97,7 +126,7 @@ async function networkFirst(request) {
     }
     if (request.mode === "navigate") {
       return new Response(
-        "<!doctype html><meta charset=utf-8><title>Offline</title><body style=\"font-family:system-ui;padding:2rem\"><h1>Brak połączenia</h1><p>Ta strona nie jest zapisana offline. Otwórz ją raz z działającym serwerem albo użyj przycisku „Zapisz do użytku offline” na stronie auta.</p><p><a href=\"/\">Wróć do profilu</a></p>",
+        "<!doctype html><meta charset=utf-8><title>Offline</title><body style=\"font-family:system-ui;padding:2rem\"><h1>Brak połączenia</h1><p>Ta strona nie została jeszcze zapisana na tym urządzeniu. Otwórz ją ponownie, gdy połączenie wróci — instrukcje wybranego auta zapisują się same, aby działały bez internetu.</p><p><a href=\"/\">Wróć do profilu</a></p>",
         { status: 503, headers: { "Content-Type": "text/html; charset=utf-8" } },
       );
     }
