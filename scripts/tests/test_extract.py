@@ -11,6 +11,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
@@ -18,6 +19,36 @@ sys.path.insert(0, str(HERE))
 
 import extract  # noqa: E402
 import make_sample_pdf  # noqa: E402
+
+
+class SampleFontTests(unittest.TestCase):
+    def test_supported_font_pairs(self) -> None:
+        for regular, bold in make_sample_pdf.FONT_PAIRS:
+            with self.subTest(regular=regular), tempfile.TemporaryDirectory() as directory:
+                regular_path = Path(directory) / regular
+                bold_path = Path(directory) / bold
+                regular_path.touch()
+                bold_path.touch()
+                with patch.object(make_sample_pdf, "FONT_DIRS", [directory]):
+                    self.assertEqual(make_sample_pdf._fonts(), (str(regular_path), str(bold_path)))
+
+    def test_incomplete_pair_falls_back_to_complete_family(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            (Path(directory) / "DejaVuSans.ttf").touch()
+            regular = Path(directory) / "Georgia.ttf"
+            bold = Path(directory) / "Georgia Bold.ttf"
+            regular.touch()
+            bold.touch()
+            with patch.object(make_sample_pdf, "FONT_DIRS", [directory]):
+                self.assertEqual(make_sample_pdf._fonts(), (str(regular), str(bold)))
+
+    def test_missing_fonts_report_searched_directories(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.object(make_sample_pdf, "FONT_DIRS", [directory]):
+                with self.assertRaises(RuntimeError) as error:
+                    make_sample_pdf._fonts()
+            self.assertIn("DejaVu Sans", str(error.exception))
+            self.assertIn(directory, str(error.exception))
 
 
 class HelperTests(unittest.TestCase):

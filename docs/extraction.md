@@ -45,6 +45,15 @@ exercises its output using a synthetic PDF.
 two columns, running headers, warnings, lists, a table, an image, page references) and checks
 the output. Review results from user-provided manuals because PDF layouts and scan quality vary.
 
+The synthetic PDF needs a complete regular/bold font pair with Polish glyphs. The generator
+prefers DejaVu Sans, then uses system Georgia on macOS or Windows. Georgia preserves the
+fixture's ASCII hyphens when embedded; Arial may map them to soft hyphens during extraction.
+It checks the standard
+DejaVu directories on Linux, `/System/Library/Fonts/Supplemental`, `/Library/Fonts` and
+`~/Library/Fonts` on macOS, and `C:/Windows/Fonts` on Windows. If neither family is available,
+install DejaVu Sans in one of the searched directories; the error lists them. These fonts
+are only needed for the synthetic tests, not for importing user manuals.
+
 ## After extraction
 
 - Check `/ostrzezenia`, a few sections with tables and images, and the search.

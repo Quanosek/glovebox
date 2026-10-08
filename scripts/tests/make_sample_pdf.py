@@ -18,21 +18,31 @@ from PIL import Image, ImageDraw
 
 FONT_DIRS = [
     "/usr/share/fonts/truetype/dejavu",
+    "/usr/share/fonts/dejavu",
+    "/System/Library/Fonts/Supplemental",
     "/Library/Fonts",
+    str(Path.home() / "Library/Fonts"),
     "C:/Windows/Fonts",
+]
+FONT_PAIRS = [
+    ("DejaVuSans.ttf", "DejaVuSans-Bold.ttf"),
+    ("Georgia.ttf", "Georgia Bold.ttf"),
+    ("georgia.ttf", "georgiab.ttf"),
 ]
 
 
-def _font(name: str) -> str | None:
-    for d in FONT_DIRS:
-        p = Path(d) / name
-        if p.exists():
-            return str(p)
-    return None
-
-
-REGULAR = _font("DejaVuSans.ttf")
-BOLD = _font("DejaVuSans-Bold.ttf")
+def _fonts() -> tuple[str, str]:
+    for regular, bold in FONT_PAIRS:
+        for directory in FONT_DIRS:
+            regular_path = Path(directory) / regular
+            bold_path = Path(directory) / bold
+            if regular_path.is_file() and bold_path.is_file():
+                return str(regular_path), str(bold_path)
+    raise RuntimeError(
+        "Do utworzenia dokumentu testowego potrzebne są czcionki DejaVu Sans lub Georgia "
+        "w wersji zwykłej i pogrubionej. Zainstaluj DejaVu Sans "
+        "w jednym z folderów: " + ", ".join(FONT_DIRS)
+    )
 
 W, H = 420, 595
 MARGIN = 30
@@ -42,6 +52,7 @@ BODY = 8.0
 
 class Writer:
     def __init__(self, doc: pymupdf.Document) -> None:
+        regular, bold = _fonts()
         self.doc = doc
         self.page: pymupdf.Page | None = None
         self.col = 0
@@ -49,15 +60,15 @@ class Writer:
         self.page_no = 0
         self.header = ""
         self.fonts = {
-            "reg": pymupdf.Font(fontfile=REGULAR),
-            "bld": pymupdf.Font(fontfile=BOLD),
+            "reg": pymupdf.Font(fontfile=regular),
+            "bld": pymupdf.Font(fontfile=bold),
             "symb": pymupdf.Font("symb"),
         }
 
     def new_page(self, header: str) -> None:
         self.page = self.doc.new_page(width=W, height=H)
-        self.page.insert_font(fontname="reg", fontfile=REGULAR)
-        self.page.insert_font(fontname="bld", fontfile=BOLD)
+        self.page.insert_font(fontname="reg", fontbuffer=self.fonts["reg"].buffer)
+        self.page.insert_font(fontname="bld", fontbuffer=self.fonts["bld"].buffer)
         self.page_no += 1
         printed = self.page_no + 2  # printed numbers start at 3
         self.header = header
@@ -155,8 +166,6 @@ class Writer:
 
 
 def build(path: str) -> None:
-    if not REGULAR or not BOLD:
-        raise RuntimeError("DejaVuSans fonts are required to build the sample PDF")
     doc = pymupdf.open()
     w = Writer(doc)
     toc: list[list[object]] = []
@@ -177,8 +186,8 @@ def build(path: str) -> None:
     w.line([("System Start-", "reg")])
     w.line([("Stop nie jest dostępny ", "reg"), ("3", "symb"), (" 45.", "reg")])
     w.gap()
-    w.line([("■ Naciśnąć przycisk ", "reg"), ("c", "bld"), (".", "reg")])
-    w.line([("■ Kluczyk złożyć do wnętrza obu-", "reg")])
+    w.line([("• Naciśnąć przycisk ", "reg"), ("c", "bld"), (".", "reg")])
+    w.line([("• Kluczyk złożyć do wnętrza obu-", "reg")])
     w.line([("dowy.", "reg")], indent=8)
     w.gap()
     w.warning("Ostrzeżenie", ["Nie zostawiać dzieci w samo-", "chodzie bez opieki."], framed=True)
