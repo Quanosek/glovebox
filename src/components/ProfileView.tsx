@@ -8,6 +8,7 @@ import { CarPicker } from "./CarPicker";
 import { ContinueReading } from "./ContinueReading";
 import { Markdown } from "./Markdown";
 import { plural } from "@/lib/typography";
+import { hasReadableManual } from "@/lib/cars";
 
 /** Local, login-free profile: car selection and the personal notebook. */
 export function ProfileView({ cars }: { cars: CarSummary[] }) {
@@ -22,6 +23,7 @@ export function ProfileView({ cars }: { cars: CarSummary[] }) {
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     .slice(0, 3);
   const name = settings.profileName.trim();
+  const hasManuals = hasReadableManual(cars);
 
   const stats = [
     { label: "Zaznaczenia", value: highlights.length, href: "/komentarze" },
@@ -84,19 +86,21 @@ export function ProfileView({ cars }: { cars: CarSummary[] }) {
         aria-label="Co chcesz zrobić?"
         className="mt-6 grid gap-4 md:grid-cols-2"
       >
-        <a href="#auta" className="panel hover-tile group block">
-          <div className="panel-title">Wybór auta</div>
-          <div className="p-5">
-            <h2 className="text-xl font-semibold group-hover:text-red">
-              {active ? active.label : "Wybierz auto"}
-            </h2>
-            <p className="mt-1 text-sm text-graphite">
-              {active
-                ? `Wybrane auto · ${active.books.length} ${plural(active.books.length, "instrukcja", "instrukcje", "instrukcji")}. Zmień albo dodaj własne poniżej.`
-                : `Liczba aut: ${cars.length}. Możesz też dodać własne z plików PDF.`}
-            </p>
-          </div>
-        </a>
+        {hasManuals && (
+          <a href="#auta" className="panel hover-tile group block">
+            <div className="panel-title">Wybór auta</div>
+            <div className="p-5">
+              <h2 className="text-xl font-semibold group-hover:text-red">
+                {active ? active.label : "Wybierz auto"}
+              </h2>
+              <p className="mt-1 text-sm text-graphite">
+                {active
+                  ? `Wybrane auto · ${active.books.length} ${plural(active.books.length, "instrukcja", "instrukcje", "instrukcji")}. Zmień albo dodaj własne poniżej.`
+                  : `Liczba aut: ${cars.length}. Możesz też dodać własne z plików PDF.`}
+              </p>
+            </div>
+          </a>
+        )}
         <Link href="/notatnik" className="panel hover-tile group block">
           <div className="panel-title">Własny notatnik</div>
           <div className="p-5">
@@ -114,20 +118,24 @@ export function ProfileView({ cars }: { cars: CarSummary[] }) {
         </Link>
       </section>
 
-      <div className="mt-6">
-        <ContinueReading
-          carLabel={
-            hydrated && data.lastRead
-              ? carName(cars, data.lastRead.car)
-              : undefined
-          }
-        />
-      </div>
+      {hasManuals && (
+        <div className="mt-6">
+          <ContinueReading
+            carLabel={
+              hydrated && data.lastRead
+                ? carName(cars, data.lastRead.car)
+                : undefined
+            }
+          />
+        </div>
+      )}
 
       <section id="auta" className="mt-8 scroll-mt-28">
-        <h2 className="mb-3 text-xs font-semibold tracking-[0.08em] text-graphite uppercase">
-          Twoje auta
-        </h2>
+        {hasManuals && (
+          <h2 className="mb-3 text-xs font-semibold tracking-[0.08em] text-graphite uppercase">
+            Twoje auta
+          </h2>
+        )}
         <CarPicker cars={cars} />
       </section>
 

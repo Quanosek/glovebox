@@ -5,9 +5,6 @@ import type { CarSpec } from "@/lib/catalog";
  * components. Client-safe: no Node APIs.
  */
 
-/** Id of the Opel Cascada; data from app version 1 belongs to it. */
-export const CASCADA_CAR_ID = "opel-cascada-2016";
-
 export interface CarBook {
   /** Directory name inside the car folder; stored with highlights. */
   id: string;
@@ -51,6 +48,10 @@ export interface CarSummary {
       sections: number;
       pages: number | null;
       placeholder: boolean;
+    }
+
+    export function hasReadableManual(cars: CarSummary[]): boolean {
+      return cars.some((car) => car.books.some((book) => !book.placeholder));
     }
   >;
 }

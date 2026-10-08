@@ -15,6 +15,9 @@ export function CarPicker({ cars }: { cars: CarSummary[] }) {
   const active = hydrated ? settings.activeCar : null;
   const online = useOnline();
   const { saved } = useOfflineState();
+  const readableCars = cars.filter((car) =>
+    car.books.some((book) => !book.placeholder),
+  );
 
   return (
     <>
@@ -29,7 +32,7 @@ export function CarPicker({ cars }: { cars: CarSummary[] }) {
         </p>
       )}
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {cars.map((car) => {
+        {readableCars.map((car) => {
           const isActive = car.id === active;
           const placeholder = car.books.every((b) => b.placeholder);
           return (
@@ -109,7 +112,7 @@ export function CarPicker({ cars }: { cars: CarSummary[] }) {
               +
             </span>
             <span className="font-semibold group-hover:text-red">
-              Dodaj własne auto
+              {readableCars.length > 0 ? "Dodaj własne auto" : "Dodaj pierwsze auto"}
             </span>
             <span className="max-w-60 text-sm text-graphite">
               Wpisz markę, model i rocznik, a potem dołącz instrukcje w PDF.
