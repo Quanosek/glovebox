@@ -98,7 +98,7 @@ export const FEATURES = [
   {
     id: "drive.ecoDisplay",
     group: "drive",
-    label: "Wskaźnik / tryb Eco, wskazówki zmiany biegów",
+    label: "Wskaźnik i tryb Eco, wskazówki zmiany biegów",
     default: no(),
   },
   {
@@ -161,14 +161,14 @@ export const FEATURES = [
     id: "lights.afl",
     group: "lights",
     label: "Adaptacyjne reflektory AFL (biksenonowe, doświetlanie zakrętów)",
-    note: "Typ reflektorów nie jest znany (AFL czy halogenowe) — pokazujemy oba warianty.",
+    note: "Typ reflektorów nie jest znany (AFL czy halogenowe) – pokazujemy oba warianty.",
     default: has("verify"),
   },
   {
     id: "lights.halogen",
     group: "lights",
     label: "Reflektory halogenowe",
-    note: "Typ reflektorów nie jest znany (AFL czy halogenowe) — pokazujemy oba warianty.",
+    note: "Typ reflektorów nie jest znany (AFL czy halogenowe) – pokazujemy oba warianty.",
     default: has("verify"),
   },
   {
@@ -188,7 +188,7 @@ export const FEATURES = [
   {
     id: "climate.manual",
     group: "comfort",
-    label: "Klimatyzacja manualna / układ ogrzewania i wentylacji",
+    label: "Klimatyzacja manualna, ogrzewanie i wentylacja",
     default: no(),
   },
   {
@@ -250,8 +250,8 @@ export const FEATURES = [
   {
     id: "key.keyless",
     group: "access",
-    label: "System Keyless Open / przycisk Start/Stop",
-    note: "Zakładamy kluczyk w stacyjce — do weryfikacji.",
+    label: "System Keyless Open i przycisk Start/Stop",
+    note: "Zakładamy kluczyk w stacyjce – do weryfikacji.",
     default: no("verify"),
   },
   {
@@ -296,7 +296,7 @@ export const FEATURES = [
     id: "assist.advancedParkAssist",
     group: "assist",
     label: "Zaawansowany asystent parkowania (Advanced Park Assist)",
-    note: "Prawdopodobnie w wyposażeniu — do potwierdzenia.",
+    note: "Prawdopodobnie w wyposażeniu – do potwierdzenia.",
     default: has("probable"),
   },
   {
@@ -320,7 +320,7 @@ export const FEATURES = [
   {
     id: "assist.forwardCollision",
     group: "assist",
-    label: "Ostrzeganie przed kolizją / odległość od poprzedzającego pojazdu",
+    label: "Ostrzeganie przed kolizją i odległość od auta z przodu",
     default: no("verify"),
   },
 
@@ -347,7 +347,7 @@ export const FEATURES = [
     id: "infotainment.onstar",
     group: "infotainment",
     label: "OnStar (przyciski w lusterku wstecznym)",
-    note: "Usługa OnStar nie działa już w Europie (wyłączona) — przyciski pozostają nieaktywne.",
+    note: "Usługa OnStar nie działa już w Europie – przyciski pozostają nieaktywne.",
     default: has(),
   },
 
@@ -361,7 +361,7 @@ export const FEATURES = [
   {
     id: "wheels.spare",
     group: "wheels",
-    label: "Koło zapasowe / dojazdowe",
+    label: "Koło zapasowe lub dojazdowe",
     default: no(),
   },
   {

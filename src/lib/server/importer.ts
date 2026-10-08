@@ -117,7 +117,7 @@ export function validateImport(req: ImportRequest): ImportRequest {
   if (req.docs.length === 0)
     throw new ImportError("Dodaj co najmniej jeden plik PDF.");
   if (req.docs.length > MAX_DOCUMENTS)
-    throw new ImportError(`Można dodać najwyżej ${MAX_DOCUMENTS} dokumentów.`);
+    throw new ImportError(`Można dodać najwyżej ${MAX_DOCUMENTS} plików PDF.`);
   for (const d of req.docs) {
     if (!/\.pdf$/i.test(d.file.name) && d.file.type !== "application/pdf")
       throw new ImportError(`Plik „${d.file.name}” nie jest plikiem PDF.`);
@@ -154,7 +154,7 @@ export async function startImport(input: ImportRequest): Promise<ImportJob> {
   const req = validateImport(input);
   if (runningJob())
     throw new ImportError(
-      "Trwa już przetwarzanie innego auta. Poczekaj na jego zakończenie.",
+      "Trwa już dodawanie innego auta. Poczekaj, aż się zakończy.",
       409,
     );
   globalJobs.__manualImportStarting = true;
@@ -267,8 +267,7 @@ async function processJob(
       const pages = /: (\d+) pages/.exec(r.stdout);
       if (r.code !== 0 || !stats) {
         doc.state = "error";
-        doc.error =
-          lastLines(r.stderr) || "Nie udało się przetworzyć dokumentu.";
+        doc.error = lastLines(r.stderr) || "Nie udało się odczytać instrukcji.";
         throw new Error(`Nie udało się odczytać pliku „${doc.name}”.`);
       }
       doc.sections = Number(stats[1]);
@@ -300,7 +299,7 @@ async function processJob(
     );
     const target = path.join(db, job.carId);
     if (await exists(target))
-      throw new Error(`Folder database/${job.carId} już istnieje.`);
+      throw new Error(`Auto o tej nazwie już istnieje.`);
     await fs.rename(staging, target);
     job.state = "done";
   } catch (err) {
@@ -330,14 +329,13 @@ async function exists(p: string): Promise<boolean> {
 
 /** Removes a user-added car folder from `database/`. */
 export async function deleteCar(id: string): Promise<void> {
-  if (!isValidId(id))
-    throw new ImportError("Nieprawidłowy identyfikator.", 400);
+  if (!isValidId(id)) throw new ImportError("Nieprawidłowe auto.", 400);
   const car = getCar(id);
   if (!car) throw new ImportError("Nie znaleziono auta.", 404);
   if (car.builtIn)
     throw new ImportError("Wbudowanego auta nie można usunąć.", 403);
   if (runningJob()?.carId === id)
-    throw new ImportError("Auto jest właśnie przetwarzane.", 409);
+    throw new ImportError("Auto jest właśnie dodawane.", 409);
   await fs.rm(path.join(getDatabaseDir(), id), {
     recursive: true,
     force: true,

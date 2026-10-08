@@ -90,13 +90,13 @@ function migrateV1toV2(data: Record<string, unknown>) {
 
 export class UnsupportedVersionError extends Error {
   constructor(public readonly found: number) {
-    super(`Dane zapisane w nowszej wersji aplikacji (wersja ${found}).`);
+    super(`Kopia pochodzi z nowszej wersji aplikacji (wersja ${found}).`);
     this.name = "UnsupportedVersionError";
   }
 }
 
 export class InvalidDataError extends Error {
-  constructor(message = "Nieprawidłowy format danych.") {
+  constructor(message = "Nie udało się odczytać danych.") {
     super(message);
     this.name = "InvalidDataError";
   }
@@ -125,7 +125,10 @@ export function migrate(
   if (version > target) throw new UnsupportedVersionError(version);
   while (version < target) {
     const step = migrations[version];
-    if (!step) throw new InvalidDataError(`Brak migracji z wersji ${version}.`);
+    if (!step)
+      throw new InvalidDataError(
+        `Kopia pochodzi ze zbyt starej wersji aplikacji (wersja ${version}).`,
+      );
     data = step(data);
     version += 1;
     data.version = version;
@@ -267,7 +270,7 @@ export function parseImport(json: string): AppData {
   try {
     parsed = JSON.parse(json);
   } catch {
-    throw new InvalidDataError("Plik nie jest prawidłowym plikiem JSON.");
+    throw new InvalidDataError("Nie udało się odczytać pliku kopii.");
   }
   if (isObject(parsed) && "data" in parsed) {
     if (parsed.app !== EXPORT_APP_ID) {

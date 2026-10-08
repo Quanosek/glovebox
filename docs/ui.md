@@ -16,6 +16,50 @@ Europe screens. Every screen should be self-explanatory, calm and consistent. Vi
 - Setup and maintenance (Python, `.venv`, git, sharing `database/`) is documented only in
   `README.md`; the UI may point to "plik README, rozdział „Dodawanie aut”".
 
+- Editorial Polish: „…” quotes, " – " (spaced en dash) for dashes, "…" for ellipses, sentence
+  case, no full stop after headings/buttons/labels, one term per concept across the app
+  (auto, instrukcja, zaznaczenie, komentarz, zakładka, notatnik, kopia zapasowa).
+
+## Layout and text wrapping (`src/app/globals.css`)
+
+- Maximum app width: `--container-app` (90rem, Tailwind `max-w-app`) for the header bar
+  contents, the main navigation, the reader shell (sidebar + text) and the footer; the silver
+  header background and red top line stay full width. Single pages use narrower containers
+  (`max-w-4xl` for reading/list pages, `max-w-6xl` for grids); the reading column is
+  `max-w-3xl` (~75 characters per line).
+- `body` sets `overflow-wrap: anywhere`, so strings without spaces (file names, codes, long
+  links) break inside boxes instead of overflowing them, and flex/grid items may shrink below
+  their longest word. Tables use `break-word` and scroll sideways in their wrapper. `.btn` and
+  `.badge` stay on one line; use `truncate` (with a `title`) for single-line names.
+- `text-wrap: balance` on headings and `.panel-title`, `text-wrap: pretty` on paragraphs and
+  list items; `hyphens: auto` (with `lang="pl"`) in manual text and notebook previews.
+
+## Polish typography (`src/lib/typography.ts`)
+
+Polish typesetting does not allow a one-letter word at the end of a line ("sieroty") or a
+lone short word on the last line of a paragraph ("wdowy"). `polishTypography(text, {
+lastWord? })` replaces the ordinary space with a non-breaking space (U+00A0) after:
+
+- one-letter words: a, i, o, u, w, z (any case);
+- abbreviations followed by a word or number: np., m.in., tzn., tj., tzw., ok., ul., nr,
+  str., s., pkt, godz., wg, ang., poz., rys., tab., zob., por., §;
+- a number followed by a short unit or symbol (125 kW, 5 l, 20 °C, 30 %), and inside digit
+  groups (1 500);
+
+and before: trailing itd./itp./etc./i in., and a spaced dash (–, —). With `lastWord` the
+last word of a paragraph (up to 10 characters) is bound to the previous one.
+
+- Manual content: applied on the server by `BlockRenderer` (paragraphs and list items with
+  `lastWord`; headings, warning titles, table cells without it). Stored content and the
+  search index are unchanged.
+- Everything else (UI, notes, comments, dynamic text): `watchTypography()`
+  (`src/lib/typographyDom.ts`, started by `ClientEffects`) fixes all text nodes after
+  hydration and watches for new ones with a `MutationObserver`. It skips `textarea`, `input`,
+  `code`, `pre`, `kbd` and `contenteditable`.
+- Replacements keep the string length, so highlight offsets stay valid; anchoring treats
+  ordinary and non-breaking spaces as equal (`docs/highlighting.md`).
+- Do not type non-breaking spaces by hand in UI strings; the pass is idempotent.
+
 ## Dialogs (`src/components/Dialog.tsx`)
 
 - Native `window.confirm`, `alert` and `prompt` are not used anywhere.

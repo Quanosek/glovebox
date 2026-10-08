@@ -53,8 +53,11 @@ export function Header({ cars }: { cars: CarSummary[] }) {
   };
 
   return (
-    <header ref={ref} className="silver-bar sticky top-0 z-40 print:hidden">
-      <div className="flex h-14 items-center gap-3 border-t-4 border-red px-3 lg:px-5">
+    <header
+      ref={ref}
+      className="silver-bar sticky top-0 z-40 border-t-4 border-t-red print:hidden"
+    >
+      <div className="mx-auto flex h-14 max-w-app items-center gap-3 px-3 lg:px-5">
         <Link
           href="/"
           className="flex shrink-0 items-center gap-2.5 text-black"
@@ -66,7 +69,7 @@ export function Header({ cars }: { cars: CarSummary[] }) {
               {car ? `${car.brand} ${car.model}` : "Moje instrukcje"}
             </span>
             <span className="block text-[0.6875rem] tracking-[0.12em] text-steel uppercase">
-              {car ? `Instrukcja · ${car.year}` : "Profil lokalny"}
+              {car ? `Instrukcja · ${car.year}` : "Profil na tym urządzeniu"}
             </span>
           </span>
         </Link>
@@ -74,9 +77,9 @@ export function Header({ cars }: { cars: CarSummary[] }) {
         {!online && (
           <span
             className="badge badge-dark shrink-0"
-            title="Brak internetu — działają instrukcje zapisane na tym urządzeniu"
+            title="Brak internetu – działają instrukcje zapisane na tym urządzeniu"
           >
-            Offline
+            Bez internetu
           </span>
         )}
 
@@ -132,7 +135,7 @@ export function Header({ cars }: { cars: CarSummary[] }) {
         aria-label="Główna nawigacja"
         className={`${open ? "block" : "hidden"} border-t border-line bg-white xl:block xl:bg-transparent`}
       >
-        <ul className="flex flex-col xl:flex-row xl:px-3">
+        <ul className="mx-auto flex max-w-app flex-col xl:flex-row xl:px-3">
           {nav.map((item) => {
             const active =
               pathname === item.href ||

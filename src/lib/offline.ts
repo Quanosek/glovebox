@@ -116,7 +116,7 @@ async function run(carId: string, force: boolean) {
     set({
       errors: {
         ...state.errors,
-        [carId]: "Brak połączenia z aplikacją — spróbuj ponownie później.",
+        [carId]: "Brak połączenia z aplikacją – spróbuj ponownie później.",
       },
     });
     return;

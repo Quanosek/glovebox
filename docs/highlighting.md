@@ -25,7 +25,9 @@ Anchors combine a W3C-style **TextQuoteSelector** and **TextPositionSelector**:
 
 `resolve(text, anchor)` tries, in order:
 
-1. **Position fast path** — `text.slice(start, end) === exact`.
+1. **Position fast path** — `text.slice(start, end) === exact`, also when the two differ only
+   in ordinary vs non-breaking spaces (the Polish typography pass, `docs/ui.md`, swaps them
+   one-for-one, so offsets never shift).
 2. **Quote search** — every occurrence of `exact` is scored by matching prefix/suffix
    characters and distance from the stored position; the best wins.
 3. **Whitespace-normalised search** — same as 2 on text with collapsed whitespace, mapped

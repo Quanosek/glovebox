@@ -126,7 +126,7 @@ async function networkFirst(request) {
     }
     if (request.mode === "navigate") {
       return new Response(
-        "<!doctype html><meta charset=utf-8><title>Offline</title><body style=\"font-family:system-ui;padding:2rem\"><h1>Brak połączenia</h1><p>Ta strona nie została jeszcze zapisana na tym urządzeniu. Otwórz ją ponownie, gdy połączenie wróci — instrukcje wybranego auta zapisują się same, aby działały bez internetu.</p><p><a href=\"/\">Wróć do profilu</a></p>",
+        "<!doctype html><meta charset=utf-8><title>Brak internetu</title><body style=\"font-family:system-ui;padding:2rem\"><h1>Brak połączenia</h1><p>Ta strona nie została jeszcze zapisana na tym urządzeniu. Otwórz ją ponownie, gdy połączenie wróci – instrukcje wybranego auta zapisują się same, aby działały bez internetu.</p><p><a href=\"/\">Wróć do profilu</a></p>",
         { status: 503, headers: { "Content-Type": "text/html; charset=utf-8" } },
       );
     }

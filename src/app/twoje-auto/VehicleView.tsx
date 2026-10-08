@@ -47,7 +47,7 @@ export function VehicleView({
             ))}
           </ul>
           <p className="border-t border-line px-4 py-2 text-xs text-steel">
-            Zmień status w Ustawieniach → Profil pojazdu.
+            Zmień ustawienie na stronie Ustawienia.
           </p>
         </section>
       )}

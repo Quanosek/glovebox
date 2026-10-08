@@ -318,8 +318,8 @@ function NoteEditor({
       </div>
       <p className="border-t border-line px-3 py-1.5 text-xs text-steel">
         Notatki zapisują się same w tej przeglądarce. Użyj przycisków powyżej
-        albo znaków: **pogrubienie**, *kursywa*, # nagłówek, - lista, - [ ]
-        zadanie, &gt; cytat. Znaki: {body.length}
+        albo prostych znaków, np. gwiazdek do pogrubienia, # do nagłówka, - do
+        listy i &gt; do cytatu. Liczba znaków: {body.length}
       </p>
     </section>
   );
@@ -369,7 +369,7 @@ const TOOLS: Array<Tool | "|"> = [
     run: (v, s, e) => wrapSelection(v, s, e, "~~"),
   },
   {
-    label: "Kod",
+    label: "Tekst stały",
     icon: "</>",
     className: "font-mono text-xs",
     run: (v, s, e) => wrapSelection(v, s, e, "`"),

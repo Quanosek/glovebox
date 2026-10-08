@@ -39,7 +39,7 @@ export function SectionGate({
           <div className="flex flex-col gap-3 p-4 text-sm text-graphite">
             <p>
               Ta część instrukcji dotyczy wyposażenia, którego według profilu
-              pojazdu nie ma Twoje auto:{" "}
+              nie ma w Twoim aucie:{" "}
               <strong className="text-ink">
                 {a.missing.map(featureLabel).join(", ")}
               </strong>
@@ -51,7 +51,7 @@ export function SectionGate({
                 className="btn"
                 onClick={() => setExpanded(true)}
               >
-                Pokaż tę sekcję
+                Pokaż tę część
               </button>
               <button
                 type="button"

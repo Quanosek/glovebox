@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { CarSummary } from "@/lib/cars";
 import { useOfflineState, useOnline } from "@/lib/offline";
 import { setActiveCar, useAppData, useHydrated } from "@/lib/storage/hooks";
+import { plural } from "@/lib/typography";
 
 /** Grid of cars from `database/` plus the "add your own car" tile. */
 export function CarPicker({ cars }: { cars: CarSummary[] }) {
@@ -22,8 +23,9 @@ export function CarPicker({ cars }: { cars: CarSummary[] }) {
           role="status"
           className="mb-4 border-l-4 border-graphite bg-paper px-4 py-2 text-sm"
         >
-          Jesteś offline. Lista aut może być nieaktualna — działają auta
-          oznaczone „Offline”. Nowe auta pojawią się po powrocie internetu.
+          Nie ma internetu. Lista aut może być nieaktualna – działają auta
+          oznaczone „Bez internetu”. Nowe auta pojawią się po powrocie
+          połączenia.
         </p>
       )}
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -43,7 +45,7 @@ export function CarPicker({ cars }: { cars: CarSummary[] }) {
                       className="badge"
                       title="Instrukcje tego auta działają bez internetu"
                     >
-                      Offline
+                      Bez internetu
                     </span>
                   )}
                   {isActive && <span className="badge badge-red">Wybrane</span>}
@@ -68,7 +70,7 @@ export function CarPicker({ cars }: { cars: CarSummary[] }) {
                         <span className="text-xs text-steel">
                           {b.placeholder
                             ? "· treść w przygotowaniu"
-                            : `· ${b.sections} sekcji`}
+                            : `· ${b.sections} ${plural(b.sections, "sekcja", "sekcje", "sekcji")}`}
                         </span>
                       </span>
                     </li>
@@ -76,7 +78,7 @@ export function CarPicker({ cars }: { cars: CarSummary[] }) {
                 </ul>
                 <p className="mt-3 text-xs text-steel">
                   {car.builtIn
-                    ? "Dołączone do aplikacji"
+                    ? "W aplikacji od początku"
                     : "Dodane przez Ciebie"}
                   {placeholder ? " · treść jeszcze niegotowa" : ""}
                 </p>

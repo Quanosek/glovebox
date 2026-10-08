@@ -6,6 +6,7 @@ import { ContinueReading } from "@/components/ContinueReading";
 import { Logo } from "@/components/Logo";
 import { carLabel } from "@/lib/cars";
 import { getCar, getCarSummary } from "@/lib/content";
+import { plural } from "@/lib/typography";
 
 type Props = PageProps<"/auto/[car]">;
 
@@ -22,8 +23,8 @@ export default async function CarPage({ params }: Props) {
   const tiles = [
     {
       href: `/szukaj?car=${car.id}`,
-      title: "Wyszukiwarka",
-      text: "Pełnotekstowe wyszukiwanie we wszystkich instrukcjach tego auta.",
+      title: "Szukaj w instrukcjach",
+      text: "Szukaj we wszystkich instrukcjach tego auta.",
     },
     {
       href: `/ostrzezenia?car=${car.id}`,
@@ -35,7 +36,7 @@ export default async function CarPage({ params }: Props) {
           {
             href: "/twoje-auto",
             title: "Wyposażenie",
-            text: "Profil wyposażenia i funkcje do weryfikacji.",
+            text: "Lista wyposażenia i rzeczy do sprawdzenia.",
           },
         ]
       : []),
@@ -93,15 +94,15 @@ export default async function CarPage({ params }: Props) {
               href={b.href}
               className="panel hover-tile group block"
             >
-              <div className="panel-title">Księga</div>
+              <div className="panel-title">Instrukcja</div>
               <div className="p-5">
                 <h3 className="text-xl font-semibold group-hover:text-red">
                   {b.title}
                 </h3>
                 <p className="mt-1 text-sm text-graphite">
                   {b.placeholder
-                    ? "Treść do wygenerowania z pliku PDF."
-                    : `${b.sections} sekcji${b.pages ? ` · ${b.pages} stron` : ""}`}
+                    ? "Treść nie jest jeszcze gotowa."
+                    : `${b.sections} ${plural(b.sections, "sekcja", "sekcje", "sekcji")}${b.pages ? ` · ${b.pages} ${plural(b.pages, "strona", "strony", "stron")}` : ""}`}
                 </p>
               </div>
             </Link>
@@ -128,7 +129,7 @@ export default async function CarPage({ params }: Props) {
           <div className="panel-title">Twoje dane</div>
           <div className="space-y-2 p-4 text-sm text-graphite">
             <p>
-              Instrukcje tego auta są zapisane w aplikacji — widać je na każdym
+              Instrukcje tego auta są zapisane w aplikacji – widać je na każdym
               urządzeniu, które z niej korzysta, bez ponownego dodawania plików.
             </p>
             <p>

@@ -23,6 +23,9 @@
 
   --radius-*: initial;
 
+  /* Widest the whole app gets on large screens (header, reader, footer). */
+  --container-app: 90rem;
+
   --font-sans:
     "Segoe UI", "Helvetica Neue", Roboto, "Noto Sans", Arial, sans-serif;
   --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
@@ -68,6 +71,12 @@ body {
   background: var(--color-white);
   color: var(--color-ink);
   font-family: var(--font-sans);
+  /*
+   * Long strings without spaces (file names, part numbers, addresses) break
+   * inside the word instead of pushing out of their box. `anywhere` also lets
+   * flex and grid items shrink below the longest word.
+   */
+  overflow-wrap: anywhere;
 }
 
 ::selection {
@@ -81,6 +90,25 @@ body {
 
 /* Soft colour fades on every link and button hover (utilities may override). */
 @layer base {
+  /* Tables keep whole words; they scroll sideways in a wrapper instead. */
+  table {
+    overflow-wrap: break-word;
+  }
+  /* Even line lengths for headings, no lone last word in paragraphs. */
+  h1,
+  h2,
+  h3,
+  h4,
+  .panel-title {
+    text-wrap: balance;
+  }
+  p,
+  li,
+  dd,
+  blockquote,
+  figcaption {
+    text-wrap: pretty;
+  }
   a,
   button,
   summary,
@@ -270,6 +298,7 @@ body {
   .prose-manual {
     font-size: var(--reader-font-size);
     line-height: 1.65;
+    hyphens: auto;
   }
   .prose-manual h2 {
     margin: 2rem 0 0.75rem;
@@ -339,7 +368,7 @@ body {
   /* Notebook Markdown preview */
   .prose-note {
     line-height: 1.7;
-    overflow-wrap: anywhere;
+    hyphens: auto;
   }
   .prose-note > :first-child {
     margin-top: 0;

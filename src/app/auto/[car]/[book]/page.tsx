@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const ctx = await load(params);
   return {
     title: ctx
-      ? `${getBook(ctx).title} — ${carLabel(ctx.car)}`
+      ? `${getBook(ctx).title} – ${carLabel(ctx.car)}`
       : "Nie znaleziono",
   };
 }
@@ -50,10 +50,10 @@ export default async function BookPage({ params }: Props) {
       </h1>
       {index.placeholder && (
         <p className="mt-4 border-l-4 border-red bg-paper px-4 py-3 text-sm">
-          Pełna treść tej instrukcji nie jest jeszcze gotowa — na razie widzisz
+          Pełna treść tej instrukcji nie jest jeszcze gotowa – na razie widzisz
           tylko krótki wstęp. Osoba, która przygotowała aplikację, może ją
           uzupełnić (opis w pliku README). Możesz też dodać instrukcję
-          samodzielnie z pliku PDF w kreatorze{" "}
+          samodzielnie z pliku PDF na stronie{" "}
           <Link href="/dodaj-auto" className="text-red underline">
             Dodaj auto
           </Link>
@@ -64,7 +64,7 @@ export default async function BookPage({ params }: Props) {
         Źródło: <span className="break-all">{index.source.file}</span>
         {index.source.pages ? ` · ${index.source.pages} stron` : ""}
         {index.source.extractedAt
-          ? ` · wygenerowano ${new Date(index.source.extractedAt).toLocaleDateString("pl-PL")}`
+          ? ` · przygotowano ${new Date(index.source.extractedAt).toLocaleDateString("pl-PL")}`
           : ""}
       </p>
       <h2 className="mt-8 mb-2 text-xs font-semibold tracking-[0.08em] text-graphite uppercase">

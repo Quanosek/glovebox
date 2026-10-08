@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Block, Run, WarningKind } from "@/content/types";
 import { resolvePageRef, type BookCtx } from "@/lib/content";
+import { NBSP, polishTypography } from "@/lib/typography";
 
 /** Server component rendering extracted manual blocks. */
 export function BlockRenderer({
@@ -40,7 +41,7 @@ function BlockView({ ctx, block }: { ctx: BookCtx; block: Block }) {
     case "paragraph":
       return (
         <p id={block.id}>
-          <Runs ctx={ctx} runs={block.runs} />
+          <Runs ctx={ctx} runs={block.runs} paragraph />
         </p>
       );
     case "list": {
@@ -49,7 +50,7 @@ function BlockView({ ctx, block }: { ctx: BookCtx; block: Block }) {
         <Tag id={block.id}>
           {block.items.map((item, i) => (
             <li key={i}>
-              <Runs ctx={ctx} runs={item} />
+              <Runs ctx={ctx} runs={item} paragraph />
             </li>
           ))}
         </Tag>
@@ -70,7 +71,7 @@ function BlockView({ ctx, block }: { ctx: BookCtx; block: Block }) {
             }`}
           >
             <WarningIcon kind={block.kind} />
-            {block.title}
+            {polishTypography(block.title)}
           </p>
           {block.blocks.map((b) => (
             <BlockView key={b.id} ctx={ctx} block={b} />
@@ -85,7 +86,7 @@ function BlockView({ ctx, block }: { ctx: BookCtx; block: Block }) {
               <thead>
                 <tr>
                   {block.rows[0].map((cell, i) => (
-                    <th key={i}>{cell}</th>
+                    <th key={i}>{polishTypography(cell)}</th>
                   ))}
                 </tr>
               </thead>
@@ -94,7 +95,7 @@ function BlockView({ ctx, block }: { ctx: BookCtx; block: Block }) {
               {block.rows.slice(block.header ? 1 : 0).map((row, r) => (
                 <tr key={r}>
                   {row.map((cell, i) => (
-                    <td key={i}>{cell}</td>
+                    <td key={i}>{polishTypography(cell)}</td>
                   ))}
                 </tr>
               ))}
@@ -127,7 +128,8 @@ function BlockView({ ctx, block }: { ctx: BookCtx; block: Block }) {
           />
           {block.page != null && (
             <figcaption className="mt-1 text-right text-xs text-steel">
-              str. {block.page}
+              str.{NBSP}
+              {block.page}
             </figcaption>
           )}
         </figure>
@@ -135,14 +137,30 @@ function BlockView({ ctx, block }: { ctx: BookCtx; block: Block }) {
   }
 }
 
-function Runs({ ctx, runs }: { ctx: BookCtx; runs: Run[] }) {
+/**
+ * Renders text runs with Polish line-breaking rules. In a whole paragraph
+ * (`paragraph`) the last text run also keeps a short final word on the line
+ * before, so no paragraph ends with a lone word.
+ */
+function Runs({
+  ctx,
+  runs,
+  paragraph = false,
+}: {
+  ctx: BookCtx;
+  runs: Run[];
+  paragraph?: boolean;
+}) {
+  const last = runs.length - 1;
+  const typo = (text: string, i: number) =>
+    polishTypography(text, { lastWord: paragraph && i === last });
   return (
     <>
       {runs.map((run, i) => {
-        if (typeof run === "string") return run;
+        if (typeof run === "string") return typo(run, i);
         if ("page" in run) {
           const href = resolvePageRef(ctx, run.page);
-          const label = `str. ${run.page}`;
+          const label = `str.${NBSP}${run.page}`;
           return href ? (
             <Link key={i} href={href} className="page-ref">
               {label}
@@ -153,7 +171,7 @@ function Runs({ ctx, runs }: { ctx: BookCtx; runs: Run[] }) {
             </span>
           );
         }
-        let node: React.ReactNode = run.t;
+        let node: React.ReactNode = typo(run.t, i);
         if (run.i) node = <em>{node}</em>;
         if (run.b) node = <strong>{node}</strong>;
         return <span key={i}>{node}</span>;

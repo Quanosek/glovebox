@@ -43,7 +43,7 @@ export async function POST(request: Request) {
       return Response.json({ error: err.message }, { status: err.status });
     console.error(err);
     return Response.json(
-      { error: "Nieoczekiwany błąd serwera podczas zapisu plików." },
+      { error: "Nie udało się zapisać instrukcji. Spróbuj ponownie." },
       { status: 500 },
     );
   }

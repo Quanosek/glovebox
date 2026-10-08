@@ -51,7 +51,7 @@ export function Sidebar({
   }, [pathname]);
 
   return (
-    <aside className="border-b border-line bg-paper lg:sticky lg:top-(--header-h) lg:h-[calc(100vh-var(--header-h))] lg:w-80 lg:shrink-0 lg:border-r lg:border-b-0 print:hidden">
+    <aside className="border-b border-line bg-paper lg:sticky lg:top-(--header-h) lg:h-[calc(100vh-var(--header-h))] lg:w-80 lg:shrink-0 lg:border-r lg:border-b-0 min-[90rem]:border-l print:hidden">
       <button
         type="button"
         className="btn btn-ghost w-full justify-between lg:hidden"

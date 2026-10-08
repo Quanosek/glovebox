@@ -118,7 +118,7 @@ export function WarningsList({
       )}
       {items.length === 0 && (
         <p className="mt-6 text-steel">
-          Brak ostrzeżeń — treść instrukcji nie została jeszcze wygenerowana.
+          Brak ostrzeżeń – treść instrukcji nie jest jeszcze gotowa.
         </p>
       )}
       <ul className="mt-4 flex flex-col gap-2">

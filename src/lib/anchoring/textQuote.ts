@@ -32,6 +32,8 @@ export function resolve(text: string, anchor: TextAnchor): TextRange | null {
   if (!exact) return null;
   // 1. Fast path: the text at the stored position is unchanged.
   if (text.slice(start, end) === exact) return { start, end };
+  // Same text with ordinary and non-breaking spaces swapped (typography).
+  if (sameSpacing(text.slice(start, end), exact)) return { start, end };
 
   // 2. Exact quote elsewhere: pick the occurrence with the best context.
   const candidates: number[] = [];
@@ -121,6 +123,14 @@ export function normalizeWithMap(text: string): {
     prevSpace = isSpace;
   }
   return { normalized, map };
+}
+
+const NBSP_RE = /\u00a0/g;
+
+function sameSpacing(a: string, b: string): boolean {
+  return (
+    a.length === b.length && a.replace(NBSP_RE, " ") === b.replace(NBSP_RE, " ")
+  );
 }
 
 function commonPrefix(a: string, b: string): number {

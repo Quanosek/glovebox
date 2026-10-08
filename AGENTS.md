@@ -98,6 +98,7 @@ src/
   lib/storage/                  localStorage store, schema, migrations, React hooks
   lib/anchoring/                text-quote/position anchoring + DOM helpers
   lib/markdown.ts               safe Markdown subset parser (notebook)
+  lib/typography.ts             Polish line-breaking rules (+ typographyDom.ts client pass)
   lib/pdfPreview.ts             first-page preview with pdfjs-dist (wizard only)
   lib/offline.ts                offline car copies (Cache API), status store, useOnline()
 ```
@@ -141,7 +142,13 @@ One import at a time; job state lives in memory (`globalThis`) and is polled by 
   `graphite #5C6166`, `ink #2B2E31`, `black`, `red #C8102E`, `red-bright #E4002B`.
   No blue, green or other hues (including focus rings, links, success messages).
 - Highlight palette (`src/lib/highlightColors.ts`): `light`, `silver`, `graphite`, `red`.
-- System sans-serif font stack; responsive for phone, tablet and desktop.
+- System sans-serif font stack; responsive for phone, tablet and desktop. App width is capped
+  at `max-w-app` (90rem); long unbroken strings must wrap inside their box
+  (`overflow-wrap: anywhere` on `body`) — never let text overflow a panel or notice.
+- Polish typography: no one-letter words at line ends and no lone last word in paragraphs —
+  `polishTypography()` (`src/lib/typography.ts`) on the server for manual content,
+  `watchTypography()` on the client for everything else. Editorial Polish (`„…”`, `–`, `…`,
+  sentence case, one term per concept). Details in `docs/ui.md`.
 - Favicon: black Opel blitz in a ring on white (`src/app/icon.svg`, original simplified
   drawing). After editing it run `pnpm icons`.
 - **Never use native `window.confirm` / `alert` / `prompt`.** Use `confirmDialog()` /

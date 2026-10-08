@@ -5,7 +5,7 @@ import { CASCADA_CAR_ID } from "@/lib/cars";
 import { getCar, getFeatureSections } from "@/lib/content";
 import { VehicleView } from "./VehicleView";
 
-export const metadata: Metadata = { title: "Wyposażenie — Opel Cascada" };
+export const metadata: Metadata = { title: "Wyposażenie – Opel Cascada" };
 
 /** Equipment profile of the Opel Cascada MY16 (the only profiled car). */
 export default function VehiclePage() {
@@ -17,7 +17,7 @@ export default function VehiclePage() {
       className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 sm:px-8"
     >
       <h1 className="border-b-2 border-red pb-2 text-2xl font-semibold">
-        Twoje auto — wyposażenie
+        Twoje auto – wyposażenie
       </h1>
       <dl className="mt-4 grid gap-px border border-line bg-line text-sm sm:grid-cols-2">
         {[
@@ -39,8 +39,8 @@ export default function VehiclePage() {
         <h2 className="panel-title">OnStar</h2>
         <div className="p-4 text-sm">
           <p className="border-l-4 border-red bg-paper px-3 py-2 font-semibold">
-            Usługa OnStar nie działa już w Europie (wyłączona) — przyciski
-            pozostają nieaktywne.
+            Usługa OnStar nie działa już w Europie – przyciski pozostają
+            nieaktywne.
           </p>
           <p className="mt-3 text-graphite">
             W lusterku wstecznym znajdują się trzy przyciski systemu OnStar:

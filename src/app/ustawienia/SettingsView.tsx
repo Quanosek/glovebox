@@ -20,6 +20,7 @@ import {
 import { getStore } from "@/lib/storage/store";
 import { confirmDialog } from "@/components/Dialog";
 import { resetOfflineStatus } from "@/lib/offline";
+import { plural } from "@/lib/typography";
 
 const FONT_SIZES: { id: FontSize; label: string }[] = [
   { id: "small", label: "Mała" },
@@ -89,9 +90,12 @@ export function SettingsView() {
       )
         return;
       const next = store.importJson(text, importMode);
+      const highlightCount = Object.keys(next.highlights).length;
+      const pageCount = next.notebook.pages.length;
+      const bookmarkCount = next.bookmarks.length;
       setMessage({
         kind: "ok",
-        text: `Wczytano kopię: ${Object.keys(next.highlights).length} zaznaczeń, ${next.notebook.pages.length} kartek, ${next.bookmarks.length} zakładek.`,
+        text: `Wczytano kopię: ${highlightCount} ${plural(highlightCount, "zaznaczenie", "zaznaczenia", "zaznaczeń")}, ${pageCount} ${plural(pageCount, "kartka", "kartki", "kartek")}, ${bookmarkCount} ${plural(bookmarkCount, "zakładka", "zakładki", "zakładek")}.`,
       });
     } catch (err) {
       setMessage({
@@ -107,7 +111,7 @@ export function SettingsView() {
     const ok = await confirmDialog({
       title: "Usunąć wszystkie dane?",
       message:
-        "Zostaną usunięte wszystkie zaznaczenia, komentarze, notatki, zakładki i ustawienia z tej przeglądarki. Tej operacji nie można cofnąć — jeśli nie masz pewności, najpierw pobierz kopię zapasową.",
+        "Zostaną usunięte wszystkie zaznaczenia, komentarze, notatki, zakładki i ustawienia z tej przeglądarki. Tej operacji nie można cofnąć – jeśli nie masz pewności, najpierw pobierz kopię zapasową.",
       confirmLabel: "Usuń wszystko",
       danger: true,
     });
@@ -127,7 +131,7 @@ export function SettingsView() {
     resetOfflineStatus();
     setMessage({
       kind: "ok",
-      text: "Instrukcje zapisane do czytania offline zostały usunięte. Zapiszą się ponownie przy następnym otwarciu auta.",
+      text: "Instrukcje zapisane do czytania bez internetu zostały usunięte. Zapiszą się ponownie przy następnym otwarciu auta.",
     });
   };
 
@@ -145,7 +149,8 @@ export function SettingsView() {
       )}
       {store.lastError && (
         <p className="border-l-4 border-red bg-paper px-4 py-2 text-sm text-red">
-          Nie udało się zapisać danych w przeglądarce: {store.lastError}
+          Nie udało się zapisać danych w tej przeglądarce. Zwolnij miejsce albo
+          pobierz kopię zapasową.
         </p>
       )}
 
@@ -191,7 +196,7 @@ export function SettingsView() {
               }
             />
             <span>
-              <strong>Pokaż wszystko</strong> — rozwijaj również sekcje o
+              <strong>Pokaż wszystko</strong> – rozwijaj również sekcje o
               wyposażeniu, którego nie ma Twoje auto (oznaczone „Brak w Twoim
               aucie”).
             </span>
@@ -227,7 +232,7 @@ export function SettingsView() {
             Określ, które wyposażenie ma Twoja Cascada. Sekcje instrukcji
             dotyczące brakującego wyposażenia są zwijane i oznaczane jako „Brak
             w Twoim aucie”. Profil wyposażenia dotyczy tylko wbudowanego auta
-            Opel Cascada 2016 — auta dodane w kreatorze pokazują pełną treść.
+            Opel Cascada 2016 – auta dodane przez Ciebie pokazują pełną treść.
           </p>
           {groups.map((g) => (
             <fieldset key={g} className="mb-4">
@@ -255,7 +260,7 @@ export function SettingsView() {
                         <select
                           className="field w-32 py-1"
                           value={state.status}
-                          aria-label={`${f.label} — status`}
+                          aria-label={`${f.label} – czy mam`}
                           onChange={(e) =>
                             setFeature(f.id, {
                               ...state,
@@ -269,7 +274,7 @@ export function SettingsView() {
                         <select
                           className="field w-40 py-1"
                           value={state.certainty}
-                          aria-label={`${f.label} — pewność`}
+                          aria-label={`${f.label} – pewność`}
                           onChange={(e) =>
                             setFeature(f.id, {
                               ...state,
@@ -294,12 +299,12 @@ export function SettingsView() {
       </section>
 
       <section className="panel">
-        <h2 className="panel-title">Kopia zapasowa i dane</h2>
+        <h2 className="panel-title">Kopie zapasowe i dane</h2>
         <div className="flex flex-col gap-4 p-4 text-sm">
           <p className="text-graphite">
             Twoje zaznaczenia, komentarze, notatki i zakładki są zapisane tylko
             w tej przeglądarce. Wyczyszczenie historii przeglądarki usunie je
-            bezpowrotnie — co jakiś czas pobierz kopię zapasową do pliku.
+            bezpowrotnie – co jakiś czas pobierz kopię zapasową do pliku.
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -319,7 +324,7 @@ export function SettingsView() {
               }
               aria-label="Sposób wczytania kopii"
             >
-              <option value="merge">Scal z obecnymi danymi</option>
+              <option value="merge">Dołącz do obecnych danych</option>
               <option value="replace">Zastąp obecne dane</option>
             </select>
             <label className="btn">
@@ -342,7 +347,7 @@ export function SettingsView() {
               className="btn"
               onClick={() => void clearOffline()}
             >
-              Usuń instrukcje zapisane offline
+              Usuń instrukcje zapisane bez internetu
             </button>
             <button
               type="button"

@@ -48,6 +48,8 @@ export function isLoopbackHost(host: string): boolean {
   );
 }
 
-function forbidden(message = "Żądanie spoza aplikacji zostało odrzucone.") {
+function forbidden(
+  message = "Ta czynność została odrzucona ze względów bezpieczeństwa.",
+) {
   return Response.json({ error: message }, { status: 403 });
 }

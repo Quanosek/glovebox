@@ -12,7 +12,7 @@ export default async function BookLayout({
   const ctx = getBookCtx(car, book);
   if (!ctx) notFound();
   return (
-    <div className="flex flex-1 flex-col lg:flex-row">
+    <div className="mx-auto flex w-full max-w-app flex-1 flex-col lg:flex-row">
       <Sidebar
         books={getSidebarBooks(ctx.car)}
         current={bookHref(car, book)}

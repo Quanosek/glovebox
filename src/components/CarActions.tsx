@@ -42,7 +42,7 @@ export function CarActions({
             usunięte z aplikacji na wszystkich urządzeniach.
           </p>
           <p className="mt-2 text-graphite">
-            Twoje notatki w Notatniku zostaną. Tej operacji nie można cofnąć.
+            Twoje notatki w notatniku zostaną. Tej operacji nie można cofnąć.
           </p>
         </>
       ),
@@ -83,7 +83,9 @@ export function CarActions({
         <div aria-live="polite">
           {progress ? (
             <>
-              <p className="font-semibold">Zapisywanie do czytania offline…</p>
+              <p className="font-semibold">
+                Zapisywanie do czytania bez internetu…
+              </p>
               <div className="mt-2 h-1.5 w-full bg-line">
                 <div
                   className="h-full bg-red transition-[width]"
@@ -96,7 +98,7 @@ export function CarActions({
                 {Math.round(
                   progress.total ? (progress.done / progress.total) * 100 : 100,
                 )}
-                % — możesz w tym czasie normalnie czytać.
+                % – możesz w tym czasie normalnie czytać.
               </p>
             </>
           ) : saved ? (
@@ -127,7 +129,7 @@ export function CarActions({
         )}
         {!online && (
           <p className="text-xs text-steel">
-            Jesteś offline — zapisane instrukcje działają, ale nie można ich
+            Nie ma internetu – zapisane instrukcje działają, ale nie można ich
             teraz odświeżyć.
           </p>
         )}

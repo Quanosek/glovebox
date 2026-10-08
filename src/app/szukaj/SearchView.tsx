@@ -58,7 +58,7 @@ export function SearchView({ cars }: { cars: SearchCar[] }) {
     let cancelled = false;
     fetch(`/api/search-index?car=${encodeURIComponent(carId)}`)
       .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        if (!r.ok) throw new Error("Nie udało się przygotować wyszukiwania.");
         return r.json() as Promise<SearchDoc[]>;
       })
       .then((d) => {
@@ -66,10 +66,9 @@ export function SearchView({ cars }: { cars: SearchCar[] }) {
         setError(null);
         setLoaded({ car: carId, docs: d });
       })
-      .catch(
-        (e: unknown) =>
-          !cancelled && setError(e instanceof Error ? e.message : String(e)),
-      );
+      .catch(() => {
+        if (!cancelled) setError("Nie udało się przygotować wyszukiwania.");
+      });
     return () => {
       cancelled = true;
     };
@@ -131,7 +130,7 @@ export function SearchView({ cars }: { cars: SearchCar[] }) {
           value={query}
           autoFocus
           onChange={(e) => setQuery(e.target.value)}
-          aria-label="Szukana fraza"
+          aria-label="Szukane słowa"
         />
         {cars.length > 1 && (
           <select
@@ -154,9 +153,9 @@ export function SearchView({ cars }: { cars: SearchCar[] }) {
           className="field sm:w-56"
           value={book}
           onChange={(e) => setBook(e.target.value)}
-          aria-label="Księga"
+          aria-label="Instrukcja"
         >
-          <option value="all">Wszystkie księgi</option>
+          <option value="all">Wszystkie instrukcje</option>
           {car?.books.map((b) => (
             <option key={b.id} value={b.id}>
               {b.short}
@@ -171,16 +170,16 @@ export function SearchView({ cars }: { cars: SearchCar[] }) {
 
       {error && (
         <p className="mt-4 text-red">
-          Nie udało się wczytać indeksu wyszukiwania: {error}
+          Nie udało się przygotować wyszukiwania: {error}
         </p>
       )}
       {!car && (
         <p className="mt-4 text-steel">
-          Brak aut w bazie — dodaj auto w kreatorze „Dodaj auto”.
+          Brak aut – dodaj auto na stronie „Dodaj auto”.
         </p>
       )}
       {car && !docs && !error && (
-        <p className="mt-4 text-steel">Wczytywanie indeksu…</p>
+        <p className="mt-4 text-steel">Przygotowywanie wyszukiwania…</p>
       )}
 
       {docs && query.trim().length >= 2 && (

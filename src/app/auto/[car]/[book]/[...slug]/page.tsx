@@ -33,7 +33,7 @@ async function load(params: Props["params"]) {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { ctx, section } = await load(params);
-  return { title: `${section.title} — ${carLabel(ctx.car)}` };
+  return { title: `${section.title} – ${carLabel(ctx.car)}` };
 }
 
 export default async function SectionPage({ params }: Props) {

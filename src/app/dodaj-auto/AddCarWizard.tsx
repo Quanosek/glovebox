@@ -16,6 +16,7 @@ import { useOnline } from "@/lib/offline";
 import { renderPdfPreview } from "@/lib/pdfPreview";
 import { slugify } from "@/lib/slug";
 import { setActiveCar } from "@/lib/storage/hooks";
+import { plural } from "@/lib/typography";
 
 /* ------------------------------------------------------------------ types */
 
@@ -154,11 +155,11 @@ export function AddCarWizard({
     setSystemError(null);
     try {
       const r = await fetch("/api/system", { cache: "no-store" });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      if (!r.ok) throw new Error("Nie udało się sprawdzić gotowości.");
       setSystem((await r.json()) as SystemStatus);
-    } catch (e) {
+    } catch {
       setSystem(null);
-      setSystemError(e instanceof Error ? e.message : String(e));
+      setSystemError("Nie udało się sprawdzić, czy można teraz dodać auto.");
     } finally {
       setChecking(false);
     }
@@ -194,18 +195,18 @@ export function AddCarWizard({
     for (const file of Array.from(list)) {
       const key = `${file.name}:${file.size}:${file.lastModified}`;
       if (!/\.pdf$/i.test(file.name) && file.type !== "application/pdf") {
-        messages.push(`Pominięto „${file.name}” — to nie jest plik PDF.`);
+        messages.push(`Pominięto „${file.name}” – to nie jest plik PDF.`);
       } else if (known.has(key)) {
         messages.push(
-          `Pominięto „${file.name}” — ten plik jest już na liście.`,
+          `Pominięto „${file.name}” – ten plik jest już na liście.`,
         );
       } else if (file.size > maxBytes) {
         messages.push(
-          `Pominięto „${file.name}” — plik jest większy niż ${formatSize(maxBytes)}.`,
+          `Pominięto „${file.name}” – plik jest większy niż ${formatSize(maxBytes)}.`,
         );
       } else if (docs.length + next.length >= maxDocs) {
         messages.push(
-          `Pominięto „${file.name}” — jedno auto może mieć najwyżej ${maxDocs} plików.`,
+          `Pominięto „${file.name}” – jedno auto może mieć najwyżej ${maxDocs} ${plural(maxDocs, "plik", "pliki", "plików")}.`,
         );
       } else {
         known.add(key);
@@ -311,7 +312,7 @@ export function AddCarWizard({
       else
         setSubmitError(
           body?.error ??
-            `Coś poszło nie tak (kod ${xhr.status}). Spróbuj ponownie za chwilę.`,
+            "Nie udało się rozpocząć dodawania auta. Spróbuj ponownie za chwilę.",
         );
     };
     xhr.onerror = () =>
@@ -333,7 +334,9 @@ export function AddCarWizard({
         const body = (await r.json()) as { job?: Job; error?: string };
         if (stop) return;
         if (!r.ok || !body.job) {
-          setSubmitError(body.error ?? `Coś poszło nie tak (kod ${r.status}).`);
+          setSubmitError(
+            body.error ?? "Nie udało się sprawdzić postępu dodawania auta.",
+          );
           return;
         }
         setJob(body.job);
@@ -465,7 +468,7 @@ export function AddCarWizard({
                   setModelOther("");
                 }}
               >
-                <option value="">— wybierz markę —</option>
+                <option value="">Wybierz markę</option>
                 {CATALOG_BRANDS.map((b) => (
                   <option key={b} value={b}>
                     {b}
@@ -506,7 +509,7 @@ export function AddCarWizard({
                     onChange={(e) => setModelChoice(e.target.value)}
                   >
                     <option value="">
-                      {brand ? "— wybierz model —" : "najpierw wybierz markę"}
+                      {brand ? "Wybierz model" : "najpierw wybierz markę"}
                     </option>
                     {models.map((m) => (
                       <option key={m} value={m}>
@@ -538,7 +541,7 @@ export function AddCarWizard({
                 onChange={(e) => setYear(e.target.value)}
               >
                 <option value="">
-                  {model ? "— wybierz rocznik —" : "najpierw wybierz model"}
+                  {model ? "Wybierz rocznik" : "najpierw wybierz model"}
                 </option>
                 {years.map((y) => (
                   <option key={y} value={y}>
@@ -549,7 +552,7 @@ export function AddCarWizard({
             </Field>
           </div>
           <Field
-            label="Wersja / silnik (opcjonalnie)"
+            label="Wersja i silnik (opcjonalnie)"
             htmlFor="car-variant"
             className="mt-3"
           >
@@ -584,7 +587,7 @@ export function AddCarWizard({
               <p>
                 <strong>Instrukcje w PDF</strong>{" "}
                 <span className="text-steel">
-                  ({docs.length}/{maxDocs}) — przeciągnij pliki tutaj albo
+                  ({docs.length} z {maxDocs}) – przeciągnij pliki tutaj albo
                 </span>
               </p>
               <label
@@ -637,7 +640,7 @@ export function AddCarWizard({
                         <span className="px-2 text-center text-xs text-steel">
                           {d.previewState === "loading"
                             ? "Generowanie podglądu…"
-                            : "PDF (brak podglądu)"}
+                            : "Brak podglądu"}
                         </span>
                       )}
                       <span className="absolute top-0 left-0 bg-ink px-1.5 py-0.5 text-xs text-white">
@@ -706,7 +709,7 @@ export function AddCarWizard({
 
           <p className="mt-4 border border-line bg-paper px-4 py-3 text-sm text-graphite">
             Każdy plik stanie się osobną instrukcją o nazwie wpisanej na karcie.
-            Pliki PDF są potrzebne tylko na czas odczytywania — potem aplikacja
+            Pliki PDF są potrzebne tylko na czas odczytywania – potem aplikacja
             je <strong className="text-ink">usuwa</strong>, a instrukcje zostają
             już na stałe.
           </p>
@@ -727,14 +730,14 @@ export function AddCarWizard({
             >
               Dodaj auto
               {docs.length > 0
-                ? ` i ${docs.length} ${docs.length === 1 ? "instrukcję" : docs.length < 5 ? "instrukcje" : "instrukcji"}`
+                ? ` i ${docs.length} ${plural(docs.length, "instrukcję", "instrukcje", "instrukcji")}`
                 : ""}{" "}
               →
             </button>
           </div>
           {!ready && formErrors.length === 0 && (
             <p className="mt-2 text-right text-xs text-red">
-              Dodawanie jest teraz niedostępne — zobacz komunikat na górze.
+              Dodawanie jest teraz niedostępne – zobacz komunikat na górze.
             </p>
           )}
         </section>
@@ -826,7 +829,7 @@ function Availability({
   if (!online || error) {
     title = "Brak połączenia";
     text =
-      "Dodawanie instrukcji wymaga połączenia z aplikacją. Zapisane auta możesz dalej czytać — wróć tutaj, gdy połączenie wróci.";
+      "Dodawanie instrukcji wymaga połączenia z aplikacją. Zapisane auta możesz dalej czytać – wróć tutaj, gdy połączenie wróci.";
   } else if (!system) {
     return checking ? (
       <p className="mt-4 text-sm text-steel">Sprawdzanie gotowości…</p>
@@ -856,7 +859,7 @@ function Availability({
     text = (
       <>
         Aplikacja nie potrafi tu jeszcze odczytywać plików PDF. Poproś osobę,
-        która ją uruchomiła, o jednorazowe przygotowanie — opis znajdzie w
+        która ją uruchomiła, o jednorazowe przygotowanie – opis znajdzie w
         instrukcji aplikacji (plik README, rozdział „Dodawanie aut”).
       </>
     );
@@ -920,7 +923,7 @@ function StepProcessing({
           {job?.state === "running" && !error && (
             <p className="mt-2 text-graphite">
               To może potrwać kilka minut przy dużych instrukcjach. Możesz
-              zamknąć tę kartę — postęp zobaczysz po ponownym otwarciu „Dodaj
+              zamknąć tę kartę – postęp zobaczysz po ponownym otwarciu „Dodaj
               auto”. Nie wyłączaj tylko komputera, na którym działa aplikacja.
             </p>
           )}
@@ -1048,8 +1051,28 @@ function StepDone({
               >
                 <span className="font-semibold">{d.title}</span>
                 <span className="text-graphite">
-                  {d.pages ?? "?"} str. · {d.sections ?? "?"} rozdziałów ·{" "}
-                  {d.images ?? "?"} ilustracji
+                  {d.pages ?? "?"}{" "}
+                  {d.pages == null
+                    ? "str."
+                    : plural(d.pages, "strona", "strony", "stron")}{" "}
+                  · {d.sections ?? "?"}{" "}
+                  {d.sections == null
+                    ? "rozdziałów"
+                    : plural(
+                        d.sections,
+                        "rozdział",
+                        "rozdziały",
+                        "rozdziałów",
+                      )}{" "}
+                  · {d.images ?? "?"}{" "}
+                  {d.images == null
+                    ? "ilustracji"
+                    : plural(
+                        d.images,
+                        "ilustracja",
+                        "ilustracje",
+                        "ilustracji",
+                      )}
                 </span>
               </li>
             ))}
@@ -1057,7 +1080,7 @@ function StepDone({
           <p className="mt-3">
             Instrukcje są gotowe do czytania.{" "}
             {job.pdfsDeleted
-              ? "Przesłane pliki PDF zostały usunięte — nie są już potrzebne."
+              ? "Przesłane pliki PDF zostały usunięte – nie są już potrzebne."
               : "Uwaga: nie udało się potwierdzić usunięcia przesłanych plików PDF."}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -1077,7 +1100,7 @@ function StepDone({
         <h2 className="panel-title">Co dalej?</h2>
         <ul className="flex list-[square] flex-col gap-2 py-3 pr-4 pl-8 text-graphite marker:text-red">
           <li>
-            Auto jest już na liście aut — dla każdego, kto korzysta z tej
+            Auto jest już na liście aut – dla każdego, kto korzysta z tej
             aplikacji, także na innych urządzeniach.
           </li>
           <li>

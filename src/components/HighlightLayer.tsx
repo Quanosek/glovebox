@@ -375,9 +375,8 @@ export function HighlightLayer({
         <div className="p-3 text-sm">
           {unsupported && (
             <p className="mb-2 border-l-2 border-red bg-paper px-3 py-1.5 text-graphite">
-              Ta przeglądarka nie obsługuje podświetlania tekstu (CSS Custom
-              Highlight API). Zaznaczenia i komentarze są zapisane, ale nie są
-              widoczne w treści.
+              Ta przeglądarka nie pokazuje wyróżnień kolorem. Zaznaczenia i
+              komentarze są zapisane, ale nie widać ich w treści.
             </p>
           )}
           {highlights.length === 0 ? (
@@ -413,8 +412,8 @@ export function HighlightLayer({
                       )}
                       {!found && (
                         <p className="mt-1 text-xs text-red">
-                          Nie odnaleziono tego fragmentu w bieżącej treści
-                          (treść mogła zostać zmieniona).
+                          Nie znaleziono tego fragmentu w obecnej treści (treść
+                          mogła zostać zmieniona).
                         </p>
                       )}
                     </div>

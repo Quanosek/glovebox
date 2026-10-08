@@ -7,6 +7,7 @@ import { updateData, useAppData, useHydrated } from "@/lib/storage/hooks";
 import { CarPicker } from "./CarPicker";
 import { ContinueReading } from "./ContinueReading";
 import { Markdown } from "./Markdown";
+import { plural } from "@/lib/typography";
 
 /** Local, login-free profile: car selection and the personal notebook. */
 export function ProfileView({ cars }: { cars: CarSummary[] }) {
@@ -48,7 +49,7 @@ export function ProfileView({ cars }: { cars: CarSummary[] }) {
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-xs tracking-[0.12em] text-steel uppercase">
-            Profil lokalny · bez logowania
+            Profil na tym urządzeniu · bez logowania
           </p>
           <h1 className="text-3xl font-semibold tracking-tight">
             {hydrated && name ? `Cześć, ${name}` : "Twój profil"}
@@ -92,7 +93,7 @@ export function ProfileView({ cars }: { cars: CarSummary[] }) {
             <p className="mt-1 text-sm text-graphite">
               {active
                 ? `Wybrane auto · ${active.books.length} ${plural(active.books.length, "instrukcja", "instrukcje", "instrukcji")}. Zmień albo dodaj własne poniżej.`
-                : `Dostępne auta: ${cars.length}. Możesz też dodać własne z plików PDF.`}
+                : `Liczba aut: ${cars.length}. Możesz też dodać własne z plików PDF.`}
             </p>
           </div>
         </a>
@@ -106,8 +107,8 @@ export function ProfileView({ cars }: { cars: CarSummary[] }) {
               {hydrated
                 ? `${data.notebook.pages.length} ${plural(data.notebook.pages.length, "kartka", "kartki", "kartek")} · `
                 : ""}
-              Puste kartki na własne notatki z prostym formatowaniem (nagłówki,
-              pogrubienie, listy, zadania).
+              Puste kartki na własne notatki. Możesz używać nagłówków,
+              pogrubienia, list i zadań.
             </p>
           </div>
         </Link>
@@ -194,16 +195,10 @@ export function ProfileView({ cars }: { cars: CarSummary[] }) {
         <Link href="/ustawienia" className="underline">
           Ustawieniach
         </Link>{" "}
-        — wyczyszczenie historii przeglądarki usuwa notatki.
+        – wyczyszczenie historii przeglądarki usuwa notatki.
       </p>
     </>
   );
 }
 
 /** Polish plural form for `n` (1 kartka, 2 kartki, 5 kartek). */
-function plural(n: number, one: string, few: string, many: string) {
-  if (n === 1) return one;
-  const d = n % 10;
-  const t = n % 100;
-  return d >= 2 && d <= 4 && (t < 12 || t > 14) ? few : many;
-}
