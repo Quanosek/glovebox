@@ -227,7 +227,7 @@ function NoteEditor({
   }, []);
 
   return (
-    <section className="panel flex min-h-[28rem] flex-col">
+    <section className="panel flex min-h-112 flex-col">
       <div className="silver-bar flex flex-wrap items-center gap-2 px-3 py-2">
         <input
           className="field min-w-0 flex-1 border-transparent bg-transparent text-lg font-semibold focus:bg-white"

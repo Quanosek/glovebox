@@ -123,7 +123,7 @@ function BlockView({ ctx, block }: { ctx: BookCtx; block: Block }) {
             height={block.height}
             alt={block.alt}
             loading="lazy"
-            className="mx-auto h-auto max-h-[28rem] w-auto max-w-full"
+            className="mx-auto h-auto max-h-112 w-auto max-w-full"
           />
           {block.page != null && (
             <figcaption className="mt-1 text-right text-xs text-steel">

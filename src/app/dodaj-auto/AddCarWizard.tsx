@@ -610,7 +610,7 @@ export function AddCarWizard({
                     key={d.key}
                     className="flex flex-col border border-line bg-white"
                   >
-                    <div className="relative flex aspect-[3/4] items-center justify-center overflow-hidden border-b border-line bg-paper">
+                    <div className="relative flex aspect-3/4 items-center justify-center overflow-hidden border-b border-line bg-paper">
                       {d.preview ? (
                         // eslint-disable-next-line @next/next/no-img-element -- local object URL
                         <img
