@@ -86,11 +86,12 @@ function resolveNormalized(text: string, anchor: TextAnchor): TextRange | null {
     positions.push(i);
   }
   if (!positions.length) return null;
+  const normStart = map.findIndex((orig) => orig >= anchor.start);
   const normAnchor: TextAnchor = {
     exact,
     prefix: normalizeWithMap(anchor.prefix).normalized,
     suffix: normalizeWithMap(anchor.suffix).normalized,
-    start: map.findIndex((orig) => orig >= anchor.start),
+    start: normStart === -1 ? normalized.length : normStart,
     end: 0,
   };
   const best = pickBest(normalized, normAnchor, positions, exact.length);

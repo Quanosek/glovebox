@@ -185,7 +185,7 @@ export function HighlightLayer({
       if (!root.contains(range.endContainer))
         range.setEnd(root, root.childNodes.length);
       const offsets = offsetsOfRange(root, range);
-      const full = containerText(root);
+      const full = text ?? containerText(root);
       if (!offsets) {
         setPending(null);
         return;
@@ -229,7 +229,7 @@ export function HighlightLayer({
       window.removeEventListener("scroll", onScroll);
       cancelAnimationFrame(frame);
     };
-  }, [root]);
+  }, [root, text]);
 
   // Close the editor on outside click / Escape.
   useEffect(() => {
