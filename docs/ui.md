@@ -24,9 +24,9 @@ Europe screens. Every screen should be self-explanatory, calm and consistent. Vi
 
 - Maximum app width: `--container-app` (90rem, Tailwind `max-w-app`) for the header bar
   contents, the main navigation, the reader shell (sidebar + text) and the footer; the silver
-  header background and red top line stay full width. Single pages use narrower containers
-  (`max-w-4xl` for reading/list pages, `max-w-6xl` for grids); the reading column is
-  `max-w-3xl` (~75 characters per line).
+  header background and red top line stay full width. Top-level screens share `.page-shell`
+  (72rem, matching `max-w-6xl`), with consistent horizontal padding; the manual reader retains
+  its wider shell and a `max-w-3xl` text column (~75 characters per line).
 - `body` sets `overflow-wrap: anywhere`, so strings without spaces (file names, codes, long
   links) break inside boxes instead of overflowing them, and flex/grid items may shrink below
   their longest word. Tables use `break-word` and scroll sideways in their wrapper. `.btn` and
@@ -83,6 +83,11 @@ last word of a paragraph (up to 10 characters) is bound to the previous one.
 - `.field` (inputs, selects, textareas): hover darkens the border; focus shows exactly one
   cue — a graphite border. No outline ring, underline or shadow on top of it. Other
   focusable elements keep the global red `:focus-visible` outline for keyboard users.
+- Selects keep their native accessible behavior and option menus, but use a shared silver
+  field and graphite arrow. Checkboxes use a square red selected state and retain the global
+  red keyboard focus outline. Native `details` disclosures use the same small red chevron.
+- Car overview tools are grouped separately from the manual list and include only actions
+  scoped to that car; comments, bookmarks and notes remain in the app-wide navigation.
 - `.hover-tile`: clickable cards/panels (car cards, profile and book tiles) get a darker
   border and a soft shadow on hover and a 1px press on `:active`.
 - `prefers-reduced-motion: reduce` shortens all transitions/animations to 1 ms and removes

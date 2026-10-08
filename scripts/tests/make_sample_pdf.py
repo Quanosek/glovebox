@@ -1,4 +1,4 @@
-"""Builds a small synthetic PDF that mimics the layout of Opel owner's manuals.
+"""Builds a small synthetic PDF with a representative vehicle-manual layout.
 
 Used by the extractor tests (the real manuals are copyrighted and are not
 committed). Layout: A5-like pages, two columns, running header with page

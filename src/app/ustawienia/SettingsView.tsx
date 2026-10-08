@@ -36,7 +36,7 @@ export function SettingsView({ cars }: { cars: CarSummary[] }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `opel-cascada-notatki-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `instrukcje-kopia-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     setMessage({ kind: "ok", text: "Kopia zapasowa została pobrana." });
@@ -148,7 +148,7 @@ export function SettingsView({ cars }: { cars: CarSummary[] }) {
           <label className="flex items-start gap-2">
             <input
               type="checkbox"
-              className="mt-0.5 accent-red"
+              className="mt-0.5"
               checked={settings.showUnavailable}
               onChange={(e) =>
                 updateData((d) => ({
@@ -226,9 +226,9 @@ export function SettingsView({ cars }: { cars: CarSummary[] }) {
               Pobierz kopię zapasową
             </button>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <select
-              className="field w-auto py-1"
+              className="field w-full py-1 sm:w-auto"
               value={importMode}
               onChange={(e) =>
                 setImportMode(e.target.value as "merge" | "replace")
@@ -238,7 +238,7 @@ export function SettingsView({ cars }: { cars: CarSummary[] }) {
               <option value="merge">Dołącz do obecnych danych</option>
               <option value="replace">Zastąp obecne dane</option>
             </select>
-            <label className="btn">
+            <label className="btn w-full justify-center sm:w-auto">
               Wczytaj kopię z pliku…
               <input
                 ref={fileRef}

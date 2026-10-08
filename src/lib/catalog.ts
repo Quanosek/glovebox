@@ -643,7 +643,7 @@ export interface ModelFamily {
 /**
  * Model family of a raw commercial name, e.g. "TOYOTA YARIS HYBRID" →
  * "Yaris", "320d xDrive" (BMW) → "Seria 3", "C 220 d" (Mercedes) →
- * "Klasa C", "CASCADA / CABRIO 1.6 / TURBO" → "Cascada".
+ * "Klasa C", "GOLF / 1.6 / TDI" → "Golf".
  */
 export function modelFamily(
   brand: string,

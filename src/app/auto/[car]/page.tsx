@@ -36,20 +36,10 @@ export default async function CarPage({ params }: Props) {
       title: "Wyposażenie",
       text: "Zaznacz, co ma Twoje auto – instrukcja dopasuje się do niego.",
     },
-    {
-      href: "/komentarze",
-      title: "Moje komentarze",
-      text: "Zaznaczenia i komentarze.",
-    },
-    { href: "/zakladki", title: "Zakładki", text: "Zapisane sekcje." },
-    { href: "/notatnik", title: "Notatnik", text: "Własne notatki." },
   ];
 
   return (
-    <main
-      id="main"
-      className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-8"
-    >
+    <main id="main" className="page-shell">
       <nav aria-label="Ścieżka" className="mb-4 text-xs text-steel">
         <Link href="/" className="hover:text-red">
           Profil
@@ -111,17 +101,25 @@ export default async function CarPage({ params }: Props) {
         </section>
       )}
 
-      <section className="mt-6 grid gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
-        {tiles.map((t) => (
-          <Link
-            key={t.href}
-            href={t.href}
-            className="group bg-white p-4 hover:bg-paper"
-          >
-            <h3 className="font-semibold group-hover:text-red">{t.title}</h3>
-            <p className="mt-1 text-sm text-graphite">{t.text}</p>
-          </Link>
-        ))}
+      <section aria-labelledby="car-tools-title" className="mt-6">
+        <h2
+          id="car-tools-title"
+          className="mb-2 text-xs font-semibold tracking-[0.08em] text-graphite uppercase"
+        >
+          Narzędzia auta
+        </h2>
+        <div className="grid gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
+          {tiles.map((t) => (
+            <Link
+              key={t.href}
+              href={t.href}
+              className="group bg-white p-4 hover:bg-paper"
+            >
+              <h3 className="font-semibold group-hover:text-red">{t.title}</h3>
+              <p className="mt-1 text-sm text-graphite">{t.text}</p>
+            </Link>
+          ))}
+        </div>
       </section>
 
       <div className="mt-6 grid gap-4 md:grid-cols-[1fr_1fr]">

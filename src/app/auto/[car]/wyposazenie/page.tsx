@@ -29,10 +29,7 @@ export default async function EquipmentPage({ params }: Props) {
   ];
 
   return (
-    <main
-      id="main"
-      className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 sm:px-8"
-    >
+    <main id="main" className="page-shell">
       <nav aria-label="Ścieżka" className="mb-4 text-xs text-steel">
         <Link href="/auta" className="hover:text-red">
           Auta
@@ -43,9 +40,7 @@ export default async function EquipmentPage({ params }: Props) {
         </Link>{" "}
         › <span className="text-ink">Wyposażenie</span>
       </nav>
-      <h1 className="border-b-2 border-red pb-2 text-2xl font-semibold">
-        Wyposażenie – {car.label}
-      </h1>
+      <h1 className="page-title">Wyposażenie – {car.label}</h1>
       <dl className="mt-4 grid gap-px border border-line bg-line text-sm sm:grid-cols-2">
         {facts.map(([k, v]) => (
           <div key={k} className="bg-white px-4 py-2">

@@ -65,7 +65,7 @@ export interface TableBlock {
 export interface ImageBlock {
   type: "image";
   id: string;
-  /** URL, e.g. `/media/opel-cascada-2016/manual/kluczyki/p021-01.webp`. */
+  /** URL, e.g. `/media/<car>/<book>/<section>/p021-01.webp`. */
   src: string;
   width: number;
   height: number;
@@ -102,7 +102,7 @@ export interface BookIndex {
   formatVersion: number;
   id: BookId;
   title: string;
-  /** True for the committed placeholder shown before `pnpm extract`. */
+  /** True when the index has no extracted manual content. */
   placeholder?: boolean;
   source: {
     url: string;

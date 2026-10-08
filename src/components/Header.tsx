@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { equipmentHref, type CarSummary } from "@/lib/cars";
+import { equipmentHref, hasReadableManual, type CarSummary } from "@/lib/cars";
 import { useOnline } from "@/lib/offline";
 import { useActiveCar } from "@/lib/storage/hooks";
 import { CarLogo } from "./CarLogo";
@@ -13,17 +13,20 @@ export function Header({ cars }: { cars: CarSummary[] }) {
   const pathname = usePathname();
   const car = useActiveCar(cars);
   const online = useOnline();
+  const hasManuals = hasReadableManual(cars);
   const nav = [
     { href: "/", label: "Profil", exact: true },
     car
       ? { href: car.href, label: `${car.brand} ${car.model}` }
-      : { href: "/auta", label: "Wybierz auto" },
+      : hasManuals
+        ? { href: "/auta", label: "Wybierz auto" }
+        : { href: "/dodaj-auto", label: "Dodaj auto" },
     ...(car ? [{ href: equipmentHref(car.id), label: "Wyposażenie" }] : []),
     { href: "/ostrzezenia", label: "Ostrzeżenia" },
     { href: "/komentarze", label: "Komentarze" },
     { href: "/zakladki", label: "Zakładki" },
     { href: "/notatnik", label: "Notatnik" },
-    { href: "/dodaj-auto", label: "Dodaj auto" },
+    ...(hasManuals ? [{ href: "/dodaj-auto", label: "Dodaj auto" }] : []),
     { href: "/ustawienia", label: "Ustawienia" },
   ];
   const router = useRouter();

@@ -35,13 +35,14 @@ See `AGENTS.md` → Storage schema. Notes:
 
 ## Migrations
 
-- `1 → 2`: assigns all data to `opel-cascada-2016`, rewrites hrefs (`/instrukcja/...`,
-  `/navi-950/...` → `/auto/opel-cascada-2016/...`, `upgradeV1Href`), rebuilds bookmark ids as
-  `${car}:${book}:${sectionId}` and sets `activeCar` when the user already had data.
+- `1 → 2`: keeps data from the former single-car version associated with its original
+  `opel-cascada-2016` car id, rewrites the old `/instrukcja/…` and `/navi-950/…` links, rebuilds
+  bookmark ids as `${car}:${book}:${sectionId}` and sets `activeCar` when the user had data.
 
-- `2 → 3`: `settings.vehicle` (overrides of the old built-in Cascada defaults) moves to
+- `2 → 3`: the old single-car `settings.vehicle` profile moves to
   `settings.vehicles["opel-cascada-2016"]`, with renamed feature ids mapped; the old
-  defaults themselves are not copied.
+  feature defaults themselves are not copied. This only preserves data created by the retired
+  single-car version; current installations have no preset vehicle or equipment.
 
 Migrations run in memory on load; the upgraded shape is written on the next change.
 

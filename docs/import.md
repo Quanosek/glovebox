@@ -114,9 +114,8 @@ assets folder. Responses are cacheable (`max-age=3600, stale-while-revalidate=86
 
 ## Limitations
 
-- Content structure quality depends on the PDF (the extractor is tuned for Opel manuals:
-  headings by font size, warning boxes, page footers). Scanned PDFs without a text layer
-  produce only images.
+- Content structure quality depends on the PDF layout (headings by font size, warning boxes,
+  page footers). Scanned PDFs without a text layer produce only images.
 - Equipment detection relies on Polish section and heading titles (`featureRules.ts`);
   manuals in other languages show all content without equipment labels.
 - Re-importing the same car creates a new folder; delete the old one on its car page

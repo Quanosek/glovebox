@@ -23,7 +23,7 @@ normally.
   `book`), matched by `matchFeatures(book, title)`. Rules are generic and run for every car
   on the server at render time — editing them needs no re-extraction. Keep rules precise:
   check that new patterns do not hit unrelated phrases (e.g. "Połączenie alarmowe" is not an
-  alarm system, "Navi 950" is not navigation-only content).
+  alarm system).
 - **Section level** — `getSectionFeatures(ctx, id)`: tags of the section title, inherited by
   sub-sections.
 - **Heading level** — `getFeatureTree(ctx, blocks, inherited)`: most equipment is described

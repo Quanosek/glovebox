@@ -2,9 +2,9 @@
 
 /*
  * Design system (see AGENTS.md → Design rules):
- * - light theme inspired by the Opel Navi 950 UI
+ * - light theme inspired by in-car manual interfaces
  * - NO rounded corners anywhere
- * - palette restricted to white, greys, silver and Opel red
+ * - palette restricted to white, greys, silver and red accents
  */
 @theme {
   --color-*: initial;
@@ -217,6 +217,17 @@ body {
     color: var(--color-ink);
     transition: border-color 160ms var(--ease-ui);
   }
+  select.field {
+    appearance: none;
+    padding-right: 2rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='m1 1 5 5 5-5' fill='none' stroke='%235c6166' stroke-width='1.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.65rem center;
+    background-size: 0.7rem;
+  }
+  select.field:disabled {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='m1 1 5 5 5-5' fill='none' stroke='%238a8f94' stroke-width='1.5'/%3E%3C/svg%3E");
+  }
   .field:hover {
     border-color: var(--color-steel);
   }
@@ -225,6 +236,65 @@ body {
   .field:focus-visible {
     outline: none;
     border-color: var(--color-graphite);
+  }
+  input[type="checkbox"] {
+    appearance: none;
+    display: inline-grid;
+    width: 1rem;
+    height: 1rem;
+    flex: 0 0 1rem;
+    place-content: center;
+    margin: 0;
+    border: 1px solid var(--color-steel);
+    background: var(--color-white);
+    vertical-align: middle;
+    cursor: pointer;
+  }
+  input[type="checkbox"]:checked {
+    border-color: var(--color-red);
+    background-color: var(--color-red);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='m2 6 2.5 2.5L10 3' fill='none' stroke='white' stroke-width='1.8'/%3E%3C/svg%3E");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 0.7rem;
+  }
+  input[type="checkbox"]:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  details > summary {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    cursor: pointer;
+    list-style: none;
+  }
+  details > summary::-webkit-details-marker {
+    display: none;
+  }
+  details > summary::before {
+    content: "›";
+    color: var(--color-red);
+    transition: transform 160ms var(--ease-ui);
+  }
+  details[open] > summary::before {
+    transform: rotate(90deg);
+  }
+
+  .page-shell {
+    width: 100%;
+    max-width: 72rem;
+    flex: 1;
+    margin-inline: auto;
+    padding: 1.5rem 1rem 2rem;
+  }
+  .page-title {
+    border-bottom: 2px solid var(--color-red);
+    padding-bottom: 0.5rem;
+    font-size: clamp(1.5rem, 2.4vw, 1.875rem);
+    font-weight: 600;
+    line-height: 1.2;
   }
 
   /* Interactive list rows / tiles: gentle background fade on hover. */
@@ -270,6 +340,11 @@ body {
   }
   .app-dialog[open]::backdrop {
     animation: backdrop-in 160ms var(--ease-ui);
+  }
+  .app-dialog-body {
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .panel {
@@ -501,6 +576,12 @@ body {
   ::backdrop {
     animation-duration: 1ms !important;
     transition-duration: 1ms !important;
+  }
+
+  @media (min-width: 40rem) {
+    .page-shell {
+      padding: 2rem 2rem 2.5rem;
+    }
   }
   .btn:active,
   .hover-tile:active {

@@ -16,8 +16,9 @@ import {
   RENAMED_FEATURES,
   type FeatureState,
 } from "@/config/vehicle";
-import { CASCADA_CAR_ID } from "@/lib/cars";
 import { isValidId } from "@/lib/slug";
+
+const LEGACY_CAR_ID = "opel-cascada-2016";
 
 /**
  * Migrations upgrade stored data one version at a time:
@@ -32,17 +33,15 @@ export const MIGRATIONS: Record<number, Migration> = {
   // Data written before versioning existed (no `version` field) is treated
   // as version 0 and has the same shape as version 1.
   0: (data) => ({ ...data, version: 1 }),
-  // v2: multiple cars. Everything stored before belongs to the Opel Cascada
-  // and its URLs move from `/<book>/…` to `/auto/<car>/<book>/…`.
+  // v2: multiple cars. Older single-car data keeps its original car association.
   1: migrateV1toV2,
-  // v3: equipment per car. The old single profile (overrides of the removed
-  // Opel Cascada defaults) becomes the Cascada's own profile.
+  // v3: equipment profiles are stored separately for each car.
   2: migrateV2toV3,
 };
 
 const V1_ROUTES = ["/instrukcja", "/navi-950"];
 
-/** Rewrites a v1 URL (`/instrukcja/…`) to the v2 car URL. */
+/** Rewrites historic single-car URLs to their original car URL. */
 export function upgradeV1Href(href: string): string {
   for (const route of V1_ROUTES) {
     if (
@@ -50,7 +49,7 @@ export function upgradeV1Href(href: string): string {
       href.startsWith(`${route}/`) ||
       href.startsWith(`${route}#`)
     )
-      return `/auto/${CASCADA_CAR_ID}${href}`;
+      return `/auto/${LEGACY_CAR_ID}${href}`;
   }
   return href;
 }
@@ -60,7 +59,7 @@ function migrateV1toV2(data: Record<string, unknown>) {
     isObject(item)
       ? {
           ...item,
-          car: CASCADA_CAR_ID,
+          car: LEGACY_CAR_ID,
           href: typeof item.href === "string" ? upgradeV1Href(item.href) : "",
         }
       : item;
@@ -74,7 +73,7 @@ function migrateV1toV2(data: Record<string, unknown>) {
         isObject(b)
           ? {
               ...(withCar(b) as Record<string, unknown>),
-              id: `${CASCADA_CAR_ID}:${str(b.book)}:${str(b.sectionId)}`,
+              id: `${LEGACY_CAR_ID}:${str(b.book)}:${str(b.sectionId)}`,
             }
           : b,
       )
@@ -91,7 +90,7 @@ function migrateV1toV2(data: Record<string, unknown>) {
     lastRead: isObject(data.lastRead) ? withCar(data.lastRead) : null,
     settings: {
       ...settings,
-      activeCar: hasData ? CASCADA_CAR_ID : null,
+      activeCar: hasData ? LEGACY_CAR_ID : null,
     },
   };
 }
@@ -100,10 +99,11 @@ function migrateV2toV3(data: Record<string, unknown>) {
   const settings = isObject(data.settings) ? { ...data.settings } : {};
   const vehicles: Record<string, unknown> = {};
   if (isObject(settings.vehicle)) {
-    const cascada: Record<string, unknown> = {};
+    const legacyProfile: Record<string, unknown> = {};
     for (const [id, state] of Object.entries(settings.vehicle))
-      cascada[RENAMED_FEATURES[id] ?? id] ??= state;
-    if (Object.keys(cascada).length > 0) vehicles[CASCADA_CAR_ID] = cascada;
+      legacyProfile[RENAMED_FEATURES[id] ?? id] ??= state;
+    if (Object.keys(legacyProfile).length > 0)
+      vehicles[LEGACY_CAR_ID] = legacyProfile;
   }
   delete settings.vehicle;
   return { ...data, settings: { ...settings, vehicles } };

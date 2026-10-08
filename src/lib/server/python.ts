@@ -3,8 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 
 /**
- * Locates a Python 3 interpreter with PyMuPDF and Pillow (needed by
- * `scripts/extract.py`). Same lookup order as `scripts/extract.mjs`.
+ * Locates a supported Python interpreter with PyMuPDF and Pillow (needed by
+ * `scripts/extract.py`).
  */
 
 export interface PythonInfo {
@@ -12,6 +12,28 @@ export interface PythonInfo {
   version: string;
   pymupdf: string | null;
   pillow: string | null;
+}
+
+function versionAtLeast(actual: string | null, required: string): boolean {
+  const parts = actual
+    ?.match(/\d+(?:\.\d+)*/)?.[0]
+    .split(".")
+    .map(Number);
+  const minimum = required.split(".").map(Number);
+  if (!parts) return false;
+  for (let i = 0; i < minimum.length; i++) {
+    const left = parts[i] ?? 0;
+    if (left !== minimum[i]) return left > minimum[i];
+  }
+  return true;
+}
+
+export function isSupportedPython(info: PythonInfo): boolean {
+  return (
+    versionAtLeast(info.version, "3.10") &&
+    versionAtLeast(info.pymupdf, "1.26") &&
+    versionAtLeast(info.pillow, "12.3")
+  );
 }
 
 const PROBE = [
@@ -111,8 +133,8 @@ export async function findPython(
     if (r.code !== 0) continue;
     try {
       const info = JSON.parse(r.stdout.trim().split("\n").pop() ?? "");
-      if (!String(info.version).startsWith("3.")) continue;
-      found.push({ command, ...info });
+      const python = { command, ...info } as PythonInfo;
+      if (isSupportedPython(python)) found.push(python);
     } catch {
       // not a usable interpreter
     }

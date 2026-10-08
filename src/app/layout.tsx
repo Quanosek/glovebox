@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     template: "%s · Moje instrukcje aut",
   },
   description:
-    "Prywatna biblioteka instrukcji obsługi aut (m.in. Opel Cascada MY16 i Navi 950) z zaznaczeniami, komentarzami i notatnikiem.",
+    "Prywatna biblioteka instrukcji samochodowych wszystkich marek z zaznaczeniami, komentarzami i notatnikiem.",
   robots: { index: false, follow: false },
 };
 
@@ -43,9 +43,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <DialogHost />
         <footer className="mt-auto border-t border-line bg-paper px-5 py-3 text-xs text-steel print:hidden">
           <p className="mx-auto max-w-app">
-            Treść instrukcji należy do producentów aut (m.in. Opel / Stellantis)
-            i służy wyłącznie do użytku prywatnego. Notatki zapisują się tylko w
-            tej przeglądarce.
+            Treść instrukcji należy do producentów aut i służy wyłącznie do
+            użytku prywatnego. Notatki zapisują się tylko w tej przeglądarce.
           </p>
         </footer>
       </body>

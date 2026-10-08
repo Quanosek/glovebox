@@ -1,31 +1,18 @@
 # Content extraction
 
-The manuals are copyrighted PDFs, so they are not committed. The pipeline converts them into
-structured JSON (`database/<car>/<book>/`) and WebP images (`database/<car>/assets/<book>/`,
-served as `/media/<car>/<book>/...`). The whole `database/` folder is git-ignored: every
-checkout keeps its own local vehicle database.
+Every manual is provided by the user through the “Dodaj auto” wizard. There are no bundled PDFs,
+vehicle definitions or per-vehicle extraction presets. The local import pipeline passes each
+uploaded document and its metadata to `scripts/extract.py`; it writes structured JSON
+(`database/<car>/<book>/`) and WebP images (`database/<car>/assets/<book>/`, served as
+`/media/<car>/<book>/...`). The whole `database/` folder is git-ignored.
 
-Two entry points use the same `scripts/extract.py`:
+The extractor accepts the PDF path, book id, output paths, image URL prefix, title and optional
+source URL as arguments. The wizard handles those arguments and stages files under
+`database/.import-<job>/` before publishing the completed car. Do not add a preset vehicle or
+edit generated output by hand.
 
-- `pnpm extract` (re)generates the Opel Cascada books listed in
-  `scripts/manuals.config.json` (this document) and writes `database/<car>/car.json` from
-  its `car` entry when the file does not exist yet;
-- the "Dodaj auto" wizard runs it for uploaded PDFs (see `docs/import.md`).
-
-`--book` accepts any lowercase slug (`[a-z0-9-]`), `--assets-url` sets the image URL prefix.
-
-## Running
-
-```bash
-python3 -m pip install -r scripts/requirements.txt   # PyMuPDF >= 1.26, Pillow >= 12.3
-pnpm fetch-manuals                                 # -> manuals/*.pdf (validated %PDF-)
-pnpm extract                                       # both books
-pnpm extract --book infotainment --max-pages 20 # one book, debug options passed through
-```
-
-`scripts/extract.mjs` looks for a Python with PyMuPDF (`.venv`, `python3`, `python`) and runs
-`scripts/extract.py` per book from `scripts/manuals.config.json` (paths, title, URL, extra args).
-The extractor wipes the book's `*.json` and asset directory before writing.
+The extractor requires Python 3.10+, PyMuPDF 1.26+ and Pillow 12.3+; `pnpm test:extract`
+exercises its output using a synthetic PDF.
 
 ## Algorithm (`scripts/extract.py`)
 
@@ -54,15 +41,13 @@ The extractor wipes the book's `*.json` and asset directory before writing.
 
 ## Testing
 
-`pnpm test:extract` builds a synthetic Opel-like PDF (`scripts/tests/make_sample_pdf.py`:
+`pnpm test:extract` builds a synthetic vehicle-manual PDF (`scripts/tests/make_sample_pdf.py`:
 two columns, running headers, warnings, lists, a table, an image, page references) and checks
-the output. The heuristics were developed against this sample because the real PDFs could
-not be downloaded in the development sandbox — after the first real extraction review the
-result and tune the CLI options in `manuals.config.json` if needed.
+the output. Review results from user-provided manuals because PDF layouts and scan quality vary.
 
 ## After extraction
 
 - Check `/ostrzezenia`, a few sections with tables and images, and the search.
-- Review `src/config/featureRules.ts` against the real section titles (e.g. infotainment
-  variant names) — the rules match titles only.
+- Review `src/config/featureRules.ts` against real Polish section titles — rules match titles
+  only.
 - Highlights on changed text are re-anchored by quote; unmatched ones are flagged, not lost.

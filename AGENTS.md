@@ -8,22 +8,26 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# AGENTS.md — opel-cascada-manual
+# AGENTS.md — car-manual-library
 
-Private, local-only Next.js app for reading car owner manuals with highlighting, comments,
-bookmarks and a Markdown notebook. Every user adds their own cars from PDF manuals with a
-step-by-step wizard (brand / model / year / engine from official catalogues) and marks each
-car's optional equipment; content about equipment the car lacks is collapsed. The owner's
-Opel Cascada MY16 manuals can be regenerated with `pnpm extract`.
+Private, local-only Next.js app for reading vehicle manuals from any manufacturer, with
+highlighting, comments, bookmarks and a Markdown notebook. The visual hierarchy takes
+inspiration from Opel's Navi 950 interface; the vehicle database itself is generic and user
+populated. There is no bundled example, default vehicle, manual template or generated content.
+Each user adds cars from PDF manuals with a step-by-step wizard and can mark optional equipment.
 
 - **No accounts, no database server.** On entry the user sees a local profile (`/`): car
   picker or notebook. User data lives in the browser only (localStorage + Cache API).
 - **Manual content is a local file database** (`database/`, **git-ignored**), served by the
-  local Next.js server (`next dev` / `next start`). Nothing in it is committed; every
-  checkout imports its own manuals (copy `database/<car>/` to move a car).
+  local Next.js server (`next dev` / `next start`). Nothing inside it is committed. A fresh
+  checkout starts without manuals; each user imports at least one manual before a car can be
+  selected. With no readable manual, the profile offers only the add-first-car action.
 - **Offline after a car is chosen.** Opening a car saves all its pages, images and scripts
   to the Cache API in the background; from then on it works with no connection. A
   connection is only needed to add cars and to refresh the car list (`docs/offline.md`).
+- **Installation checks.** The add-car wizard validates the supported Node and Python versions,
+  PyMuPDF/Pillow, extractor availability, database write access, local access and active import
+  jobs. It reports whether manuals already exist but does not require them to import the first car.
 - **Non-technical users.** UI text is plain Polish without jargon (no paths, commands, file
   formats, "serwer", "JSON", "localStorage" …); technical details belong in `README.md` /
   `docs/` (`docs/ui.md`).
@@ -40,10 +44,15 @@ Opel Cascada MY16 manuals can be regenerated with `pnpm extract`.
 | Code, identifiers, code comments, commit messages, `AGENTS.md`, `docs/*.md` | **English** |
 | UI text, page content, manual content, root `README.md`, user-facing errors | **Polish**  |
 
-## Commands
+## First session and commands
 
 pnpm is the only package manager (`pnpm-lock.yaml`; `pnpm-workspace.yaml` allow-lists
 dependency build scripts). Do not add `package-lock.json` / `yarn.lock`.
+Read the Polish user setup in `README.md` before changing onboarding or import behavior. A
+fresh clone has no car content: install dependencies, prepare Python as described there, start
+the app, and add the first car through `/dodaj-auto`. Never create or commit files under
+`database/`; `.gitignore` excludes user manuals, import staging data and local catalogue/logo
+caches. Check `git status --ignored` carefully before modifying local database content.
 
 ```bash
 pnpm install           # install from pnpm-lock.yaml (CI: --frozen-lockfile)
@@ -54,28 +63,26 @@ pnpm lint              # ESLint (flat config: next core-web-vitals + typescript)
 pnpm typecheck         # next typegen && tsc --noEmit
 pnpm test              # Vitest (src/**/*.test.ts)
 pnpm format            # Prettier (+ Tailwind class sorting); `pnpm format:check` only checks
-pnpm test:extract      # Python unittest for scripts/extract.py (needs PyMuPDF)
-pnpm fetch-manuals     # download the Cascada PDFs into manuals/ (git-ignored)
-pnpm extract           # Cascada PDFs -> database/opel-cascada-2016/** (+ car.json if missing)
+pnpm test:extract      # Python unittest for scripts/extract.py (needs supported Python/PyMuPDF/Pillow)
 pnpm icons             # src/app/icon.svg -> apple-icon.png + favicon.ico
 ```
 
 The importer finds Python via `PYTHON`, then `.venv/bin/python` / `.venv\Scripts\python.exe`,
-then `python3`, `python`, `py` (first one with PyMuPDF + Pillow wins; `src/lib/server/python.ts`).
+then `python3`, `python`, `py`; it accepts Python 3.10+, PyMuPDF 1.26+ and Pillow 12.3+
+(`src/lib/server/python.ts`, `scripts/requirements.txt`).
 
 ## Architecture
 
 ```
-database/                       local manual content (git-ignored; JSON + WebP, never PDFs)
+database/                       user-managed manual content (git-ignored; JSON + WebP, never PDFs)
   <car>/car.json                CarFile: brand, model, year, variant?, catalog?, spec?, books[]
   <car>/<bookId>/index.json     BookIndex (+ one ChapterFile JSON per top-level chapter)
   <car>/assets/<bookId>/<chapter>/p<page>-<n>.webp   illustrations, served as /media/<car>/...
   .import-<job>/                staging folder of a running import (skipped)
   .catalog/                     cached official catalogue answers (docs/catalog.md)
   .logos/                       cached brand logos (docs/logos.md)
-scripts/                        extraction pipeline (Python + Node wrappers), icon generator
+scripts/                        generic PDF extraction (Python), tests, icon generator
   extract.py                    PDF -> JSON blocks + WebP images (PyMuPDF, Pillow)
-  extract.mjs / manuals.config.json   regenerates the Cascada books (+ car.json)
 public/sw.js                    service worker (shell precache + runtime caching, docs/offline.md)
 src/
   app/
@@ -86,7 +93,7 @@ src/
     auto/[car]/wyposazenie/     equipment of the car (EquipmentEditor)
     auto/[car]/[book]/          book index + sidebar layout; [...slug]/ section pages
     dodaj-auto/                 import wizard (AddCarWizard: car + PDFs, reading, equipment, done)
-    api/system                  GET environment check (Python, PyMuPDF, Pillow, writable db)
+    api/system                  GET environment + manual count check (Node, Python, database)
     api/cars                    GET list · POST multipart import (202 {job})
     api/cars/[car]              GET · DELETE (not while importing)
     api/cars/[car]/offline      GET { version, urls } for the offline copy of a car
@@ -118,18 +125,16 @@ src/
 ```
 
 - The app runs as a **local Node server**; pages are `force-dynamic` (root layout) so newly
-  imported cars appear without a rebuild. `next.config.ts` permanently redirects the old
-  `/instrukcja/*` and `/navi-950/*` URLs to `/auto/opel-cascada-2016/...` and `/twoje-auto`
-  to `/auta`.
+  imported cars appear without a rebuild. `listCarSummaries()` excludes cars that have no
+  readable manual; the profile and car picker show the first-car action when the library is empty.
 - Content API (`src/lib/content.ts`) works on a `BookCtx { car, book }`: `getBookCtx(car,
 route)`, `getBook`, `getSection`, `sectionHref`, `getTocTree`, `getPrevNext`,
   `resolvePageRef`, … plus `listCars`, `listCarSummaries`, `getAllWarnings`,
   `getSearchDocs(car)`, `getSectionFeatures`, `getFeatureTree`, `getFeatureSections(car)`,
   `getCarUrls(car)`, `getCarVersion(car)`. Override the folder with `MANUALS_DATABASE_DIR`.
 - Ids: car and book ids match `ID_PATTERN` (`/^[a-z0-9][a-z0-9-]{0,79}$/`, `src/lib/slug.ts`);
-  this is also what keeps `/media` and imports path-safe. Cascada keeps book ids `manual` /
-  `infotainment` (routes `instrukcja` / `navi-950`); imported books use id = route = slug of
-  the title (`assets` and `wyposazenie` reserved, `RESERVED_BOOK_ROUTES`).
+  this is also what keeps `/media` and imports path-safe. Imported book ids and routes are
+  slugs of their titles (`assets` and `wyposazenie` reserved, `RESERVED_BOOK_ROUTES`).
 - Mutating API routes call `rejectCrossSite()` (loopback `Host` + same-origin `Origin` /
   `Sec-Fetch-Site`; `MANUALS_ALLOW_REMOTE_IMPORT=1` allows LAN hosts) because the server is
   unauthenticated; only GET routes may skip it.
@@ -150,8 +155,9 @@ which then shows the equipment step.
 
 ## Design rules (strict)
 
-- Light, minimal UI inspired by the Opel **Navi 950** screens: thin 1px lines, silver
-  gradients for headers/buttons (`.silver-bar`, `.btn`, `.panel-title`), Opel red accents.
+- Light, minimal UI inspired by the Opel **Navi 950** interface: thin 1px lines, silver
+  gradients for headers/buttons (`.silver-bar`, `.btn`, `.panel-title`), red accents. Keep UI
+  and vehicle data manufacturer-neutral; only the design inspiration and accent color refer to Opel.
 - **No rounded corners anywhere.** Tailwind radius tokens are removed (`--radius-*: initial`)
   and `globals.css` forces `border-radius: 0 !important` on every element. Never add
   `rounded-*` classes or inline radii.
@@ -167,8 +173,8 @@ which then shows the equipment step.
   `polishTypography()` (`src/lib/typography.ts`) on the server for manual content,
   `watchTypography()` on the client for everything else. Editorial Polish (`„…”`, `–`, `…`,
   sentence case, one term per concept). Details in `docs/ui.md`.
-- Favicon: black Opel blitz in a ring on white (`src/app/icon.svg`, original simplified
-  drawing). After editing it run `pnpm icons`. With an active car the header and the car
+- Favicon: generic open-book mark on white (`src/app/icon.svg`). After editing it run
+  `pnpm icons`. With an active car the header and the car
   page show the official brand logo of the car's model year instead (`CarLogo`,
   `docs/logos.md`); brand logos keep their own colours (content, not UI chrome).
 - **Never use native `window.confirm` / `alert` / `prompt`.** Use `confirmDialog()` /
@@ -206,13 +212,13 @@ Details in `docs/vehicle-profile.md`. Every car is tagged; no car has preset equ
   per top-level chapter). Section ids are slug paths (`chapter/sub`); block ids `b1..bN`
   per section are deep-link targets (`/auto/<car>/<book>/<slug>#b12`). Page references are
   `{ page: n }` runs resolved to links by `resolvePageRef`.
-- Generated content must not be edited by hand (it is overwritten by `pnpm extract` or a
-  re-import). Fix the extractor or its CLI options in `scripts/manuals.config.json` instead
-  (see `docs/extraction.md`).
+- Generated content must not be edited by hand (it is replaced by importing the source PDF
+  again). The generic extractor and its tests are in `scripts/extract.py` and
+  `scripts/tests/` (`docs/extraction.md`).
 - A fresh checkout has an empty `database/` (the app offers adding a car). Raw PDFs are
   never committed (`manuals/`, `*.pdf`), and neither is any generated content.
-- Adding a car by hand: create `database/<id>/car.json` + book folders in the same format
-  (the wizard does exactly this).
+- Do not create seeded/example cars or database fixtures. The wizard creates each user's
+  `database/<id>/car.json` and book folders from their PDFs.
 
 ## Storage schema
 
@@ -233,10 +239,9 @@ AppData {
 }
 ```
 
-- v1 → v2 (`MIGRATIONS[1]`): everything belongs to `opel-cascada-2016`, hrefs are rewritten
-  to `/auto/opel-cascada-2016/...`, bookmark ids rebuilt.
-- v2 → v3 (`MIGRATIONS[2]`): `settings.vehicle` overrides move to
-  `settings.vehicles["opel-cascada-2016"]` (renamed feature ids mapped, old defaults dropped).
+- Historical v1 → v2 and v2 → v3 migrations preserve data from the retired single-car
+  application. The legacy vehicle id and routes only occur in migration code; they do not seed
+  a vehicle or affect new installs.
 - Changing the shape: bump `SCHEMA_VERSION`, add `MIGRATIONS[oldVersion]` in
   `migrations.ts`, extend `sanitize`, add a test in `src/lib/__tests__/storage.test.ts`.
 - Export file: `{ app: "opel-cascada-manual", exportedAt, data }`. Import accepts it (or bare

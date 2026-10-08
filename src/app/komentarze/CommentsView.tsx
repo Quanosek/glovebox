@@ -49,7 +49,6 @@ export function CommentsView({ cars }: { cars: CarSummary[] }) {
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
-            className="accent-red"
             checked={onlyComments}
             onChange={(e) => setOnlyComments(e.target.checked)}
           />

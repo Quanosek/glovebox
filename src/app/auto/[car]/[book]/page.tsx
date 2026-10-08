@@ -45,9 +45,7 @@ export default async function BookPage({ params }: Props) {
         </Link>{" "}
         › <span className="text-ink">{index.title}</span>
       </nav>
-      <h1 className="border-b-2 border-red pb-2 text-2xl font-semibold">
-        {index.title}
-      </h1>
+      <h1 className="page-title">{index.title}</h1>
       {index.placeholder && (
         <p className="mt-4 border-l-4 border-red bg-paper px-4 py-3 text-sm">
           Pełna treść tej instrukcji nie jest jeszcze gotowa – na razie widzisz
