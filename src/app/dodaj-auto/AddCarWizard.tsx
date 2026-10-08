@@ -1218,7 +1218,7 @@ function StepProcessing({
                 )}
                 {d.state === "error" && (d.error || d.log.length > 0) && (
                   <details className="mt-1">
-                    <summary className="cursor-pointer text-steel">
+                    <summary className="text-steel">
                       Szczegóły (dla osoby technicznej)
                     </summary>
                     <pre className="mt-1 max-h-24 overflow-auto bg-paper px-2 py-1 text-[11px] whitespace-pre-wrap">
