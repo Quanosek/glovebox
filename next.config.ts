@@ -9,7 +9,11 @@ const nextConfig: NextConfig = {
   async redirects() {
     // URLs of the first, single-car version of the app.
     return ["instrukcja", "navi-950"].flatMap((route) => [
-      { source: `/${route}`, destination: `${CASCADA}/${route}`, permanent: true },
+      {
+        source: `/${route}`,
+        destination: `${CASCADA}/${route}`,
+        permanent: true,
+      },
       {
         source: `/${route}/:path*`,
         destination: `${CASCADA}/${route}/:path*`,

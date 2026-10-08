@@ -1,8 +1,16 @@
 # Content extraction
 
 The manuals are copyrighted PDFs, so they are not committed. The pipeline converts them into
-structured JSON (`src/content/<book>/`) and WebP images (`public/assets/<book>/`), which are
-committed.
+structured JSON (`database/<car>/<book>/`) and WebP images (`database/<car>/assets/<book>/`,
+served as `/media/<car>/<book>/...`), which are committed.
+
+Two entry points use the same `scripts/extract.py`:
+
+- `npm run extract` regenerates the built-in Opel Cascada books listed in
+  `scripts/manuals.config.json` (this document);
+- the "Dodaj auto" wizard runs it for uploaded PDFs (see `docs/import.md`).
+
+`--book` accepts any lowercase slug (`[a-z0-9-]`), `--assets-url` sets the image URL prefix.
 
 ## Running
 

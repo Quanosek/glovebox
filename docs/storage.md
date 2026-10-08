@@ -11,17 +11,32 @@ Nothing is sent anywhere.
   `sanitize()` drops/repairs invalid entries. Also `parseImport()` and `mergeData()`.
 - `store.ts` — `AppStore` (in-memory snapshot + persistence + listeners), `getStore()`
   browser singleton (listens to the `storage` event for cross-tab sync), `newId()`.
-- `hooks.ts` — `useAppData()`, `useHydrated()`, `useVehicleProfile()`, `updateData(fn)`.
+- `hooks.ts` — `useAppData()`, `useHydrated()`, `useVehicleProfile()`, `useActiveCar(cars)`,
+  `setActiveCar(id)`, `updateData(fn)`.
 
 `updateData` takes a pure function `(data) => newData`; never mutate the snapshot.
 
-## Schema (version 1)
+## Schema (version 2)
 
 See `AGENTS.md` → Storage schema. Notes:
+
+- Highlights, bookmarks and `lastRead` carry `car` (a `database/` car id) and `book` (a book
+  id inside that car). Views filter by car and label entries with the car/book names from
+  `listCarSummaries()`; entries of a car that was deleted stay in storage and keep their ids.
+- `settings.activeCar` is the car picked on the profile; the URL (`/auto/<id>`) wins while
+  reading (`useActiveCar`). `settings.profileName` is the local profile's display name.
 
 - `settings.vehicle` contains only overrides of `DEFAULT_PROFILE`.
 - `lastRead.scrollY` is restored only when the user clicks "Kontynuuj czytanie"
   (a one-shot sessionStorage flag, `opel-cascada-manual:restore-scroll`).
+
+## Migrations
+
+- `1 → 2`: assigns all data to `opel-cascada-2016`, rewrites hrefs (`/instrukcja/...`,
+  `/navi-950/...` → `/auto/opel-cascada-2016/...`, `upgradeV1Href`), rebuilds bookmark ids as
+  `${car}:${book}:${sectionId}` and sets `activeCar` when the user already had data.
+
+Migrations run in memory on load; the upgraded shape is written on the next change.
 
 ## Adding a migration
 

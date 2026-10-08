@@ -8,10 +8,7 @@
       "out": "database/opel-cascada-2016/manual",
       "assets": "database/opel-cascada-2016/assets/manual",
       "assetsUrl": "/media/opel-cascada-2016/manual",
-      "args": [
-        "--max-page-level",
-        "2"
-      ]
+      "args": ["--max-page-level", "2"]
     },
     {
       "id": "infotainment",
@@ -21,10 +18,7 @@
       "out": "database/opel-cascada-2016/infotainment",
       "assets": "database/opel-cascada-2016/assets/infotainment",
       "assetsUrl": "/media/opel-cascada-2016/infotainment",
-      "args": [
-        "--max-page-level",
-        "2"
-      ]
+      "args": ["--max-page-level", "2"]
     }
   ]
 }

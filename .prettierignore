@@ -2,6 +2,6 @@
 out
 node_modules
 public
-src/content/**/*.json
+database
 package-lock.json
 manuals

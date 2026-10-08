@@ -91,7 +91,7 @@ export function ProfileView({ cars }: { cars: CarSummary[] }) {
             </h2>
             <p className="mt-1 text-sm text-graphite">
               {active
-                ? `Wybrane auto · ${active.books.length} ${active.books.length === 1 ? "instrukcja" : "instrukcje"}. Zmień albo dodaj własne poniżej.`
+                ? `Wybrane auto · ${active.books.length} ${plural(active.books.length, "instrukcja", "instrukcje", "instrukcji")}. Zmień albo dodaj własne poniżej.`
                 : `Dostępne auta: ${cars.length}. Możesz też dodać własne z plików PDF.`}
             </p>
           </div>
@@ -106,7 +106,9 @@ export function ProfileView({ cars }: { cars: CarSummary[] }) {
               Notatnik
             </h2>
             <p className="mt-1 text-sm text-graphite">
-              {hydrated ? `${data.notebook.pages.length} kartek · ` : ""}
+              {hydrated
+                ? `${data.notebook.pages.length} ${plural(data.notebook.pages.length, "kartka", "kartki", "kartek")} · `
+                : ""}
               Puste kartki z podstawowym formatowaniem Markdown (nagłówki,
               pogrubienie, listy, zadania).
             </p>
@@ -199,4 +201,12 @@ export function ProfileView({ cars }: { cars: CarSummary[] }) {
       </p>
     </>
   );
+}
+
+/** Polish plural form for `n` (1 kartka, 2 kartki, 5 kartek). */
+function plural(n: number, one: string, few: string, many: string) {
+  if (n === 1) return one;
+  const d = n % 10;
+  const t = n % 100;
+  return d >= 2 && d <= 4 && (t < 12 || t > 14) ? few : many;
 }
