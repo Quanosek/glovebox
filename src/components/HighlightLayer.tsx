@@ -197,20 +197,18 @@ export function HighlightLayer({
         setPending(null);
         return;
       }
-      const rect = range.getBoundingClientRect();
-      const header =
-        parseFloat(
-          getComputedStyle(document.documentElement).getPropertyValue(
-            "--header-h",
-          ),
-        ) || 56;
-      const below = rect.top < header + 56;
-      setPending({
-        start,
-        end,
-        x: rect.left + rect.width / 2,
-        y: below ? rect.bottom : rect.top,
-        below,
+      setPending({ start, end, ...toolbarPosition(range) });
+    };
+    // While scrolling only move the toolbar; offsets do not change.
+    let frame = 0;
+    const onScroll = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        const sel = window.getSelection();
+        if (!sel || sel.isCollapsed || sel.rangeCount === 0) return;
+        const pos = toolbarPosition(sel.getRangeAt(0));
+        setPending((p) => (p ? { ...p, ...pos } : p));
       });
     };
     const deferred = (e: Event) => window.setTimeout(() => check(e), 0);
@@ -222,13 +220,14 @@ export function HighlightLayer({
     document.addEventListener("keyup", deferred);
     document.addEventListener("touchend", deferred);
     document.addEventListener("selectionchange", onSelectionChange);
-    window.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       document.removeEventListener("mouseup", deferred);
       document.removeEventListener("keyup", deferred);
       document.removeEventListener("touchend", deferred);
       document.removeEventListener("selectionchange", onSelectionChange);
-      window.removeEventListener("scroll", check);
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(frame);
     };
   }, [root]);
 
@@ -574,6 +573,20 @@ function offsetFromPoint(root: Node, x: number, y: number): number | null {
   const range = doc.caretRangeFromPoint?.(x, y);
   if (range) return offsetOf(root, range.startContainer, range.startOffset);
   return null;
+}
+
+function toolbarPosition(range: Range): Point & { below: boolean } {
+  const rect = range.getBoundingClientRect();
+  const header =
+    parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue("--header-h"),
+    ) || 56;
+  const below = rect.top < header + 56;
+  return {
+    x: rect.left + rect.width / 2,
+    y: below ? rect.bottom : rect.top,
+    below,
+  };
 }
 
 function clamp(v: number, min: number, max: number): number {

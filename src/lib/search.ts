@@ -15,10 +15,12 @@ export function normalizeText(text: string): string {
 export function excerpt(text: string, terms: string[], radius = 90): string {
   const norm = normalizeText(text);
   let pos = -1;
-  for (const t of terms) {
-    const i = norm.indexOf(normalizeText(t));
-    if (i >= 0 && (pos < 0 || i < pos)) pos = i;
-  }
+  // Offsets are only comparable when normalisation preserved the length.
+  if (norm.length === text.length)
+    for (const t of terms) {
+      const i = norm.indexOf(normalizeText(t));
+      if (i >= 0 && (pos < 0 || i < pos)) pos = i;
+    }
   const flat = (s: string) => s.replace(/\s+/g, " ").trim();
   if (pos < 0)
     return (

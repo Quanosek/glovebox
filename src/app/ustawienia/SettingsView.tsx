@@ -68,7 +68,7 @@ export function SettingsView() {
     a.href = url;
     a.download = `opel-cascada-notatki-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
-    URL.revokeObjectURL(url);
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     setMessage({ kind: "ok", text: "Kopia zapasowa została pobrana." });
   };
 

@@ -35,6 +35,7 @@ export function Sidebar({
 }) {
   const pathname = decodeURIComponent(usePathname());
   const [open, setOpen] = useState(false);
+  const [openBooks, setOpenBooks] = useState<Record<string, boolean>>({});
   const profile = useVehicleProfile();
   const hydrated = useHydrated();
   const { settings } = useAppData();
@@ -63,42 +64,55 @@ export function Sidebar({
         aria-label="Spis treści"
         className={`${open ? "block" : "hidden"} max-h-[70vh] overflow-y-auto py-2 lg:block lg:h-full lg:max-h-none`}
       >
-        {books.map((book) => (
-          <details
-            key={book.href}
-            open={book.href === current}
-            className="group/book"
-          >
-            <summary className="silver-bar flex cursor-pointer list-none items-center justify-between px-4 py-2 text-xs font-semibold tracking-[0.08em] text-graphite uppercase">
-              <Link
-                href={book.href}
-                className="hover:text-red"
-                onClick={() => setOpen(false)}
-              >
-                {book.title}
-              </Link>
-              <span
-                aria-hidden="true"
-                className="text-steel group-open/book:rotate-90"
-              >
-                ›
-              </span>
-            </summary>
-            <ul className="py-1">
-              {book.nodes.map((node) => (
-                <TocItem
-                  key={node.id}
-                  node={node}
-                  depth={0}
-                  pathname={pathname}
-                  profile={hydrated ? profile : null}
-                  hideMissing={!settings.showUnavailable}
-                  onNavigate={() => setOpen(false)}
-                />
-              ))}
-            </ul>
-          </details>
-        ))}
+        {books.map((book) => {
+          const isOpen = openBooks[book.href] ?? book.href === current;
+          return (
+            <div key={book.href}>
+              <div className="silver-bar flex items-stretch text-xs font-semibold tracking-[0.08em] text-graphite uppercase">
+                <Link
+                  href={book.href}
+                  className="flex-1 px-4 py-2 hover:text-red"
+                  onClick={() => setOpen(false)}
+                >
+                  {book.title}
+                </Link>
+                <button
+                  type="button"
+                  className="w-9 shrink-0 text-steel hover:text-ink"
+                  aria-expanded={isOpen}
+                  aria-label={
+                    isOpen ? `Zwiń: ${book.title}` : `Rozwiń: ${book.title}`
+                  }
+                  onClick={() =>
+                    setOpenBooks((m) => ({ ...m, [book.href]: !isOpen }))
+                  }
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`inline-block ${isOpen ? "rotate-90" : ""}`}
+                  >
+                    ›
+                  </span>
+                </button>
+              </div>
+              {isOpen && (
+                <ul className="py-1">
+                  {book.nodes.map((node) => (
+                    <TocItem
+                      key={node.id}
+                      node={node}
+                      depth={0}
+                      pathname={pathname}
+                      profile={hydrated ? profile : null}
+                      hideMissing={!settings.showUnavailable}
+                      onNavigate={() => setOpen(false)}
+                    />
+                  ))}
+                </ul>
+              )}
+            </div>
+          );
+        })}
       </nav>
     </aside>
   );
