@@ -89,8 +89,9 @@ last word of a paragraph (up to 10 characters) is bound to the previous one.
   red keyboard focus outline. Native `details` disclosures use the same small red chevron.
 - The profile lists only cars assigned to that browser profile. Other readable cars can be
   added from `/dodaj-auto` without importing their manuals again; removing a car from the list
-  does not delete its manuals or saved annotations. `/auto/<id>` redirects to the selected-car
-  page at `/auto/<id>/wyposazenie`, which also contains its manual links and equipment editor.
+  does not delete its manuals or saved annotations. `/auto/<id>` is the selected-car information
+  page with manual links and scoped tools. Its equipment button opens the separate
+  `/auto/<id>/wyposazenie` editor.
 - Selected-car tools are grouped in a two-column layout and include search and warnings scoped
   to that car. Warnings are opened from this view rather than the global navigation. Comments,
   bookmarks and notes remain in the app-wide navigation.
@@ -98,8 +99,9 @@ last word of a paragraph (up to 10 characters) is bound to the previous one.
   border and a soft shadow on hover and a 1px press on `:active`.
 - The page backdrop is made from layered, irregular CSS radial gradients in the existing
   neutral palette; it uses no images or additional visual dependencies.
-- Views outside the primary header navigation expose a shared "Wstecz" control; it returns to
-  the prior same-origin view and uses the relevant car, book, or profile as a direct-entry fallback.
+- Views outside the primary header navigation expose a shared "Wstecz" control aligned to the
+  reader shell width; it returns to the prior same-origin view and uses the relevant car, book,
+  or profile as a direct-entry fallback.
 - `prefers-reduced-motion: reduce` shortens all transitions/animations to 1 ms and removes
   the press movement.
 

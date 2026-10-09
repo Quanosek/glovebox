@@ -24,7 +24,7 @@ export function BackButton() {
   const bookRoute = /^\/auto\/[^/]+\/([^/]+)/.exec(pathname)?.[1];
   const fallback = carId
     ? bookRoute === "wyposazenie"
-      ? "/"
+      ? `/auto/${carId}`
       : bookRoute
         ? `/auto/${carId}/${bookRoute}`
         : `/auto/${carId}`

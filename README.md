@@ -46,7 +46,7 @@ komputerze: folder `database/` jest w `.gitignore` i nie trafia do repozytorium.
   na komputerze (`database/.logos/`), więc działa też offline.
 - **Wyposażenie auta** — dla każdego auta osobno („Mam” / „Nie mam” / „Nie wiem”), tylko
   funkcje opisane w jego instrukcjach, z linkami do odpowiednich sekcji; podpowiedzi na
-  podstawie silnika. Ustawienia otworzysz przyciskiem na stronie wybranego auta.
+  podstawie silnika. Edytor otworzysz osobnym przyciskiem na stronie wybranego auta.
 - **Offline** — po otwarciu auta wszystkie jego strony i ilustracje zapisują się same w tle;
   potem całe auto działa bez internetu (znaczek „Offline” w nagłówku). Połączenie jest
   potrzebne tylko do dodawania aut i odświeżenia listy aut.

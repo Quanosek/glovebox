@@ -8,11 +8,9 @@ import { HighlightLayer } from "@/components/HighlightLayer";
 import { ReadingTracker } from "@/components/ReadingTracker";
 import { SectionGate } from "@/components/SectionGate";
 import { SectionList } from "@/components/SectionList";
-import { bookHref, carHref, carLabel } from "@/lib/cars";
+import { carLabel } from "@/lib/cars";
 import {
-  getAncestors,
   getBlocks,
-  getBook,
   getBookCtx,
   getChildren,
   getPrevNext,
@@ -38,9 +36,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function SectionPage({ params }: Props) {
   const { ctx, section } = await load(params);
-  const index = getBook(ctx);
   const href = sectionHref(ctx, section);
-  const ancestors = getAncestors(ctx, section);
   const features = getSectionFeatures(ctx, section);
   const children = getChildren(ctx, section);
   const { prev, next } = getPrevNext(ctx, section);
@@ -55,33 +51,6 @@ export default async function SectionPage({ params }: Props) {
         title={section.title}
         href={href}
       />
-      <nav aria-label="Ścieżka" className="mb-4 text-xs text-steel">
-        <ol className="flex flex-wrap gap-x-1.5">
-          <li>
-            <Link href={carHref(ctx.car.id)} className="hover:text-red">
-              {carLabel(ctx.car)}
-            </Link>
-          </li>
-          <li>
-            ›{" "}
-            <Link
-              href={bookHref(ctx.car.id, ctx.book.route)}
-              className="hover:text-red"
-            >
-              {index.title}
-            </Link>
-          </li>
-          {ancestors.map((a) => (
-            <li key={a.id}>
-              ›{" "}
-              <Link href={sectionHref(ctx, a)} className="hover:text-red">
-                {a.title}
-              </Link>
-            </li>
-          ))}
-        </ol>
-      </nav>
-
       <header className="border-b-2 border-red pb-2">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <h1 className="text-2xl leading-tight font-semibold">

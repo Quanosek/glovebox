@@ -89,9 +89,10 @@ src/
   app/
     page.tsx                    profile (ProfileView): assigned cars / notebook / continue reading
     auta/                       car list (CarPicker)
-    auto/[car]/                 redirects to the selected-car page
-    auto/[car]/wyposazenie/     selected-car page (books, scoped search/warnings, equipment,
-                                offline status and profile removal); layout tracks active car
+    auto/[car]/                 selected-car information (books, scoped search/warnings,
+                                equipment link, offline status and profile removal);
+                                layout tracks active car
+    auto/[car]/wyposazenie/     per-car equipment editor (EquipmentEditor)
     auto/[car]/[book]/          book index + sidebar layout; [...slug]/ section pages
     dodaj-auto/                 add library car or import wizard (car + PDFs, reading, equipment)
     api/system                  GET environment + manual count check (Node, Python, database)

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { carHref, carLabel } from "@/lib/cars";
+import { carLabel } from "@/lib/cars";
 import {
   getBook,
   getBookCtx,
@@ -35,16 +35,6 @@ export default async function BookPage({ params }: Props) {
 
   return (
     <article>
-      <nav aria-label="Ścieżka" className="mb-4 text-xs text-steel">
-        <Link href="/" className="hover:text-red">
-          Profil
-        </Link>{" "}
-        ›{" "}
-        <Link href={carHref(ctx.car.id)} className="hover:text-red">
-          {carLabel(ctx.car)}
-        </Link>{" "}
-        › <span className="text-ink">{index.title}</span>
-      </nav>
       <h1 className="page-title">{index.title}</h1>
       {index.placeholder && (
         <p className="mt-4 border-l-4 border-red bg-paper px-4 py-3 text-sm">

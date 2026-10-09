@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { CarPicker } from "@/components/CarPicker";
 import { listCarSummaries } from "@/lib/content";
 
@@ -9,12 +8,6 @@ export default function CarsPage() {
   const cars = listCarSummaries();
   return (
     <main id="main" className="page-shell">
-      <nav aria-label="Ścieżka" className="mb-4 text-xs text-steel">
-        <Link href="/" className="hover:text-red">
-          Profil
-        </Link>{" "}
-        › <span className="text-ink">Auta</span>
-      </nav>
       <h1 className="page-title">Wybór auta</h1>
       <p className="mt-3 mb-5 text-sm text-graphite">
         Liczba aut: {cars.length}. Wybierz swoje, aby czytać jego instrukcje,

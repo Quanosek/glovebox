@@ -248,24 +248,26 @@ body {
     color: var(--color-white);
   }
   .btn-primary:hover {
-    background: var(--red-gradient);
+    background: var(--red-gradient-hover);
     border-color: var(--color-red-bright);
   }
   .btn-primary::before {
     background-image:
       radial-gradient(
-        ellipse 54% 120% at 20% 50%,
-        rgba(228, 0, 43, 0.78),
-        transparent 75%
+        ellipse 58% 130% at 20% 50%,
+        rgba(228, 0, 43, 0.98) 0%,
+        rgba(228, 0, 43, 0.62) 48%,
+        transparent 78%
       ),
       radial-gradient(
-        ellipse 48% 110% at 80% 50%,
-        rgba(200, 16, 46, 0.56),
-        transparent 76%
+        ellipse 54% 125% at 80% 50%,
+        rgba(200, 16, 46, 0.88) 0%,
+        rgba(200, 16, 46, 0.48) 48%,
+        transparent 78%
       );
   }
   .btn-primary:hover::before {
-    opacity: 0.8;
+    opacity: 0.95;
     background-position: 220% 50%;
   }
   .btn-primary:active:not(:disabled) {
