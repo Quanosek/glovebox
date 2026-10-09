@@ -12,7 +12,9 @@ Server-only (reads `src/lib/content.ts`); results are memoised per car and
 - `getCarOverview(car)` → `stats` (pages, sections, illustrations, icons, warnings by kind),
   `tiles` ("Najczęściej potrzebne"), `glossaryCount`, `techCount`, `techPreview` (up to four
   measured facts) and `serviceHref` (section about periodic service).
-- `getGlossary(car)` → pictograms with their explanation grouped by section. Sections whose
+- `getGlossary(car)` → pictograms with their explanation grouped by section: icon image blocks
+  followed by text, and paragraphs that start with an inline symbol run
+  (`{ icon }`, e.g. "[symbol] Kierunkowskaz str. 98"). Sections whose
   title chain matches `INDICATOR_SECTION` come first; when a manual has none, all icons are
   used. Duplicates (same image and text) are dropped; at most ~240 symbols.
 - `getTechCards(car)` scans every section so more manuals get "Dane techniczne":

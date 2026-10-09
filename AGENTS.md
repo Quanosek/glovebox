@@ -64,7 +64,7 @@ pnpm lint              # ESLint (flat config: next core-web-vitals + typescript)
 pnpm typecheck         # next typegen && tsc --noEmit
 pnpm test              # Vitest (src/**/*.test.ts)
 pnpm format            # Prettier (+ Tailwind class sorting); `pnpm format:check` only checks
-pnpm test:extract      # Python unittest for scripts/extract.py (needs supported Python/PyMuPDF/Pillow)
+pnpm test:extract      # Python unittest for the extractor (same interpreter lookup as the importer)
 pnpm icons             # src/app/icon.svg -> apple-icon.png + favicon.ico
 ```
 
@@ -83,7 +83,9 @@ database/                       user-managed manual content (git-ignored; JSON +
   .catalog/                     cached official catalogue answers (docs/catalog.md)
   .logos/                       cached brand logos (docs/logos.md)
 scripts/                        generic PDF extraction (Python), tests, icon generator
-  extract.py                    PDF -> JSON blocks + WebP images (PyMuPDF, Pillow)
+  extract.py                    CLI entry: PDF -> JSON blocks + WebP images (PyMuPDF, Pillow)
+  manual_extract/               extractor package, one module per topic (docs/extraction.md)
+  run-python.mjs                runs Python found like the importer does (pnpm test:extract)
 public/sw.js                    service worker (shell precache + runtime caching, docs/offline.md)
 src/
   app/
@@ -237,8 +239,8 @@ Details in `docs/vehicle-profile.md`. Every car is tagged; no car has preset equ
   per section are deep-link targets (`/auto/<car>/<book>/<slug>#b12`). Page references are
   `{ page: n }` runs resolved to links by `resolvePageRef`.
 - Generated content must not be edited by hand (it is replaced by importing the source PDF
-  again). The generic extractor and its tests are in `scripts/extract.py` and
-  `scripts/tests/` (`docs/extraction.md`).
+  again). The generic extractor and its tests are in `scripts/extract.py`,
+  `scripts/manual_extract/` and `scripts/tests/` (`docs/extraction.md`).
 - A fresh checkout has an empty `database/` (the app offers adding a car). Raw PDFs are
   never committed (`manuals/`, `*.pdf`), and neither is any generated content.
 - Do not create seeded/example cars or database fixtures. The wizard creates each user's

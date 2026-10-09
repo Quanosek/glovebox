@@ -131,19 +131,27 @@ export function getCarOverview(car: CarFile): CarOverview {
       .slice(0, QUICK_TOPICS_MAX);
     const tech = getTechCards(car);
     const techPreview: TableFact[] = [];
+    const previewKeys = new Set<string>();
     for (const card of tech)
       for (const t of card.tables)
         if (t.kind === "facts")
-          for (const f of t.facts)
+          for (const f of t.facts) {
+            const fact = {
+              label: shorten(f.label, 60),
+              value: shorten(f.value, 40),
+            };
+            // Several books of one car repeat the same tables.
+            const key = `${fact.label}|${fact.value}`;
             if (
               techPreview.length < 4 &&
+              !previewKeys.has(key) &&
               isNumeric(f.value) &&
               hasMeasurement(f.value)
-            )
-              techPreview.push({
-                label: shorten(f.label, 60),
-                value: shorten(f.value, 40),
-              });
+            ) {
+              previewKeys.add(key);
+              techPreview.push(fact);
+            }
+          }
     return {
       stats,
       tiles,

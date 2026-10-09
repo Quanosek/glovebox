@@ -99,8 +99,8 @@ class Writer:
         x = self.x + indent
         assert self.page is not None
         for text, font in parts:
-            self.page.insert_text((x, self.y + size), text, fontname=font, fontsize=size)
-            x += self.fonts[font].text_length(text, fontsize=size)
+            self.page.insert_text((x, self.y + size), text, fontname=font, fontsize=size)  # pyright: ignore[reportArgumentType]
+            x += self.fonts[font].text_length(text, fontsize=size)  # pyright: ignore[reportArgumentType]
         self.y += size * 1.3
 
     def gap(self, k: float = 0.8) -> None:
@@ -212,6 +212,117 @@ def build(path: str) -> None:
     for _ in range(3):
         w.new_page("Skorowidz")
         w.line([("Bagażnik ........ 30", "reg")])
+    doc.set_toc(toc)
+    doc.save(path)
+
+
+# --------------------------------------------------------------------------
+# Three-column layout (landscape pages, rules between columns)
+# --------------------------------------------------------------------------
+
+W3, H3 = 540, 360
+COLS3 = [43.0, 207.0, 372.0]
+COL3_W = 147.0
+
+
+def build_three_columns(path: str) -> None:
+    """Landscape pages with three columns separated by vertical rules, a
+    running header above a full-width rule, "fake bold" (filled and stroked
+    text), a symbol font for page references and button pictograms, a warning
+    box broken across two columns, a note set off by indentation, bullets
+    touching their text and a table drawn with horizontal rules only."""
+    regular, _ = _fonts()
+    font = pymupdf.Font(fontfile=regular)
+    doc = pymupdf.open()
+
+    def page(header: str, printed: int) -> pymupdf.Page:
+        pg = doc.new_page(width=W3, height=H3)
+        pg.insert_font(fontname="reg", fontbuffer=font.buffer)
+        pg.insert_text((380, 24), header, fontname="reg", fontsize=11)
+        pg.insert_text((505, 24), str(printed), fontname="reg", fontsize=11)
+        pg.draw_rect(pymupdf.Rect(43, 28, 519, 29), color=None, fill=(0, 0, 0))
+        return pg
+
+    def text(pg: pymupdf.Page, x: float, y: float, parts: list[tuple[str, str]], size: float = 9) -> None:
+        """parts: (text, style) with style reg / bold (stroked) / symb."""
+        for t, style in parts:
+            if style == "symb":
+                pg.insert_text((x, y), t, fontname="symb", fontsize=size)  # pyright: ignore[reportArgumentType]
+                x += pymupdf.Font("symb").text_length(t, fontsize=size)  # pyright: ignore[reportArgumentType]
+                continue
+            pg.insert_text((x, y), t, fontname="reg", fontsize=size, render_mode=2 if style == "bold" else 0, border_width=0.02)
+            x += font.text_length(t, fontsize=size)  # pyright: ignore[reportArgumentType]
+
+    def vline(pg: pymupdf.Page, x: float, y0: float, y1: float, width: float = 0.75) -> None:
+        pg.draw_line((x, y0), (x, y1), color=(0, 0, 0), width=width)
+
+    def hline(pg: pymupdf.Page, x0: float, x1: float, y: float, width: float = 0.75) -> None:
+        pg.draw_line((x0, y), (x1, y), color=(0, 0, 0), width=width)
+
+    toc: list[list[object]] = []
+    p1 = page("Kluczyki, drzwi i szyby", 21)
+    for x in (198, 363):
+        vline(p1, x, 37, 343, 0.5)
+    c0, c1, c2 = COLS3
+    toc.append([1, "Kluczyki, drzwi i szyby", 1])
+    toc.append([2, "Szyby", 1])
+    text(p1, c0, 50, [("Szyby", "bold")], size=12)
+    text(p1, c0, 66, [("Wybrać ", "reg"), ("Ustawienia", "bold"), (" w menu.", "reg")])
+    text(p1, c0, 82, [("Wymiana", "bold")])
+    text(p1, c0, 95, [("Wymianę zlecić warsztatowi.", "reg")])
+    # A sentence running from the bottom of the first into the second column.
+    y = 315
+    for line in ["Szyby otwierane elektrycznie działają", "po włączeniu zapłonu. Mechanizm", "zabezpieczający zatrzymuje szybę,"]:
+        text(p1, c0, y, [(line, "reg")])
+        y += 10
+    text(p1, c1, 50, [("gdy napotka opór. Po zwolnieniu", "reg")])
+    text(p1, c1, 60, [("przełącznika szyba zatrzymuje się", "reg")])
+    text(p1, c1, 70, [("w aktualnym położeniu.", "reg")])
+    text(p1, c1, 83, [("Nacisnąć przycisk ", "reg"), ("c", "symb"), (".", "reg")])
+    text(p1, c1, 96, [("Szczegóły ", "reg"), ("Þ", "symb"), (" 12.", "reg")])
+    # "Przestroga" box open at the bottom, continued in the third column.
+    top = 120
+    vline(p1, c1, top, 343)
+    vline(p1, c1 + COL3_W, top, 343)
+    hline(p1, c1, c1 + COL3_W, top)
+    hline(p1, c1, c1 + COL3_W, top + 20)
+    text(p1, c1 + 50, top + 14, [("Przestroga", "reg")], size=10)
+    y = top + 34
+    for line in ["Nie przymocowywać ciężkich", "przedmiotów do kluczyka,", "ponieważ mogą uszkodzić"]:
+        text(p1, c1 + 5, y, [(line, "reg")])
+        y += 10
+    vline(p1, c2, 37, 77)
+    vline(p1, c2 + COL3_W, 37, 77)
+    hline(p1, c2, c2 + COL3_W, 77)
+    text(p1, c2 + 5, 50, [("stacyjkę.", "reg")])
+    # Note set off by indentation only.
+    text(p1, c2 + 4, 100, [("Uwaga", "bold")])
+    text(p1, c2 + 4, 110, [("Baterię wymieniać tylko na", "reg")])
+    text(p1, c2 + 4, 120, [("baterię tego samego typu.", "reg")])
+    text(p1, c2, 133, [("Kolejny akapit.", "reg")])
+    text(p1, c2, 146, [("•Pierwszy punkt", "reg")])
+    text(p1, c2, 159, [("•Drugi punkt", "reg")])
+
+    p2 = page("Dane techniczne", 22)
+    toc.append([1, "Dane techniczne", 2])
+    toc.append([2, "Pojemności", 2])
+    text(p2, c0, 50, [("Pojemności", "reg")], size=12)
+    grid = [43, 220, 295, 519]
+
+    def rule(y: float, width: float) -> None:
+        for a, b in zip(grid, grid[1:]):
+            hline(p2, a, b, y, width)
+
+    for x, cell in zip(grid, ["Silnik", "B14NEL", "A16XHT"]):
+        text(p2, x, 66, [(cell, "reg")])
+    rule(69, 1.5)
+    for y, row in ((80, ["Olej [l]", "4,0", "5,5"]), (93, ["Płyn [l]", "6,1", "6,3"])):
+        for x, cell in zip(grid, row):
+            text(p2, x, y, [(cell, "reg")])
+        rule(y + 3, 0.5 if y == 80 else 1.5)
+    # Repeat the running header so that it is recognised as such.
+    for n in range(3):
+        page("Dane techniczne", 23 + n)
     doc.set_toc(toc)
     doc.save(path)
 

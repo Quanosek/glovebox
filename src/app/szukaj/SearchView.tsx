@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { SearchDoc } from "@/lib/content";
 import { getAvailability } from "@/lib/availability";
 import { excerpt, normalizeText } from "@/lib/search";
+import { polishTypography as typo } from "@/lib/typography";
 import {
   useAppData,
   useHydrated,
@@ -19,6 +20,11 @@ export interface SearchCar {
   books: { id: string; short: string }[];
 }
 
+/**
+ * Rendered inside a Suspense boundary, which hydrates after the page-wide
+ * typography pass (`watchTypography`) has run: server-rendered text applies
+ * the same Polish line-breaking rules itself so both renders match.
+ */
 export function SearchView({ cars }: { cars: SearchCar[] }) {
   const params = useSearchParams();
   const router = useRouter();
@@ -144,7 +150,7 @@ export function SearchView({ cars }: { cars: SearchCar[] }) {
           >
             {cars.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.label}
+                {typo(c.label)}
               </option>
             ))}
           </select>
@@ -158,14 +164,15 @@ export function SearchView({ cars }: { cars: SearchCar[] }) {
           <option value="all">Wszystkie instrukcje</option>
           {car?.books.map((b) => (
             <option key={b.id} value={b.id}>
-              {b.short}
+              {typo(b.short)}
             </option>
           ))}
         </select>
       </form>
       <p className="mt-2 text-xs text-steel">
-        Wielkość liter i polskie znaki nie mają znaczenia (np. „swiatla”
-        znajdzie „światła”).
+        {typo(
+          "Wielkość liter i polskie znaki nie mają znaczenia (np. „swiatla” znajdzie „światła”).",
+        )}
       </p>
 
       {error && (
@@ -175,7 +182,7 @@ export function SearchView({ cars }: { cars: SearchCar[] }) {
       )}
       {!car && (
         <p className="mt-4 text-steel">
-          Brak aut – dodaj auto na stronie „Dodaj auto”.
+          {typo("Brak aut – dodaj auto na stronie „Dodaj auto”.")}
         </p>
       )}
       {car && !docs && !error && (

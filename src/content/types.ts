@@ -15,7 +15,9 @@ export type Run =
   | string
   | { t: string; b?: true; i?: true }
   /** Reference to a printed page number of the same book ("patrz str. 45"). */
-  | { page: number };
+  | { page: number }
+  /** Inline pictogram from the manual (button, warning lamp), shown at text size. */
+  | { icon: string; w: number; h: number };
 
 export type WarningKind = "danger" | "warning" | "caution" | "note";
 

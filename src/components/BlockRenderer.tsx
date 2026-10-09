@@ -26,19 +26,35 @@ export function BlockRenderer({
   blocks: Block[];
   features?: FeatureId[];
 }) {
-  return <Nodes ctx={ctx} nodes={getFeatureTree(ctx, blocks, features)} />;
+  // The first illustration is usually the largest element on screen.
+  const eager = blocks.find((b) => b.type === "image" && !b.icon)?.id;
+  return (
+    <Nodes
+      ctx={ctx}
+      nodes={getFeatureTree(ctx, blocks, features)}
+      eager={eager}
+    />
+  );
 }
 
-function Nodes({ ctx, nodes }: { ctx: BookCtx; nodes: FeatureNode[] }) {
+function Nodes({
+  ctx,
+  nodes,
+  eager,
+}: {
+  ctx: BookCtx;
+  nodes: FeatureNode[];
+  eager?: string;
+}) {
   return nodes.map((n) =>
     n.kind === "block" ? (
-      <BlockView key={n.block.id} ctx={ctx} block={n.block} />
+      <BlockView key={n.block.id} ctx={ctx} block={n.block} eager={eager} />
     ) : (
       <div key={n.heading.id}>
         <BlockView ctx={ctx} block={n.heading} />
         <AvailabilityBadges features={n.features} />
         <SectionGate features={n.features} compact>
-          <Nodes ctx={ctx} nodes={n.children} />
+          <Nodes ctx={ctx} nodes={n.children} eager={eager} />
         </SectionGate>
       </div>
     ),
@@ -52,7 +68,15 @@ const WARNING_STYLE: Record<WarningKind, string> = {
   note: "border-silver bg-paper",
 };
 
-function BlockView({ ctx, block }: { ctx: BookCtx; block: Block }) {
+function BlockView({
+  ctx,
+  block,
+  eager,
+}: {
+  ctx: BookCtx;
+  block: Block;
+  eager?: string;
+}) {
   switch (block.type) {
     case "heading": {
       const Tag = `h${block.level}` as "h2" | "h3" | "h4";
@@ -147,7 +171,7 @@ function BlockView({ ctx, block }: { ctx: BookCtx; block: Block }) {
             width={block.width}
             height={block.height}
             alt={block.alt}
-            loading="lazy"
+            loading={block.id === eager ? "eager" : "lazy"}
             className="mx-auto h-auto max-h-112 w-auto max-w-full"
           />
           {block.page != null && (
@@ -160,6 +184,18 @@ function BlockView({ ctx, block }: { ctx: BookCtx; block: Block }) {
       );
   }
 }
+
+/**
+ * Pictogram inside a sentence: as tall as the text, centred on the line,
+ * with a little space on both sides.
+ */
+const INLINE_SYMBOL_STYLE: React.CSSProperties = {
+  display: "inline-block",
+  width: "auto",
+  height: "1.2em",
+  margin: "0 0.15em",
+  verticalAlign: "middle",
+};
 
 /**
  * Renders text runs with Polish line-breaking rules. In a whole paragraph
@@ -193,6 +229,21 @@ function Runs({
             <span key={i} className="text-steel">
               {label}
             </span>
+          );
+        }
+        if ("icon" in run) {
+          // Inline styles: the symbol must sit in the line even before (or
+          // without) the stylesheet, which makes images blocks by default.
+          return (
+            <Image
+              key={i}
+              src={run.icon}
+              width={run.w}
+              height={run.h}
+              alt="symbol"
+              className="inline-symbol"
+              style={INLINE_SYMBOL_STYLE}
+            />
           );
         }
         let node: React.ReactNode = typo(run.t, i);

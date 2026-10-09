@@ -12,7 +12,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "icons": "node scripts/generate-icons.mjs",
-    "test:extract": "python3 -m unittest discover -s scripts/tests"
+    "test:extract": "node scripts/run-python.mjs -m unittest discover -s scripts/tests"
   },
   "dependencies": {
     "minisearch": "^7.2.0",

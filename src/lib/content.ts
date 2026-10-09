@@ -22,6 +22,7 @@ import type {
   BookIndex,
   ChapterFile,
   HeadingBlock,
+  Run,
   SectionMeta,
   WarningBlock,
 } from "@/content/types";
@@ -490,6 +491,13 @@ export function getCarVersion(car: CarFile): string {
 
 function collectImages(block: Block, urls: Set<string>) {
   if (block.type === "image") urls.add(block.src);
+  const addIcons = (runs: Run[]) => {
+    for (const r of runs)
+      if (typeof r !== "string" && "icon" in r) urls.add(r.icon);
+  };
+  if (block.type === "paragraph" || block.type === "heading")
+    addIcons(block.runs);
+  if (block.type === "list") block.items.forEach(addIcons);
   if (block.type === "warning")
     block.blocks.forEach((b) => collectImages(b, urls));
 }

@@ -17,7 +17,13 @@ import type { QuickTopicId } from "@/config/quickTopics";
 export function runsToText(runs: Run[]): string {
   return runs
     .map((r) =>
-      typeof r === "string" ? r : "page" in r ? `str. ${r.page}` : r.t,
+      typeof r === "string"
+        ? r
+        : "page" in r
+          ? `str. ${r.page}`
+          : "icon" in r
+            ? ""
+            : r.t,
     )
     .join("");
 }
@@ -67,12 +73,29 @@ export interface IconEntry {
 /**
  * Pictograms of a section paired with the text printed next to them: the
  * following paragraph or list (manuals print the symbol, then explain it).
- * Consecutive icons share the text that follows them.
+ * Consecutive icons share the text that follows them. A paragraph that
+ * starts with an inline symbol ("[symbol] Kierunkowskaz str. 98") is an
+ * entry of its own.
  */
 export function iconEntries(blocks: Block[], maxText = 220): IconEntry[] {
   const out: IconEntry[] = [];
   for (let i = 0; i < blocks.length; i++) {
     const b = blocks[i];
+    if (b.type === "paragraph") {
+      const [first, ...rest] = b.runs;
+      if (typeof first !== "string" && first && "icon" in first) {
+        const text = runsToText(rest).trim();
+        if (text)
+          out.push({
+            id: b.id,
+            src: first.icon,
+            width: first.w,
+            height: first.h,
+            text: shorten(text, maxText),
+          });
+      }
+      continue;
+    }
     if (b.type !== "image" || !b.icon) continue;
     let text = "";
     for (let j = i + 1; j < blocks.length && j <= i + 4; j++) {

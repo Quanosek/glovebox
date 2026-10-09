@@ -90,6 +90,30 @@ describe("overview helpers", () => {
     ]);
   });
 
+  it("reads paragraphs that start with an inline symbol as entries", () => {
+    const entries = iconEntries([
+      {
+        type: "paragraph",
+        id: "b1",
+        runs: [
+          { icon: "/media/s.webp", w: 20, h: 18 },
+          " Kierunkowskaz ",
+          { page: 98 },
+        ],
+      },
+      para("b2", "Lampka świeci na zielono."),
+    ]);
+    expect(entries).toEqual([
+      {
+        id: "b1",
+        src: "/media/s.webp",
+        width: 20,
+        height: 18,
+        text: "Kierunkowskaz str. 98",
+      },
+    ]);
+  });
+
   it("uses large illustrations only as thumbnails", () => {
     expect(firstIllustration([icon("b1")])).toBeNull();
     const big: Block = {
