@@ -251,7 +251,7 @@ Single localStorage key `opel-cascada-manual`, versioned (`SCHEMA_VERSION` in
 
 ```ts
 AppData {
-  version: 5;
+  version: 6;
   highlights: Record<id, { id, car, book, sectionId, sectionTitle, href,
     anchor: { exact, prefix, suffix, start, end }, color, comment, createdAt, updatedAt }>;
   notebook: { pages: { id, title, body /* Markdown */, createdAt, updatedAt }[] }; // user order
@@ -259,7 +259,7 @@ AppData {
   lastRead: { car, book, sectionId, title, href, scrollY, at } | null;
   history: { car, book, sectionId, title, href, thumb: string | null, at }[]; // newest first, ≤ 12
   reminders: { id, car, kind: "inspection" | "insurance" | "custom", title,
-    dueDate: string | null, dueKm: number | null, done,
+    dueDate: string | null, eventDate: string | null, dueKm: number | null, done,
     createdAt, updatedAt }[];
   settings: { fontSize, showUnavailable, ownedCars,
     vehicles: Record<carId, Record<featureId, FeatureState>>,

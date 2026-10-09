@@ -132,10 +132,10 @@ export function CustomReminders({
                 {!r.done && r.dueDate && (
                   <DueBadge days={daysUntil(r.dueDate, today)} />
                 )}
-                <div className="flex gap-1">
+                <div className="grid w-full grid-cols-[minmax(0,1fr)_auto] gap-1 sm:flex sm:w-auto">
                   <button
                     type="button"
-                    className={`btn h-9 py-0 ${r.done ? "btn-pressed" : ""}`}
+                    className={`btn h-9 min-w-0 justify-center py-0 whitespace-normal ${r.done ? "btn-pressed" : ""}`}
                     aria-pressed={r.done}
                     onClick={() => saveReminder({ ...r, done: !r.done })}
                   >
@@ -143,7 +143,7 @@ export function CustomReminders({
                   </button>
                   <button
                     type="button"
-                    className="btn btn-ghost h-9 py-0"
+                    className="btn btn-ghost h-9 justify-center py-0"
                     onClick={() => void remove(r)}
                   >
                     Usuń

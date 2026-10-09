@@ -35,6 +35,7 @@ describe("layout hint", () => {
         kind: "inspection",
         title: "Badanie techniczne",
         dueDate: "2026-10-20",
+        eventDate: null,
         dueKm: null,
         done: false,
         createdAt: "x",

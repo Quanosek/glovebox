@@ -47,6 +47,8 @@ export const MIGRATIONS: Record<number, Migration> = {
   3: migrateV3toV4,
   // v5: reading history, service reminders and per-car favourites.
   4: migrateV4toV5,
+  // v6: fixed reminders retain the event date used to calculate their deadline.
+  5: (data) => data,
 };
 
 const V1_ROUTES = ["/instrukcja", "/navi-950"];
@@ -386,6 +388,7 @@ function sanitizeReminder(r: unknown): Reminder | null {
     kind,
     title,
     dueDate: isValidDate(r.dueDate) ? r.dueDate : null,
+    eventDate: isValidDate(r.eventDate) ? r.eventDate : null,
     dueKm: km != null && km >= 0 && km <= 5_000_000 ? km : null,
     done: r.done === true,
     createdAt: str(r.createdAt, new Date(0).toISOString()),

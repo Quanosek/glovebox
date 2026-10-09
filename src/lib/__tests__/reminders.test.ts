@@ -14,6 +14,7 @@ const reminder = (over: Partial<Reminder>): Reminder => ({
   kind: "custom",
   title: "Przegląd",
   dueDate: null,
+  eventDate: null,
   dueKm: null,
   done: false,
   createdAt: "2026-01-01T00:00:00.000Z",

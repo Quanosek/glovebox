@@ -7,7 +7,7 @@ import type { FeatureState } from "@/config/vehicle";
  */
 
 export const STORAGE_KEY = "opel-cascada-manual";
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 export const EXPORT_APP_ID = "opel-cascada-manual";
 
 export type HighlightColor = "light" | "silver" | "graphite" | "red";
@@ -99,6 +99,8 @@ export interface Reminder {
   title: string;
   /** `YYYY-MM-DD` or null. */
   dueDate: string | null;
+  /** Date of the last inspection or OC policy start, when applicable. */
+  eventDate: string | null;
   /** Mileage in km or null. */
   dueKm: number | null;
   done: boolean;

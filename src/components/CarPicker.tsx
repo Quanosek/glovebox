@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { confirmDialog } from "@/components/Dialog";
 import type { CarSummary } from "@/lib/cars";
-import { useOfflineState, useOnline } from "@/lib/offline";
+import { forgetCarOffline, useOfflineState, useOnline } from "@/lib/offline";
 import {
   addOwnedCar,
   removeOwnedCar,
@@ -50,7 +50,10 @@ export function CarPicker({
       confirmLabel: "Usuń z listy",
       danger: true,
     });
-    if (ok) removeOwnedCar(car.id);
+    if (ok) {
+      removeOwnedCar(car.id);
+      void forgetCarOffline(car.id).catch(() => {});
+    }
   };
 
   return (

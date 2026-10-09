@@ -19,7 +19,7 @@ Nothing is sent anywhere.
 
 `updateData` takes a pure function `(data) => newData`; never mutate the snapshot.
 
-## Schema (version 5)
+## Schema (version 6)
 
 See `AGENTS.md` → Storage schema. Notes:
 
@@ -39,10 +39,12 @@ See `AGENTS.md` → Storage schema. Notes:
   entry per `car:book:sectionId` (`historyKey`). `ReadingTracker` calls `recordReading` with the
   section's first illustration as `thumb` (only `/media/…` URLs survive `sanitize`; links must
   start with `/auto/`). The profile shows it under "Ostatnio czytane".
-- `reminders` (v5) are the owner's reminders per car: `kind` (`inspection` = yearly technical
+- `reminders` are the owner's reminders per car: `kind` (`inspection` = yearly technical
   inspection, `insurance` = OC insurance, `custom` = own entry; unknown values become
   `custom`), `title` (required, ≤ 120 characters), optional `dueDate` (`YYYY-MM-DD`) and
-  `dueKm` (0–5 000 000), `done`. Invalid dates or mileages become `null`. `inspection` and
+  `dueKm` (0–5 000 000), `eventDate` (last inspection or OC policy start), `done`. Invalid dates
+  or mileages become `null`. Fixed reminders calculate the next deadline one year after
+  `eventDate`. `inspection` and
   `insurance` have one entry per car with the fixed id `${kind}:${car}` (`fixedReminderId`;
   `sanitize` rewrites their ids, so duplicates collapse and merging matches them).
 - The car page "Ulubione" bar is derived from `bookmarks` (the newest `FAVORITES_LIMIT` = 6
@@ -66,6 +68,7 @@ See `AGENTS.md` → Storage schema. Notes:
   manuals library.
 - `4 → 5`: adds `history` (seeded with the `lastRead` section, without thumbnail), empty
   `reminders`.
+- `5 → 6`: adds `eventDate` to reminders; existing due dates are preserved.
 
 Migrations run in memory on load; the upgraded shape is written on the next change.
 
@@ -100,6 +103,9 @@ Migrations run in memory on load; the upgraded shape is written on the next chan
 - `opel-cascada-manual:offline` — status of offline car copies (`src/lib/offline.ts`). It is
   derived state (rebuilt on the next car visit), deliberately not part of `AppData`, the
   export file or the schema version.
+- `opel-cascada-manual:notifications` — last due date notified per reminder. Native browser
+  notifications are optional and checked while the app is open; they are not scheduled while
+  the app is closed.
 
 ## Layout hint cookie
 

@@ -196,6 +196,7 @@ async function run(carId: string, force: boolean) {
 /** Removes a car's offline copy (pages and illustrations) and its status. */
 export async function forgetCarOffline(carId: string): Promise<void> {
   load();
+  await jobs.get(carId)?.catch(() => {});
   set({
     saved: without(state.saved, carId),
     errors: without(state.errors, carId),

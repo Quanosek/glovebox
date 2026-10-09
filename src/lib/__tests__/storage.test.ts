@@ -191,11 +191,31 @@ describe("migrate", () => {
       bookmarks: [{ car: "volvo-v60-2021", book: "manual", sectionId: "x" }],
       highlights: { invalid: { car: "../unsafe" } },
     });
+
     expect(data.settings.ownedCars).toEqual([
       "skoda-octavia-2019",
       "mazda-3-2020",
       "volvo-v60-2021",
     ]);
+  });
+
+  it("adds the event date field when upgrading v5 reminders", () => {
+    const data = migrate({
+      version: 5,
+      reminders: [
+        {
+          id: "inspection:car",
+          car: "car",
+          kind: "inspection",
+          title: "Badanie techniczne",
+          dueDate: "2026-10-01",
+        },
+      ],
+    });
+    expect(data.reminders[0]).toMatchObject({
+      dueDate: "2026-10-01",
+      eventDate: null,
+    });
   });
 
   it("sanitizes owned cars and keeps an empty list by default", () => {
@@ -326,6 +346,7 @@ describe("schema v5", () => {
         kind: "custom",
         title: "Olej",
         dueDate: null,
+        eventDate: null,
         dueKm: 30000,
         done: true,
         createdAt: "2026-01-01T00:00:00.000Z",
