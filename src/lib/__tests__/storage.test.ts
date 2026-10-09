@@ -278,8 +278,26 @@ describe("schema v5", () => {
       ["c", "2026-01-02T00:00:00.000Z", null],
     ]);
     expect(data.reminders.map((r) => r.id)).toEqual(["r1", "r3"]);
+    expect(data.reminders.map((r) => r.kind)).toEqual(["custom", "custom"]);
     expect(data.reminders[1].dueDate).toBeNull();
     expect(data.settings.favorites).toEqual({ [car]: [bookmark.id] });
+  });
+
+  it("keeps one inspection and one OC reminder per car", () => {
+    const data = migrate({
+      version: SCHEMA_VERSION,
+      reminders: [
+        { id: "a", car, kind: "inspection", title: "Badanie techniczne" },
+        { id: "b", car, kind: "inspection", title: "Badanie techniczne" },
+        { id: "c", car, kind: "insurance", title: "Ubezpieczenie OC" },
+        { id: "d", car, kind: "weird", title: "Własne" },
+      ],
+    });
+    expect(data.reminders.map((r) => [r.id, r.kind])).toEqual([
+      [`inspection:${car}`, "inspection"],
+      [`insurance:${car}`, "insurance"],
+      ["d", "custom"],
+    ]);
   });
 
   it("merges history and reminders, newest wins", () => {
@@ -294,6 +312,7 @@ describe("schema v5", () => {
       {
         id: "r1",
         car,
+        kind: "custom",
         title: "Olej",
         dueDate: null,
         dueKm: 30000,

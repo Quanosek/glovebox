@@ -78,10 +78,24 @@ export interface HistoryEntry {
   at: string;
 }
 
-/** Owner's own service reminder for one car (date and/or mileage). */
+/**
+ * Kind of a reminder: the yearly technical inspection and the OC insurance
+ * have one fixed entry per car (id `${kind}:${car}`); `custom` entries are
+ * the owner's own (service, oil change, tyres …).
+ */
+export type ReminderKind = "inspection" | "insurance" | "custom";
+
+export const REMINDER_KINDS: ReminderKind[] = [
+  "inspection",
+  "insurance",
+  "custom",
+];
+
+/** Owner's reminder for one car (date and/or mileage). */
 export interface Reminder {
   id: string;
   car: string;
+  kind: ReminderKind;
   title: string;
   /** `YYYY-MM-DD` or null. */
   dueDate: string | null;
@@ -91,6 +105,12 @@ export interface Reminder {
   createdAt: string;
   updatedAt: string;
 }
+
+/** Id of the fixed reminder of a kind for one car. */
+export const fixedReminderId = (
+  kind: Exclude<ReminderKind, "custom">,
+  car: string,
+) => `${kind}:${car}`;
 
 export const HISTORY_LIMIT = 12;
 export const FAVORITES_LIMIT = 6;

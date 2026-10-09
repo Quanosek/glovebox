@@ -6,10 +6,13 @@ import {
   type AppData,
   FAVORITES_LIMIT,
   HISTORY_LIMIT,
+  REMINDER_KINDS,
+  fixedReminderId,
   type Bookmark,
   type FontSize,
   type HistoryEntry,
   type Reminder,
+  type ReminderKind,
   type Highlight,
   type HighlightColor,
   type NotePage,
@@ -381,6 +384,9 @@ function sanitizeHistory(h: unknown): HistoryEntry | null {
 function sanitizeReminder(r: unknown): Reminder | null {
   if (!isObject(r) || typeof r.id !== "string" || !r.id || !isValidId(r.car))
     return null;
+  const kind: ReminderKind = REMINDER_KINDS.includes(r.kind as ReminderKind)
+    ? (r.kind as ReminderKind)
+    : "custom";
   const title = str(r.title).trim().slice(0, 120);
   if (!title) return null;
   const km =
@@ -388,8 +394,9 @@ function sanitizeReminder(r: unknown): Reminder | null {
       ? Math.round(r.dueKm)
       : null;
   return {
-    id: r.id,
+    id: kind === "custom" ? r.id : fixedReminderId(kind, r.car),
     car: r.car,
+    kind,
     title,
     dueDate:
       typeof r.dueDate === "string" && DATE.test(r.dueDate) ? r.dueDate : null,

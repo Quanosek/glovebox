@@ -4,7 +4,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { confirmDialog } from "@/components/Dialog";
 import { saveCarOffline, useOfflineState, useOnline } from "@/lib/offline";
+import { useLayoutHint } from "@/lib/storage/hintContext";
 import { removeOwnedCar, useHydrated } from "@/lib/storage/hooks";
+import { Skeleton } from "./Skeleton";
 
 /** Offline copy status and the profile removal action of the car page. */
 export function CarActions({ carId, label }: { carId: string; label: string }) {
@@ -12,7 +14,10 @@ export function CarActions({ carId, label }: { carId: string; label: string }) {
   const hydrated = useHydrated();
   const online = useOnline();
   const offline = useOfflineState();
+  const hint = useLayoutHint();
   const saved = hydrated ? offline.saved[carId] : undefined;
+  // Before hydration the hint tells whether a copy exists (date unknown yet).
+  const hasCopy = hydrated ? Boolean(saved) : hint.offline.includes(carId);
   const progress = offline.running[carId];
   const offlineError = offline.errors[carId];
   const [deleting, setDeleting] = useState(false);
@@ -66,11 +71,16 @@ export function CarActions({ carId, label }: { carId: string; label: string }) {
                 % – możesz w tym czasie normalnie czytać.
               </p>
             </>
-          ) : saved ? (
+          ) : hasCopy ? (
             <p>
               <span className="badge badge-dark mr-2">Gotowe</span>
               Instrukcje tego auta działają także bez internetu (zapisano{" "}
-              {new Date(saved.savedAt).toLocaleDateString("pl-PL")}).
+              {saved ? (
+                new Date(saved.savedAt).toLocaleDateString("pl-PL")
+              ) : (
+                <Skeleton className="inline-block h-4 w-20 align-middle" />
+              )}
+              ).
             </p>
           ) : (
             <p className="text-graphite">
@@ -89,7 +99,7 @@ export function CarActions({ carId, label }: { carId: string; label: string }) {
             disabled={!online}
             onClick={() => void saveCarOffline(carId, { force: true })}
           >
-            {saved ? "Zapisz ponownie" : "Zapisz teraz"}
+            {hasCopy ? "Zapisz ponownie" : "Zapisz teraz"}
           </button>
         )}
         {!online && (

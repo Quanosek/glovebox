@@ -5,11 +5,13 @@ import { usePathname } from "next/navigation";
 import type { FeatureState, VehicleProfile } from "@/config/vehicle";
 import type { CarSummary } from "@/lib/cars";
 import { isValidId } from "@/lib/slug";
+import { useLayoutHint } from "./hintContext";
 import { historyKey } from "./migrations";
 import {
   EMPTY_DATA,
   FAVORITES_LIMIT,
   HISTORY_LIMIT,
+  fixedReminderId,
   type AppData,
   type HistoryEntry,
   type Reminder,
@@ -113,14 +115,15 @@ export function updateData(fn: (data: AppData) => AppData): void {
 
 /**
  * Car currently in use: the car of the open `/auto/<car>` page, otherwise
- * the one chosen on the profile page. Null before hydration.
+ * the one chosen on the profile page (from the layout hint before hydration).
  */
 export function useActiveCar(cars: CarSummary[]): CarSummary | null {
   const pathname = usePathname();
   const { settings } = useAppData();
   const hydrated = useHydrated();
+  const hint = useLayoutHint();
   const fromPath = /^\/auto\/([^/]+)/.exec(pathname)?.[1];
-  const id = fromPath ?? (hydrated ? settings.activeCar : null);
+  const id = fromPath ?? (hydrated ? settings.activeCar : hint.activeCar);
   return cars.find((c) => c.id === id) ?? null;
 }
 
@@ -188,16 +191,21 @@ export function saveReminder(
     const existing = reminder.id
       ? d.reminders.find((r) => r.id === reminder.id)
       : undefined;
+    const id =
+      reminder.kind === "custom"
+        ? (existing?.id ?? newId())
+        : fixedReminderId(reminder.kind, reminder.car);
+    const fixed = d.reminders.find((r) => r.id === id);
     const next: Reminder = {
       ...reminder,
-      id: existing?.id ?? newId(),
-      createdAt: existing?.createdAt ?? now,
+      id,
+      createdAt: (existing ?? fixed)?.createdAt ?? now,
       updatedAt: now,
     };
     return {
       ...d,
-      reminders: existing
-        ? d.reminders.map((r) => (r.id === existing.id ? next : r))
+      reminders: d.reminders.some((r) => r.id === id)
+        ? d.reminders.map((r) => (r.id === id ? next : r))
         : [...d.reminders, next],
     };
   });

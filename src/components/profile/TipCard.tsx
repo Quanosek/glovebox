@@ -4,17 +4,26 @@ import Link from "next/link";
 import { useState } from "react";
 import { carName, type CarSummary } from "@/lib/cars";
 import type { Tip } from "@/lib/overview";
+import { useLayoutHint } from "@/lib/storage/hintContext";
 import { useAppData, useHydrated } from "@/lib/storage/hooks";
 
 /** "Czy wiesz, że…": a random note from the manuals of the profile's cars. */
-export function TipCard({ tips, cars }: { tips: Tip[]; cars: CarSummary[] }) {
+export function TipCard({
+  tips,
+  cars,
+  seed,
+}: {
+  tips: Tip[];
+  cars: CarSummary[];
+  /** Random start in [0, 1), chosen by the server for this page view. */
+  seed: number;
+}) {
   const hydrated = useHydrated();
+  const hint = useLayoutHint();
   const { settings } = useAppData();
-  // Random start, used only after hydration (the server never renders it).
-  const [seed] = useState(() => Math.random());
   const [step, setStep] = useState(0);
-  if (!hydrated) return null;
-  const own = tips.filter((t) => settings.ownedCars.includes(t.car));
+  const owned = hydrated ? settings.ownedCars : hint.ownedCars;
+  const own = tips.filter((t) => owned.includes(t.car));
   if (own.length === 0) return null;
   const tip = own[(Math.floor(seed * own.length) + step) % own.length];
 
