@@ -85,11 +85,22 @@ last word of a paragraph (up to 10 characters) is bound to the previous one.
   deeper bottom) with a faint inner top highlight. Its hover never swaps the background and
   has no moving sheen: a single top-light overlay fades in by opacity only. Do not stack
   radial gradients on red surfaces – they band visibly on small buttons.
+- Status line (`StatusBar`, inside the sticky header): active car, its copy on this device,
+  connection and the local date/time (rendered only after hydration, refreshed every 15 s).
+  It makes no requests.
+- Car overview screens (car page, "Lampki kontrolne", "Dane techniczne") and the reader side
+  column are described in `docs/car-overview.md`; their classes are `.car-hero`,
+  `.car-hero-logo`, `.car-hero-spec`, `.stat-strip`/`.stat-cell`, `.nav-key`, `.section-label`
+  (red dash + uppercase label), `.fav-bar`/`.fav-key`/`.fav-num` and `.thumb` (framed
+  manual illustration).
 - Add-car wizard (`/dodaj-auto`): the step strip (`.wizard-track`) shows square keys on one
   line with a red track growing with progress (`--wizard-progress`); phones show the keys plus
   one "Etap n z 4" line. Step 1 is split into lettered panels ("A Twoje auto", "B Instrukcje",
   `.wizard-mark`) and a sticky "Podsumowanie" card with the chosen car, missing items and the
-  main button; the PDF drop area is `.wizard-drop`.
+  main button; the PDF drop area is `.wizard-drop`. Step 2 shows the first page of each
+  manual on a horizontal "film strip" (`.film-strip`/`.film-frame[data-state]`) with a thin
+  progress bar on the thumbnail (`.film-progress`, indeterminate while reading, static with
+  reduced motion). Step 4 shows the car card (`CarHero`) with totals instead of a list.
 - `.field` (inputs, selects, textareas): hover darkens the border; focus shows exactly one
   cue — a graphite border. No outline ring, underline or shadow on top of it. Other
   focusable elements keep the global red `:focus-visible` outline for keyboard users.
@@ -116,6 +127,7 @@ last word of a paragraph (up to 10 characters) is bound to the previous one.
 
 ## Connection state
 
-`useOnline()` (`src/lib/offline.ts`) drives the header "Offline" badge, the notice above the
+`useOnline()` (`src/lib/offline.ts`) drives the status line under the header ("Połączono" /
+"Bez internetu" in red), the notice above the
 car list and the "Brak połączenia" message in the add-car wizard. Reading saved cars never
 depends on it.

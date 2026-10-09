@@ -32,9 +32,7 @@ export function RecentActivity({ cars }: { cars: CarSummary[] }) {
     );
 
   // The newest entry is already shown by "Czytaj dalej".
-  const read = history
-    .filter((h) => h.href !== lastRead?.href)
-    .slice(0, LIMIT);
+  const read = history.filter((h) => h.href !== lastRead?.href).slice(0, LIMIT);
   const marks = Object.values(highlights)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     .slice(0, LIMIT);
@@ -59,7 +57,10 @@ export function RecentActivity({ cars }: { cars: CarSummary[] }) {
                       /* eslint-disable-next-line @next/next/no-img-element -- local manual illustration */
                       <img src={h.thumb} alt="" loading="lazy" />
                     ) : (
-                      <span aria-hidden="true" className="h-0.5 w-5 bg-silver" />
+                      <span
+                        aria-hidden="true"
+                        className="h-0.5 w-5 bg-silver"
+                      />
                     )}
                   </span>
                   <span className="min-w-0 flex-1">

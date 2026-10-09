@@ -87,11 +87,14 @@ scripts/                        generic PDF extraction (Python), tests, icon gen
 public/sw.js                    service worker (shell precache + runtime caching, docs/offline.md)
 src/
   app/
-    page.tsx                    profile (ProfileView): assigned cars / notebook / continue reading
+    page.tsx                    profile (ProfileView): assigned cars / notebook / continue reading,
+                                reading history, recent highlights, "Czy wiesz, że…" tips
     auta/                       car list (CarPicker)
-    auto/[car]/                 selected-car information (books, scoped search/warnings,
-                                equipment link, offline status and profile removal);
-                                layout tracks active car
+    auto/[car]/                 car "home screen" (docs/car-overview.md): car card, numbers,
+                                favourites, quick tiles, books, tools, technical-data preview,
+                                service reminders, offline status; layout tracks active car
+    auto/[car]/lampki-kontrolne/  symbols glossary (icons + explanation from the manuals)
+    auto/[car]/dane-techniczne/   technical data cards (tables of technical chapters)
     auto/[car]/wyposazenie/     per-car equipment editor (EquipmentEditor)
     auto/[car]/[book]/          book index + sidebar layout; [...slug]/ section pages
     dodaj-auto/                 add library car or import wizard (car + PDFs, reading, equipment)
@@ -110,10 +113,16 @@ src/
   components/Dialog.tsx         confirmDialog()/alertDialog() + DialogHost (root layout)
   components/EquipmentEditor.tsx  per-car equipment checklist (wizard + equipment page)
   components/CarLogo.tsx        brand logo of the active car (header, car page), falls back to Logo
+  components/StatusBar.tsx      Navi-like status line under the header (car, connection, time)
+  components/car/               car overview parts (CarHero, CarStatsStrip, QuickTiles, ...)
+  components/profile/, reader/  profile activity/tips, reader side column highlights
+  config/quickTopics.ts         title rules for "Najczęściej potrzebne", glossary, technical data
   config/vehicle.ts             generic optional features (no defaults) + suggestFromSpec
   config/featureRules.ts        title rules tagging sections/headings of every car
   content/types.ts              content format contract
   lib/content.ts                server-only database reader (Node fs, mtime-checked cache)
+  lib/carOverview.ts            server-only car overview/glossary/tech/tips collection
+  lib/overview.ts               client-safe overview helpers and types (tested)
   lib/server/                   importer (jobs), official catalogue, python, cross-site guard
   lib/catalog.ts                client-safe catalogue types + name normalisation
   lib/logos.ts                  brand logo matching + year selection (pure, tested)
@@ -136,7 +145,8 @@ route)`, `getBook`, `getSection`, `sectionHref`, `getTocTree`, `getPrevNext`,
   `getCarUrls(car)`, `getCarVersion(car)`. Override the folder with `MANUALS_DATABASE_DIR`.
 - Ids: car and book ids match `ID_PATTERN` (`/^[a-z0-9][a-z0-9-]{0,79}$/`, `src/lib/slug.ts`);
   this is also what keeps `/media` and imports path-safe. Imported book ids and routes are
-  slugs of their titles (`assets` and `wyposazenie` reserved, `RESERVED_BOOK_ROUTES`).
+  slugs of their titles (`assets`, `wyposazenie`, `lampki-kontrolne` and `dane-techniczne`
+  reserved, `RESERVED_BOOK_ROUTES`).
 - Mutating API routes call `rejectCrossSite()` (loopback `Host` + same-origin `Origin` /
   `Sec-Fetch-Site`; `MANUALS_ALLOW_REMOTE_IMPORT=1` allows LAN hosts) because the server is
   unauthenticated; only GET routes may skip it.
@@ -229,14 +239,18 @@ Single localStorage key `opel-cascada-manual`, versioned (`SCHEMA_VERSION` in
 
 ```ts
 AppData {
-  version: 4;
+  version: 5;
   highlights: Record<id, { id, car, book, sectionId, sectionTitle, href,
     anchor: { exact, prefix, suffix, start, end }, color, comment, createdAt, updatedAt }>;
   notebook: { pages: { id, title, body /* Markdown */, createdAt, updatedAt }[] }; // user order
   bookmarks: { id: `${car}:${book}:${sectionId}`, car, book, sectionId, title, href, createdAt }[];
   lastRead: { car, book, sectionId, title, href, scrollY, at } | null;
+  history: { car, book, sectionId, title, href, thumb: string | null, at }[]; // newest first, ≤ 12
+  reminders: { id, car, title, dueDate: string | null, dueKm: number | null, done,
+    createdAt, updatedAt }[];
   settings: { fontSize, showUnavailable, ownedCars,
     vehicles: Record<carId, Record<featureId, FeatureState>>,
+    favorites: Record<carId, bookmarkId[]>, // pinned "Ulubione", ≤ 6 per car
     activeCar: string | null, profileName: string };
 }
 ```
@@ -254,7 +268,7 @@ AppData {
 
 More detail: `docs/ui.md`, `docs/import.md`, `docs/offline.md`, `docs/storage.md`,
 `docs/highlighting.md`, `docs/comments.md`, `docs/notebook.md`, `docs/extraction.md`,
-`docs/vehicle-profile.md`, `docs/catalog.md`, `docs/logos.md`. Keep these files in sync with the code in the same change.
+`docs/vehicle-profile.md`, `docs/catalog.md`, `docs/logos.md`, `docs/car-overview.md`. Keep these files in sync with the code in the same change.
 
 ## Conventions
 

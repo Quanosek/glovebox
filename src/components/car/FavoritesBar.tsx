@@ -2,11 +2,7 @@
 
 import Link from "next/link";
 import { FAVORITES_LIMIT } from "@/lib/storage/schema";
-import {
-  toggleFavorite,
-  useAppData,
-  useHydrated,
-} from "@/lib/storage/hooks";
+import { toggleFavorite, useAppData, useHydrated } from "@/lib/storage/hooks";
 import { Skeleton } from "../Skeleton";
 
 /**

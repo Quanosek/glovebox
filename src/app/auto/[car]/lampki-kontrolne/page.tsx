@@ -33,8 +33,7 @@ export default async function GlossaryPage({ params }: Props) {
         <Link href={carHref(car.id)} className="text-red hover:underline">
           {carLabel(car)}
         </Link>{" "}
-        razem z opisem. Wybierz symbol, aby przeczytać cały fragment
-        instrukcji.
+        razem z opisem. Wybierz symbol, aby przeczytać cały fragment instrukcji.
       </p>
       {groups.length === 0 ? (
         <p className="panel mt-6 p-4 text-graphite">

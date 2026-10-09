@@ -25,9 +25,12 @@ export function QuickTiles({ tiles }: { tiles: QuickTile[] }) {
               <span className="mt-3 block text-base leading-snug font-semibold">
                 {t.label}
               </span>
-              <span className="mt-0.5 block truncate text-xs text-steel">
-                {t.section}
-              </span>
+              {t.section.toLocaleLowerCase("pl") !==
+                t.label.toLocaleLowerCase("pl") && (
+                <span className="mt-0.5 block truncate text-xs text-steel">
+                  {t.section}
+                </span>
+              )}
             </Link>
           </li>
         ))}

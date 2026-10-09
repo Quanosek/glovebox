@@ -35,7 +35,12 @@ export function CarHero({
     <section className="car-hero">
       <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:p-7">
         <div className="car-hero-logo">
-          <CarLogo carId={carId} brand={brand} size={72} className="text-black" />
+          <CarLogo
+            carId={carId}
+            brand={brand}
+            size={72}
+            className="text-black"
+          />
         </div>
         <div className="min-w-0 flex-1">
           {badge && <span className="badge badge-red mb-2">{badge}</span>}

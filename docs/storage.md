@@ -13,11 +13,13 @@ Nothing is sent anywhere.
   browser singleton (listens to the `storage` event for cross-tab sync), `newId()`.
 - `hooks.ts` — `useAppData()`, `useHydrated()`, `useVehicleProfile(carId?)`,
   `setFeatureState(car, id, state | null)`, `setVehicleProfile(car, profile)`,
-  `useActiveCar(cars)`, `setActiveCar(id)`, `updateData(fn)`.
+  `useActiveCar(cars)`, `setActiveCar(id)`, `updateData(fn)`, `recordReading(entry)`,
+  `toggleFavorite(car, bookmarkId)`, `withoutBookmark(data, id)`, `saveReminder(r)`,
+  `deleteReminder(id)`.
 
 `updateData` takes a pure function `(data) => newData`; never mutate the snapshot.
 
-## Schema (version 4)
+## Schema (version 5)
 
 See `AGENTS.md` → Storage schema. Notes:
 
@@ -33,6 +35,16 @@ See `AGENTS.md` → Storage schema. Notes:
 - `settings.vehicles[carId]` is the equipment profile of one car (`docs/vehicle-profile.md`):
   only features the owner set (or accepted suggestions); there are no defaults. `sanitize`
   keeps known feature ids and valid states only.
+- `history` (v5) holds up to `HISTORY_LIMIT` (12) recently read sections, newest first, one
+  entry per `car:book:sectionId` (`historyKey`). `ReadingTracker` calls `recordReading` with the
+  section's first illustration as `thumb` (only `/media/…` URLs survive `sanitize`; links must
+  start with `/auto/`). The profile shows it under "Ostatnio czytane".
+- `reminders` (v5) are the owner's service reminders per car: `title` (required, ≤ 120
+  characters), optional `dueDate` (`YYYY-MM-DD`) and `dueKm` (0–5 000 000), `done`. Invalid dates
+  or mileages become `null`.
+- `settings.favorites[carId]` (v5) lists up to `FAVORITES_LIMIT` (6) bookmark ids pinned to the
+  car page "Ulubione" bar. Only ids of existing bookmarks of that car are kept; removing a
+  bookmark (`withoutBookmark`) also unpins it.
 - `lastRead.scrollY` is restored only when the user clicks "Kontynuuj czytanie"
   (a one-shot sessionStorage flag, `opel-cascada-manual:restore-scroll`).
 
@@ -49,6 +61,8 @@ See `AGENTS.md` → Storage schema. Notes:
 - `3 → 4`: `settings.ownedCars` is initialized from cars already used in this profile (active car,
   equipment, highlights, bookmarks or last-read location), rather than claiming every car in the
   manuals library.
+- `4 → 5`: adds `history` (seeded with the `lastRead` section, without thumbnail), empty
+  `reminders` and empty `settings.favorites`.
 
 Migrations run in memory on load; the upgraded shape is written on the next change.
 
@@ -70,7 +84,9 @@ Migrations run in memory on load; the upgraded shape is written on the next chan
 - Export: `{ app: "opel-cascada-manual", exportedAt, data }` (pretty-printed JSON download).
 - Import: export file or bare `AppData`; `merge` mode keeps current data and takes the newer
   entry per id (`updatedAt`/`createdAt`), notebook pages and bookmarks are merged by id,
-  equipment profiles per car and feature (the current state wins);
+  equipment profiles per car and feature (the current state wins), history per section
+  (newest `at` wins), reminders by id (newest `updatedAt` wins) and favourites per car
+  (union, at most six);
   `replace` mode overwrites everything.
 - UI labels: "Pobierz kopię zapasową" (export), "Wczytaj kopię z pliku…" (import).
 - "Usuń wszystkie dane" removes the key; "Usuń instrukcje zapisane offline" deletes the Cache

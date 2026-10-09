@@ -18,7 +18,9 @@ export function SectionHighlights({
   const { highlights } = useAppData();
   if (!hydrated) return null;
   const own = Object.values(highlights)
-    .filter((h) => h.car === car && h.book === book && h.sectionId === sectionId)
+    .filter(
+      (h) => h.car === car && h.book === book && h.sectionId === sectionId,
+    )
     .sort((a, b) => a.anchor.start - b.anchor.start);
   if (own.length === 0) return null;
   return (

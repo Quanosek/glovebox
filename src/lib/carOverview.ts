@@ -245,7 +245,10 @@ export function getTips(cars: CarFile[], perCar = 30): Tip[] {
       // Spread over the whole manual rather than taking the first chapter.
       if (list.length <= perCar) return list;
       const step = list.length / perCar;
-      return Array.from({ length: perCar }, (_, i) => list[Math.floor(i * step)]);
+      return Array.from(
+        { length: perCar },
+        (_, i) => list[Math.floor(i * step)],
+      );
     });
     out.push(...tips);
   }

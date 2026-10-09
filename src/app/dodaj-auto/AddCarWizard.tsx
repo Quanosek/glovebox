@@ -1320,13 +1320,21 @@ function StepProcessing({
         <ol className="film-strip" aria-label="Instrukcje">
           {(job?.docs.length
             ? job.docs.map((d, i) => ({ doc: d, preview: picked[i]?.preview }))
-            : picked.map((p) => ({ doc: null, preview: p.preview, title: p.title }))
+            : picked.map((p) => ({
+                doc: null,
+                preview: p.preview,
+                title: p.title,
+              }))
           ).map((item, i) => {
             const d = item.doc;
             const state = d?.state ?? "queued";
             const title = d?.title ?? ("title" in item ? item.title : "");
             return (
-              <li key={d?.bookId ?? i} className="film-frame" data-state={state}>
+              <li
+                key={d?.bookId ?? i}
+                className="film-frame"
+                data-state={state}
+              >
                 <div className="relative flex aspect-3/4 items-center justify-center overflow-hidden border-b border-line bg-paper">
                   {item.preview ? (
                     // eslint-disable-next-line @next/next/no-img-element -- local object URL
@@ -1386,13 +1394,23 @@ function StepProcessing({
                   {d?.state === "done" && d.sections != null && (
                     <span>
                       {d.sections}{" "}
-                      {plural(d.sections, "rozdział", "rozdziały", "rozdziałów")}
+                      {plural(
+                        d.sections,
+                        "rozdział",
+                        "rozdziały",
+                        "rozdziałów",
+                      )}
                     </span>
                   )}
                   {d?.state === "done" && d.images != null && (
                     <span>
                       {d.images}{" "}
-                      {plural(d.images, "ilustracja", "ilustracje", "ilustracji")}
+                      {plural(
+                        d.images,
+                        "ilustracja",
+                        "ilustracje",
+                        "ilustracji",
+                      )}
                     </span>
                   )}
                   {d?.state === "error" && (d.error || d.log.length > 0) && (
@@ -1552,7 +1570,10 @@ function StepDone({
       n: job.docs.length,
       label: plural(job.docs.length, "instrukcja", "instrukcje", "instrukcji"),
     },
-    { n: sum("pages"), label: plural(sum("pages"), "strona", "strony", "stron") },
+    {
+      n: sum("pages"),
+      label: plural(sum("pages"), "strona", "strony", "stron"),
+    },
     {
       n: sum("sections"),
       label: plural(sum("sections"), "rozdział", "rozdziały", "rozdziałów"),

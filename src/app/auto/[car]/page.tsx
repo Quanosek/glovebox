@@ -136,10 +136,7 @@ export default async function CarPage({ params }: Props) {
             facts={overview.techPreview}
             tables={overview.techCount}
           />
-          <ServiceReminders
-            carId={car.id}
-            serviceHref={overview.serviceHref}
-          />
+          <ServiceReminders carId={car.id} serviceHref={overview.serviceHref} />
           <CarActions carId={car.id} label={car.label} />
         </aside>
       </div>

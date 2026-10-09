@@ -34,8 +34,7 @@ export default async function TechDataPage({ params }: Props) {
       </p>
       {cards.length === 0 && (
         <p className="panel mt-6 p-4 text-graphite">
-          W instrukcjach tego auta nie znaleźliśmy tabel z danymi
-          technicznymi.
+          W instrukcjach tego auta nie znaleźliśmy tabel z danymi technicznymi.
         </p>
       )}
       <div className="mt-6 space-y-8">

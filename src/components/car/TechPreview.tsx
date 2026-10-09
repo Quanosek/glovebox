@@ -33,8 +33,8 @@ export function TechPreview({
       )}
       <div className="border-t border-line px-4 py-3">
         <Link href={techDataHref(carId)} className="btn w-full justify-center">
-          Wszystkie dane ({tables}{" "}
-          {plural(tables, "tabela", "tabele", "tabel")}) ›
+          Wszystkie dane ({tables} {plural(tables, "tabela", "tabele", "tabel")}
+          ) ›
         </Link>
       </div>
     </section>
