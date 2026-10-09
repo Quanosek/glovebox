@@ -3,7 +3,12 @@ import {
   addYear,
   daysUntil,
   dueSoon,
+  formatManualDateInput,
+  getMonthGridDays,
+  isFutureDate,
+  parseManualDate,
   sortReminders,
+  toManualDate,
   todayIso,
 } from "@/lib/reminders";
 import type { Reminder } from "@/lib/storage/schema";
@@ -29,9 +34,39 @@ describe("reminders", () => {
     expect(daysUntil("2025-12-31", "2026-01-01")).toBe(-1);
   });
 
+  it("disallows dates after today but allows today", () => {
+    expect(isFutureDate("2026-10-09", "2026-10-09")).toBe(false);
+    expect(isFutureDate("2026-10-10", "2026-10-09")).toBe(true);
+  });
+
+  it("formats and validates manual dates without requiring dots", () => {
+    expect(formatManualDateInput("09102026")).toBe("09.10.2026");
+    expect(formatManualDateInput("0910")).toBe("09.10");
+    expect(parseManualDate("09102026")).toBe("2026-10-09");
+    expect(parseManualDate("09.10.2026")).toBe("2026-10-09");
+    expect(parseManualDate("9/10/2026")).toBe("2026-10-09");
+    expect(parseManualDate("9,10,2026")).toBe("2026-10-09");
+    expect(parseManualDate("31.02.2026")).toBeNull();
+    expect(parseManualDate("9.10.26")).toBeNull();
+    expect(formatManualDateInput("9/10,2026x")).toBe("9.10.2026");
+    expect(toManualDate("2026-10-09")).toBe("09.10.2026");
+  });
+
   it("moves a date by one year, also from 29 February", () => {
     expect(addYear("2026-10-09")).toBe("2027-10-09");
     expect(addYear("2028-02-29")).toBe("2029-02-28");
+  });
+
+  it("builds a six-week calendar grid starting on Monday", () => {
+    const may = getMonthGridDays(2026, 5);
+    expect(may).toHaveLength(42);
+    expect(may.slice(0, 5)).toEqual([null, null, null, null, 1]);
+    expect(may[34]).toBe(31);
+    expect(may.slice(35)).toEqual(Array(7).fill(null));
+
+    const leapFebruary = getMonthGridDays(2024, 2);
+    expect(leapFebruary[3]).toBe(1);
+    expect(leapFebruary[31]).toBe(29);
   });
 
   it("formats today as a local calendar day", () => {

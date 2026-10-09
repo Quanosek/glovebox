@@ -114,6 +114,14 @@ placeholder?, defaultValue?, maxLength?, ... })` asks for one line of text (e.g.
   Its hover never swaps the red background: it reuses the silver sweep (`.btn::before`, same
   ellipse, position and timing) with a softer white light that fades out before the edges.
   Do not change the red background on hover or layer extra gradients on it – that bands.
+- Reminder dates use the app's own Monday-first six-week calendar grid, not the browser's
+  native date picker. The selected day uses `.calendar-day-selected` and `--red-gradient`;
+  today has a graphite outline so the date control stays within the app palette. Months are
+  directly selectable (future months and days are disabled); arrows move by one month.
+  The field accepts digits, `.`, `,` and `/` (separators become dots, digit-only input gets
+  dots inserted) and shows `DD.MM.YYYY`; a valid entry opens the calendar on that date. The
+  calendar key sits inside the field on the right, and the calendar flips above the field when
+  the viewport has too little space below.
 - Header: the navigation row ends with the local weekday, date and time (`Clock` in
   `Header.tsx`, desktop only, filled after hydration and refreshed every 15 s; no requests)
   and a red "Bez internetu" badge when offline. "Przypomnienia" carries a `.nav-count` badge

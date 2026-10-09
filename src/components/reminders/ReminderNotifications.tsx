@@ -1,26 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useSyncExternalStore } from "react";
 
 type Permission = NotificationPermission | "unsupported";
 
+function subscribe(callback: () => void) {
+  window.addEventListener("reminders-notification-permission", callback);
+  return () =>
+    window.removeEventListener("reminders-notification-permission", callback);
+}
+
+function getPermission(): Permission {
+  return typeof Notification === "undefined"
+    ? "unsupported"
+    : Notification.permission;
+}
+
 export function ReminderNotifications() {
-  const [permission, setPermission] = useState<Permission>("default");
+  const permission = useSyncExternalStore<Permission | null>(
+    subscribe,
+    getPermission,
+    () => null,
+  );
 
   const enable = async () => {
-    if (typeof Notification === "undefined") {
-      setPermission("unsupported");
+    if (typeof Notification === "undefined") return;
+    try {
+      await Notification.requestPermission();
+      window.dispatchEvent(new Event("reminders-notification-permission"));
+    } catch {
       return;
     }
-    try {
-      const next = await Notification.requestPermission();
-      setPermission(next);
-      if (next === "granted")
-        window.dispatchEvent(new Event("reminders-notification-permission"));
-    } catch {
-      setPermission("unsupported");
-    }
   };
+
+  if (permission === null || permission === "granted") return null;
 
   return (
     <section className="panel flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -34,16 +47,14 @@ export function ReminderNotifications() {
       <button
         type="button"
         className="btn shrink-0 justify-center"
-        disabled={permission === "granted" || permission === "unsupported"}
+        disabled={permission === "unsupported"}
         onClick={() => void enable()}
       >
-        {permission === "granted"
-          ? "Powiadomienia włączone"
-          : permission === "denied"
-            ? "Zablokowano powiadomienia"
-            : permission === "unsupported"
-              ? "Niedostępne w tej przeglądarce"
-              : "Włącz powiadomienia"}
+        {permission === "denied"
+          ? "Zablokowano powiadomienia"
+          : permission === "unsupported"
+            ? "Niedostępne w tej przeglądarce"
+            : "Włącz powiadomienia"}
       </button>
     </section>
   );
