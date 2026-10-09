@@ -90,7 +90,9 @@ last word of a paragraph (up to 10 characters) is bound to the previous one.
 - `confirmDialog({ title, message?, confirmLabel?, cancelLabel?, danger? })` resolves to
   `true`/`false`; `alertDialog()` shows a single "OK"; `promptDialog({ title, label,
 placeholder?, defaultValue?, maxLength?, ... })` asks for one line of text (e.g. the profile
-  name) and resolves to the text or `null` on cancel – forms are never squeezed into the page. Requests are queued and rendered one at
+  name) and `formDialog({ title, fields, validate?, ... })` collects multiple fields in one
+  modal and keeps it open to show validation errors. Prompts and forms resolve to their values
+  or `null` on cancel – forms are never squeezed into the page. Requests are queued and rendered one at
   a time by `DialogHost` (mounted once in `src/app/layout.tsx`).
 - Rendering: native `<dialog>` opened with `showModal()` (focus trap, top layer, centred by
   `margin: auto`), class `.app-dialog`; `::backdrop` is semi-transparent ink with

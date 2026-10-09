@@ -37,30 +37,27 @@ function Clock() {
           Bez internetu
         </span>
       )}
-      {now ? (
-        <>
-          <span>
-            {now.toLocaleDateString("pl-PL", {
+      <span className={now ? "" : "invisible"} aria-hidden={!now}>
+        {now
+          ? now.toLocaleDateString("pl-PL", {
               weekday: "long",
               day: "numeric",
               month: "long",
-            })}
-          </span>
-          <time
-            dateTime={now.toISOString()}
-            className="min-w-[5ch] text-right text-base font-semibold text-ink"
-          >
-            {now.toLocaleTimeString("pl-PL", {
+            })
+          : "poniedziałek, 30 października"}
+      </span>
+      <time
+        dateTime={now?.toISOString()}
+        aria-hidden={!now}
+        className="min-w-[5ch] text-right text-base font-semibold text-ink"
+      >
+        {now
+          ? now.toLocaleTimeString("pl-PL", {
               hour: "2-digit",
               minute: "2-digit",
-            })}
-          </time>
-        </>
-      ) : (
-        <span aria-hidden="true" className="min-w-[5ch] text-base">
-          &nbsp;
-        </span>
-      )}
+            })
+          : "00:00"}
+      </time>
     </span>
   );
 }

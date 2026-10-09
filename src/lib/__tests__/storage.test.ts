@@ -300,6 +300,17 @@ describe("schema v5", () => {
     ]);
   });
 
+  it("drops impossible calendar dates from reminders", () => {
+    const data = migrate({
+      version: SCHEMA_VERSION,
+      reminders: [
+        { id: "valid", car, title: "Valid", dueDate: "2024-02-29" },
+        { id: "invalid", car, title: "Invalid", dueDate: "2026-02-31" },
+      ],
+    });
+    expect(data.reminders.map((r) => r.dueDate)).toEqual(["2024-02-29", null]);
+  });
+
   it("merges history and reminders, newest wins", () => {
     const current = createEmptyData();
     current.history = [entry("a", "2026-01-01T00:00:00.000Z")];

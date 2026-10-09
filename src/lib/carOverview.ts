@@ -246,7 +246,7 @@ export function getSectionThumb(
 export function getTips(cars: CarFile[], perCar = 30): Tip[] {
   const out: Tip[] = [];
   for (const car of cars) {
-    const tips = cached(car, "tips", () => {
+    const tips = cached(car, `tips:${perCar}`, () => {
       const list: Tip[] = [];
       for (const ctx of bookCtxs(car)) {
         for (const s of getBook(ctx).sections) {

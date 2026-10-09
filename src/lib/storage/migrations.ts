@@ -335,6 +335,14 @@ export const historyKey = (
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+function isValidDate(value: unknown): value is string {
+  if (typeof value !== "string" || !DATE.test(value)) return false;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return (
+    !Number.isNaN(date.valueOf()) && date.toISOString().slice(0, 10) === value
+  );
+}
+
 function sanitizeHistory(h: unknown): HistoryEntry | null {
   if (
     !isObject(h) ||
@@ -377,8 +385,7 @@ function sanitizeReminder(r: unknown): Reminder | null {
     car: r.car,
     kind,
     title,
-    dueDate:
-      typeof r.dueDate === "string" && DATE.test(r.dueDate) ? r.dueDate : null,
+    dueDate: isValidDate(r.dueDate) ? r.dueDate : null,
     dueKm: km != null && km >= 0 && km <= 5_000_000 ? km : null,
     done: r.done === true,
     createdAt: str(r.createdAt, new Date(0).toISOString()),

@@ -25,11 +25,9 @@ function useBack(): (() => void) | null {
   const carId = /^\/auto\/([^/]+)/.exec(pathname)?.[1];
   const bookRoute = /^\/auto\/[^/]+\/([^/]+)/.exec(pathname)?.[1];
   const fallback = carId
-    ? bookRoute === "wyposazenie"
+    ? !bookRoute || RESERVED_BOOK_ROUTES.includes(bookRoute)
       ? `/auto/${carId}`
-      : bookRoute
-        ? `/auto/${carId}/${bookRoute}`
-        : `/auto/${carId}`
+      : `/auto/${carId}/${bookRoute}`
     : "/";
 
   return () => {

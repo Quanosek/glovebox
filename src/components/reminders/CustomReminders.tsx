@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { confirmDialog } from "../Dialog";
+import { confirmDialog, formDialog } from "../Dialog";
 import { Skeleton } from "../Skeleton";
 import {
   REMINDER_SUGGESTIONS,
@@ -25,28 +24,50 @@ export function CustomReminders({
   reminders: Reminder[] | null;
   skeletonRows: number;
 }) {
-  const [adding, setAdding] = useState(false);
-  const [title, setTitle] = useState("");
-  const [date, setDate] = useState("");
-  const [km, setKm] = useState("");
   const today = todayIso();
   const own = reminders ? sortReminders(reminders) : null;
 
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    const kmValue = km.replace(/\s/g, "");
+  const add = async () => {
+    const values = await formDialog({
+      title: "Nowe przypomnienie",
+      fields: [
+        {
+          name: "title",
+          label: "Co trzeba zrobić?",
+          placeholder: "np. Przegląd okresowy",
+          maxLength: 120,
+          required: true,
+          suggestions: REMINDER_SUGGESTIONS,
+        },
+        { name: "date", label: "Termin (opcjonalnie)", type: "date" },
+        {
+          name: "km",
+          label: "Przebieg w km (opcjonalnie)",
+          placeholder: "np. 120 000",
+          maxLength: 9,
+          pattern: "[0-9 ]*",
+          inputMode: "numeric",
+        },
+      ],
+      confirmLabel: "Zapisz przypomnienie",
+      validate: ({ title, km }) => {
+        if (!title.trim()) return "Wpisz, co trzeba zrobić.";
+        const kmValue = km.replace(/\s/g, "");
+        if (kmValue && Number(kmValue) > 5_000_000)
+          return "Przebieg nie może przekraczać 5 000 000 km.";
+        return null;
+      },
+    });
+    if (!values) return;
+    const kmValue = values.km.replace(/\s/g, "");
     saveReminder({
       car: carId,
       kind: "custom",
-      title: title.trim(),
-      dueDate: date || null,
-      dueKm: kmValue ? Math.max(0, Math.round(Number(kmValue))) : null,
+      title: values.title.trim(),
+      dueDate: values.date || null,
+      dueKm: kmValue ? Number(kmValue) : null,
       done: false,
     });
-    setTitle("");
-    setDate("");
-    setKm("");
-    setAdding(false);
   };
 
   const remove = async (r: Reminder) => {
@@ -63,7 +84,7 @@ export function CustomReminders({
 
   return (
     <div>
-      {rows.length === 0 && !adding ? (
+      {rows.length === 0 ? (
         <p className="text-graphite">
           Dodaj własne terminy, np. przegląd w serwisie, wymianę oleju albo
           opon.
@@ -134,80 +155,14 @@ export function CustomReminders({
         </ul>
       ) : null}
 
-      {adding ? (
-        <form onSubmit={submit} className="mt-4 grid gap-3 sm:grid-cols-2">
-          <label className="sm:col-span-2">
-            <span className="mb-1 block text-sm font-semibold text-graphite">
-              Co trzeba zrobić?
-            </span>
-            <input
-              className="field"
-              list={`reminder-suggestions-${carId}`}
-              required
-              maxLength={120}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="np. Przegląd okresowy"
-              autoFocus
-            />
-            <datalist id={`reminder-suggestions-${carId}`}>
-              {REMINDER_SUGGESTIONS.map((s) => (
-                <option key={s} value={s} />
-              ))}
-            </datalist>
-          </label>
-          <label>
-            <span className="mb-1 block text-sm font-semibold text-graphite">
-              Termin (opcjonalnie)
-            </span>
-            <input
-              type="date"
-              className="field"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-          </label>
-          <label>
-            <span className="mb-1 block text-sm font-semibold text-graphite">
-              Przebieg w km (opcjonalnie)
-            </span>
-            <input
-              className="field"
-              inputMode="numeric"
-              pattern="[0-9 ]*"
-              maxLength={9}
-              value={km}
-              onChange={(e) => setKm(e.target.value)}
-              placeholder="np. 120 000"
-            />
-          </label>
-          <div className="flex flex-wrap gap-2 sm:col-span-2">
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={!title.trim()}
-            >
-              Zapisz przypomnienie
-            </button>
-            <button
-              type="button"
-              className="btn"
-              onClick={() => setAdding(false)}
-            >
-              Anuluj
-            </button>
-          </div>
-        </form>
-      ) : (
-        <button
-          type="button"
-          className="btn mt-4"
-          disabled={!own}
-          onClick={() => setAdding(true)}
-        >
-          + Dodaj przypomnienie
-        </button>
-      )}
+      <button
+        type="button"
+        className="btn mt-4"
+        disabled={!own}
+        onClick={() => void add()}
+      >
+        + Dodaj przypomnienie
+      </button>
     </div>
   );
 }

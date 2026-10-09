@@ -17,7 +17,9 @@ export function FavoritesBar({ carId }: { carId: string }) {
   const hydrated = useHydrated();
   const hint = useLayoutHint();
   const { bookmarks } = useAppData();
-  const own = bookmarks.filter((b) => b.car === carId).reverse();
+  const own = bookmarks
+    .filter((b) => b.car === carId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   // Before hydration the hint tells how many keys are taken.
   const shown = hydrated
     ? Math.min(own.length, FAVORITES_LIMIT)
