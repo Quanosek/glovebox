@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import type { CarSummary } from "@/lib/cars";
 import { carName } from "@/lib/cars";
 import { updateData, useAppData, useHydrated } from "@/lib/storage/hooks";
@@ -13,11 +14,16 @@ import { hasReadableManual } from "@/lib/cars";
 
 /** Local, login-free profile: car selection and the personal notebook. */
 export function ProfileView({ cars }: { cars: CarSummary[] }) {
+  const [editingName, setEditingName] = useState(false);
+  const [draftName, setDraftName] = useState("");
   const data = useAppData();
   const hydrated = useHydrated();
   const { settings } = data;
+  const myCars = hydrated
+    ? cars.filter((car) => settings.ownedCars.includes(car.id))
+    : [];
   const active = hydrated
-    ? (cars.find((c) => c.id === settings.activeCar) ?? null)
+    ? (myCars.find((c) => c.id === settings.activeCar) ?? null)
     : null;
   const highlights = Object.values(data.highlights);
   const pages = [...data.notebook.pages]
@@ -51,35 +57,87 @@ export function ProfileView({ cars }: { cars: CarSummary[] }) {
           {hydrated && name ? name[0].toUpperCase() : "★"}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs tracking-[0.12em] text-steel uppercase">
-            Profil na tym urządzeniu · bez logowania
-          </p>
-          <h1 className="text-3xl font-semibold tracking-tight">
-            {hydrated && name ? `Cześć, ${name}` : "Twój profil"}
-          </h1>
-          <label className="mt-2 flex max-w-sm items-center gap-2 text-sm text-graphite">
-            <span className="shrink-0">Nazwa profilu:</span>
-            <input
-              className="field h-8"
-              placeholder="opcjonalnie, np. imię"
-              maxLength={80}
-              value={hydrated ? settings.profileName : ""}
-              disabled={!hydrated}
-              onChange={(e) =>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-3xl font-semibold tracking-tight">
+              {hydrated && name ? `Cześć, ${name}` : "Twój profil"}
+            </h1>
+            {hydrated && (
+              <button
+                type="button"
+                className="btn btn-ghost h-9 w-9 justify-center p-0"
+                aria-label="Edytuj imię"
+                title="Edytuj imię"
+                onClick={() => {
+                  setDraftName(settings.profileName);
+                  setEditingName(true);
+                }}
+              >
+                <svg
+                  viewBox="0 0 20 20"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="m12.8 3.2 4 4M3 17l3.8-.8L16.3 6.7a1.8 1.8 0 0 0-2.5-2.5L4.3 13.7 3 17Z"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            )}
+          </div>
+          {editingName && (
+            <form
+              className="mt-3 flex max-w-md flex-wrap items-end gap-2"
+              onSubmit={(event) => {
+                event.preventDefault();
                 updateData((d) => ({
                   ...d,
-                  settings: { ...d.settings, profileName: e.target.value },
-                }))
-              }
-            />
-          </label>
+                  settings: {
+                    ...d.settings,
+                    profileName: draftName.slice(0, 80),
+                  },
+                }));
+                setEditingName(false);
+              }}
+            >
+              <label className="min-w-48 flex-1 text-sm text-graphite">
+                <span className="mb-1 block">
+                  Jak mamy się do Ciebie zwracać?
+                </span>
+                <input
+                  autoFocus
+                  className="field h-9"
+                  placeholder="Wpisz imię"
+                  maxLength={80}
+                  value={draftName}
+                  onChange={(event) => setDraftName(event.target.value)}
+                />
+              </label>
+              <button type="submit" className="btn btn-primary h-9">
+                Zapisz
+              </button>
+              <button
+                type="button"
+                className="btn h-9"
+                onClick={() => setEditingName(false)}
+              >
+                Anuluj
+              </button>
+            </form>
+          )}
         </div>
       </section>
 
       <p className="mt-4 text-sm text-graphite">
         {!hasManuals
           ? "Nie dodano jeszcze żadnych instrukcji. Dodaj pierwsze auto z plików PDF, aby rozpocząć czytanie."
-          : "Nie musisz zakładać konta ani się logować. Twoje zaznaczenia, komentarze, notatki i ustawienia zostają tylko na tym urządzeniu. Wybierz auto, a jego instrukcje zapiszą się tak, by działały także bez internetu."}
+          : myCars.length === 0
+            ? "Dodaj auto do swojego profilu, wybierając je z dostępnych instrukcji albo dodając własne. Twoje ustawienia zostają na tym urządzeniu."
+            : "Nie musisz zakładać konta ani się logować. Twoje zaznaczenia, komentarze, notatki i ustawienia zostają tylko na tym urządzeniu. Wybierz auto, a jego instrukcje zapiszą się tak, by działały także bez internetu."}
       </p>
 
       <section
@@ -96,7 +154,7 @@ export function ProfileView({ cars }: { cars: CarSummary[] }) {
               <p className="mt-1 text-sm text-graphite">
                 {active
                   ? `Wybrane auto · ${active.books.length} ${plural(active.books.length, "instrukcja", "instrukcje", "instrukcji")}. Zmień albo dodaj własne poniżej.`
-                  : `Liczba aut: ${cars.length}. Możesz też dodać własne z plików PDF.`}
+                  : `Liczba Twoich aut: ${myCars.length}. Możesz dodać kolejne z dostępnych instrukcji.`}
               </p>
             </div>
           </a>
@@ -131,12 +189,10 @@ export function ProfileView({ cars }: { cars: CarSummary[] }) {
       )}
 
       <section id="auta" className="mt-8 scroll-mt-28">
-        {hasManuals && (
-          <h2 className="mb-3 text-xs font-semibold tracking-[0.08em] text-graphite uppercase">
-            Twoje auta
-          </h2>
-        )}
-        <CarPicker cars={cars} />
+        <h2 className="mb-3 text-xs font-semibold tracking-[0.08em] text-graphite uppercase">
+          Twoje auta
+        </h2>
+        <CarPicker cars={cars} ownedCarIds={myCars.map((car) => car.id)} />
       </section>
 
       <section className="mt-8">

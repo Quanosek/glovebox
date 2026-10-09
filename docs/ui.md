@@ -79,6 +79,7 @@ last word of a paragraph (up to 10 characters) is bound to the previous one.
 - Links, buttons and `summary` get a 160 ms colour/background/border fade (base layer).
 - `.btn`: hover lightens the silver gradient and darkens the border; `:active` moves the
   button 1px down, flips the gradient and adds a faint inset shadow — a subtle "pressed key".
+  A soft radial sheen sweeps across the button and fades to transparent at its edges;
   `.btn-primary` and `.btn-ghost` have matching pressed states.
 - `.field` (inputs, selects, textareas): hover darkens the border; focus shows exactly one
   cue — a graphite border. No outline ring, underline or shadow on top of it. Other
@@ -86,11 +87,21 @@ last word of a paragraph (up to 10 characters) is bound to the previous one.
 - Selects keep their native accessible behavior and option menus, but use a shared silver
   field and graphite arrow. Checkboxes use a square red selected state and retain the global
   red keyboard focus outline. Native `details` disclosures use the same small red chevron.
-- Car overview tools are grouped separately from the manual list and include only actions
-  scoped to that car. Equipment profiles are opened from each car card on the home profile;
-  comments, bookmarks and notes remain in the app-wide navigation.
+- The profile lists only cars assigned to that browser profile. Other readable cars can be
+  added from `/dodaj-auto` without importing their manuals again; removing a car from the list
+  does not delete its manuals or saved annotations. `/auto/<id>` is the selected-car information
+  page with manual links and scoped tools. Its equipment button opens the separate
+  `/auto/<id>/wyposazenie` editor.
+- Selected-car tools are grouped in a two-column layout and include search and warnings scoped
+  to that car. Warnings are opened from this view rather than the global navigation. Comments,
+  bookmarks and notes remain in the app-wide navigation.
 - `.hover-tile`: clickable cards/panels (car cards, profile and book tiles) get a darker
   border and a soft shadow on hover and a 1px press on `:active`.
+- The page backdrop is made from layered, irregular CSS radial gradients in the existing
+  neutral palette; it uses no images or additional visual dependencies.
+- Views outside the primary header navigation expose a shared "Wstecz" control aligned to the
+  reader shell width; it returns to the prior same-origin view and uses the relevant car, book,
+  or profile as a direct-entry fallback.
 - `prefers-reduced-motion: reduce` shortens all transitions/animations to 1 ms and removes
   the press movement.
 

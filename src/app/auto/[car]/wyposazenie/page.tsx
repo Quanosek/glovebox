@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EquipmentEditor } from "@/components/EquipmentEditor";
 import { carLabel } from "@/lib/cars";
@@ -9,7 +8,7 @@ type Props = PageProps<"/auto/[car]/wyposazenie">;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const car = getCar((await params).car);
-  return { title: car ? `Wyposażenie – ${carLabel(car)}` : "Nie znaleziono" };
+  return { title: car ? carLabel(car) : "Nie znaleziono" };
 }
 
 /** Equipment of one car, chosen by the owner from what its manuals describe. */
@@ -30,16 +29,6 @@ export default async function EquipmentPage({ params }: Props) {
 
   return (
     <main id="main" className="page-shell">
-      <nav aria-label="Ścieżka" className="mb-4 text-xs text-steel">
-        <Link href="/auta" className="hover:text-red">
-          Auta
-        </Link>{" "}
-        ›{" "}
-        <Link href={car.href} className="hover:text-red">
-          {car.label}
-        </Link>{" "}
-        › <span className="text-ink">Wyposażenie</span>
-      </nav>
       <h1 className="page-title">Wyposażenie – {car.label}</h1>
       <dl className="mt-4 grid gap-px border border-line bg-line text-sm sm:grid-cols-2">
         {facts.map(([k, v]) => (

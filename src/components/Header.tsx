@@ -16,16 +16,14 @@ export function Header({ cars }: { cars: CarSummary[] }) {
   const hasManuals = hasReadableManual(cars);
   const nav = [
     { href: "/", label: "Profil", exact: true },
-    car
-      ? { href: car.href, label: `${car.brand} ${car.model}` }
+    ...(car
+      ? [{ href: car.href, label: `${car.brand} ${car.model}` }]
       : hasManuals
-        ? { href: "/auta", label: "Wybierz auto" }
-        : { href: "/dodaj-auto", label: "Dodaj auto" },
+        ? [{ href: "/auta", label: "Wybierz auto" }]
+        : []),
     { href: "/notatnik", label: "Notatnik" },
     { href: "/komentarze", label: "Komentarze" },
     { href: "/zakladki", label: "Zakładki" },
-    { href: "/ostrzezenia", label: "Ostrzeżenia" },
-    ...(hasManuals ? [{ href: "/dodaj-auto", label: "Dodaj auto" }] : []),
     { href: "/ustawienia", label: "Ustawienia" },
   ];
   const router = useRouter();

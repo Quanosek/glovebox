@@ -3,75 +3,42 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { confirmDialog } from "@/components/Dialog";
-import {
-  forgetCarOffline,
-  saveCarOffline,
-  useOfflineState,
-  useOnline,
-} from "@/lib/offline";
-import {
-  setActiveCar,
-  setVehicleProfile,
-  useAppData,
-  useHydrated,
-} from "@/lib/storage/hooks";
+import { saveCarOffline, useOfflineState, useOnline } from "@/lib/offline";
+import { removeOwnedCar, useHydrated } from "@/lib/storage/hooks";
 
-/** Offline copy status and the "delete car" action of the car page. */
+/** Offline copy status and the profile removal action of the car page. */
 export function CarActions({ carId, label }: { carId: string; label: string }) {
   const router = useRouter();
-  const { settings } = useAppData();
   const hydrated = useHydrated();
   const online = useOnline();
   const offline = useOfflineState();
   const saved = hydrated ? offline.saved[carId] : undefined;
   const progress = offline.running[carId];
   const offlineError = offline.errors[carId];
-  const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const remove = async () => {
     const ok = await confirmDialog({
-      title: "Usunąć auto?",
+      title: "Usunąć auto z Twoich aut?",
       message: (
         <>
           <p>
-            Auto <strong>{label}</strong> i wszystkie jego instrukcje zostaną
-            usunięte z aplikacji na wszystkich urządzeniach.
+            <strong>{label}</strong> zniknie z Twojej listy aut. Instrukcje
+            pozostaną dostępne i możesz dodać to auto ponownie.
           </p>
           <p className="mt-2 text-graphite">
-            Twoje notatki w notatniku zostaną. Tej operacji nie można cofnąć.
+            Twoje zaznaczenia, notatki i ustawienia nie zostaną usunięte.
           </p>
         </>
       ),
-      confirmLabel: "Usuń auto",
+      confirmLabel: "Usuń z listy",
       danger: true,
     });
     if (!ok) return;
     setDeleting(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/cars/${carId}`, { method: "DELETE" });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as {
-          error?: string;
-        };
-        throw new Error(body.error ?? "Nie udało się usunąć auta.");
-      }
-      await forgetCarOffline(carId);
-      setVehicleProfile(carId, {});
-      if (settings.activeCar === carId) setActiveCar(null);
-      router.push("/auta");
-      router.refresh();
-    } catch (err) {
-      setError(
-        err instanceof TypeError
-          ? "Brak połączenia z aplikacją. Spróbuj ponownie później."
-          : err instanceof Error
-            ? err.message
-            : "Nie udało się usunąć auta.",
-      );
-      setDeleting(false);
-    }
+    removeOwnedCar(carId);
+    router.push("/");
+    router.refresh();
   };
 
   return (
@@ -136,12 +103,11 @@ export function CarActions({ carId, label }: { carId: string; label: string }) {
             type="button"
             className="btn"
             onClick={remove}
-            disabled={deleting || !online}
+            disabled={deleting}
           >
-            {deleting ? "Usuwanie…" : "Usuń to auto"}
+            {deleting ? "Usuwanie…" : "Usuń z moich aut"}
           </button>
         </div>
-        {error && <p className="text-red">{error}</p>}
       </div>
     </div>
   );

@@ -7,7 +7,7 @@ import type { FeatureState } from "@/config/vehicle";
  */
 
 export const STORAGE_KEY = "opel-cascada-manual";
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 export const EXPORT_APP_ID = "opel-cascada-manual";
 
 export type HighlightColor = "light" | "silver" | "graphite" | "red";
@@ -79,6 +79,8 @@ export interface Settings {
   vehicles: Record<string, Record<string, FeatureState>>;
   /** Car chosen on the profile page (`database/<car>`), if any. */
   activeCar: string | null;
+  /** Cars added to this browser profile from the shared manuals library. */
+  ownedCars: string[];
   /** Optional display name of the local profile. */
   profileName: string;
 }
@@ -103,6 +105,7 @@ export const DEFAULT_SETTINGS: Settings = {
   showUnavailable: false,
   vehicles: {},
   activeCar: null,
+  ownedCars: [],
   profileName: "",
 };
 

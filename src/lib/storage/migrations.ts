@@ -37,6 +37,8 @@ export const MIGRATIONS: Record<number, Migration> = {
   1: migrateV1toV2,
   // v3: equipment profiles are stored separately for each car.
   2: migrateV2toV3,
+  // v4: cars are assigned to a local profile instead of all being shown by default.
+  3: migrateV3toV4,
 };
 
 const V1_ROUTES = ["/instrukcja", "/navi-950"];
@@ -107,6 +109,28 @@ function migrateV2toV3(data: Record<string, unknown>) {
   }
   delete settings.vehicle;
   return { ...data, settings: { ...settings, vehicles } };
+}
+
+function migrateV3toV4(data: Record<string, unknown>) {
+  const settings = isObject(data.settings) ? { ...data.settings } : {};
+  const ownedCars = new Set<string>();
+  const addCar = (value: unknown) => {
+    if (isValidId(value)) ownedCars.add(value);
+  };
+  addCar(settings.activeCar);
+  if (isObject(settings.vehicles))
+    for (const car of Object.keys(settings.vehicles)) addCar(car);
+  if (isObject(data.highlights))
+    for (const highlight of Object.values(data.highlights))
+      if (isObject(highlight)) addCar(highlight.car);
+  if (Array.isArray(data.bookmarks))
+    for (const bookmark of data.bookmarks)
+      if (isObject(bookmark)) addCar(bookmark.car);
+  if (isObject(data.lastRead)) addCar(data.lastRead.car);
+  return {
+    ...data,
+    settings: { ...settings, ownedCars: [...ownedCars] },
+  };
 }
 
 export class UnsupportedVersionError extends Error {
@@ -230,6 +254,8 @@ export function sanitize(data: Record<string, unknown>): AppData {
   if (typeof s.showUnavailable === "boolean")
     settings.showUnavailable = s.showUnavailable;
   if (isValidId(s.activeCar)) settings.activeCar = s.activeCar;
+  if (Array.isArray(s.ownedCars))
+    settings.ownedCars = [...new Set(s.ownedCars.filter(isValidId))];
   if (typeof s.profileName === "string")
     settings.profileName = s.profileName.slice(0, 80);
   if (isObject(s.vehicles)) {
@@ -348,12 +374,15 @@ export function mergeData(current: AppData, incoming: AppData): AppData {
   const vehicles = { ...current.settings.vehicles };
   for (const [car, profile] of Object.entries(incoming.settings.vehicles))
     vehicles[car] = { ...profile, ...vehicles[car] };
+  const ownedCars = [
+    ...new Set([...current.settings.ownedCars, ...incoming.settings.ownedCars]),
+  ];
   return {
     ...current,
     highlights,
     notebook: { pages },
     bookmarks,
     lastRead,
-    settings: { ...current.settings, vehicles },
+    settings: { ...current.settings, vehicles, ownedCars },
   };
 }

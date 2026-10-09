@@ -4,6 +4,7 @@ import { useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import type { FeatureState, VehicleProfile } from "@/config/vehicle";
 import type { CarSummary } from "@/lib/cars";
+import { isValidId } from "@/lib/slug";
 import { EMPTY_DATA, type AppData } from "./schema";
 import { getStore } from "./store";
 
@@ -67,6 +68,35 @@ export function setVehicleProfile(
     else delete vehicles[carId];
     return { ...d, settings: { ...d.settings, vehicles } };
   });
+}
+
+/** Adds a car from the shared manuals library to this browser profile. */
+export function addOwnedCar(carId: string): void {
+  if (!isValidId(carId)) return;
+  updateData((d) =>
+    d.settings.ownedCars.includes(carId)
+      ? d
+      : {
+          ...d,
+          settings: {
+            ...d.settings,
+            ownedCars: [...d.settings.ownedCars, carId],
+          },
+        },
+  );
+}
+
+/** Removes a car from this browser profile without deleting its manuals. */
+export function removeOwnedCar(carId: string): void {
+  if (!isValidId(carId)) return;
+  updateData((d) => ({
+    ...d,
+    settings: {
+      ...d.settings,
+      activeCar: d.settings.activeCar === carId ? null : d.settings.activeCar,
+      ownedCars: d.settings.ownedCars.filter((id) => id !== carId),
+    },
+  }));
 }
 
 export function updateData(fn: (data: AppData) => AppData): void {

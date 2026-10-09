@@ -169,11 +169,44 @@ describe("migrate", () => {
         },
       },
     });
+
     expect(data.settings.vehicles).toEqual({
       "skoda-octavia-2019": {
         "drive.towbar": { status: "has", certainty: "confirmed" },
       },
     });
+  });
+
+  it("migrates only cars already used by the local profile into owned cars", () => {
+    const data = migrate({
+      version: 3,
+      settings: {
+        activeCar: "skoda-octavia-2019",
+        vehicles: {
+          "mazda-3-2020": {
+            "drive.towbar": { status: "has", certainty: "confirmed" },
+          },
+        },
+      },
+      bookmarks: [{ car: "volvo-v60-2021", book: "manual", sectionId: "x" }],
+      highlights: { invalid: { car: "../unsafe" } },
+    });
+    expect(data.settings.ownedCars).toEqual([
+      "skoda-octavia-2019",
+      "mazda-3-2020",
+      "volvo-v60-2021",
+    ]);
+  });
+
+  it("sanitizes owned cars and keeps an empty list by default", () => {
+    expect(createEmptyData().settings.ownedCars).toEqual([]);
+    const data = migrate({
+      version: SCHEMA_VERSION,
+      settings: {
+        ownedCars: ["skoda-octavia-2019", "../unsafe", "skoda-octavia-2019"],
+      },
+    });
+    expect(data.settings.ownedCars).toEqual(["skoda-octavia-2019"]);
   });
 });
 
@@ -230,6 +263,7 @@ describe("parseImport / mergeData", () => {
     a.settings.vehicles = {
       car1: { "drive.towbar": { status: "has", certainty: "confirmed" } },
     };
+    a.settings.ownedCars = ["car1"];
     b.settings.vehicles = {
       car1: {
         "drive.towbar": { status: "no", certainty: "confirmed" },
@@ -237,10 +271,12 @@ describe("parseImport / mergeData", () => {
       },
       car2: { "drive.towbar": { status: "no", certainty: "confirmed" } },
     };
+    b.settings.ownedCars = ["car2"];
     const merged = mergeData(a, b);
     expect(merged.settings.vehicles.car1["drive.towbar"].status).toBe("has");
     expect(merged.settings.vehicles.car1["access.alarm"].status).toBe("has");
     expect(merged.settings.vehicles.car2["drive.towbar"].status).toBe("no");
+    expect(merged.settings.ownedCars).toEqual(["car1", "car2"]);
     expect(merged.highlights.x.comment).toBe("nowszy");
     expect(Object.keys(merged.highlights).sort()).toEqual(["x", "y"]);
     expect(merged.notebook.pages.map((p) => p.body)).toEqual(["new", ""]);
