@@ -68,8 +68,13 @@ re-extraction.
   zaznaczenia" (client, `#hl-<id>` links).
 - Profile `/`: "Czytaj dalej" with the history thumbnail, "Ostatnio czytane" (history),
   "Ostatnie zaznaczenia i komentarze" and `TipCard` (random tip of the profile's cars; the
-  server picks the seed, so the tip is rendered on the first paint). Before hydration all of
+  server picks the seed, so the tip is rendered on the first paint). When only one of the two
+  lists has entries, the free half shows `UpcomingDeadlines` ("Najbliższe terminy": inspection
+  and OC of the profile's cars, nearest first, at most four rows, links to `/przypomnienia`);
+  without owned cars the single list spans the row. The counters at the bottom follow the
+  navigation order: notebook pages, highlights, comments, bookmarks. Before hydration all of
   them render from the layout hint (`docs/storage.md`), with placeholder rows of the same size.
+- `/przypomnienia` without cars: a short explanation and "Dodaj auto" (`/dodaj-auto`).
 - Add-car wizard: step 2 film strip, step 4 `CarHero` from `GET /api/cars/<id>`.
 
 ## Browser data (schema v5, `docs/storage.md`)

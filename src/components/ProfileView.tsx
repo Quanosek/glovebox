@@ -13,6 +13,7 @@ import { PROFILE_NOTES_LIMIT } from "@/lib/storage/hint";
 import { useLayoutHint } from "@/lib/storage/hintContext";
 import { RecentActivity } from "./profile/RecentActivity";
 import { TipCard } from "./profile/TipCard";
+import { UpcomingDeadlines } from "./profile/UpcomingDeadlines";
 import type { Tip } from "@/lib/overview";
 import { plural } from "@/lib/typography";
 import { hasReadableManual } from "@/lib/cars";
@@ -55,10 +56,11 @@ export function ProfileView({
   const lastReadCar = hydrated ? data.lastRead?.car : hint.lastRead?.car;
 
   const stats = [
+    // Same order as the main navigation: Notatnik, Komentarze, Zakładki.
+    { label: "Kartki w notatniku", value: counts[3], href: "/notatnik" },
     { label: "Zaznaczenia", value: counts[0], href: "/komentarze" },
     { label: "Komentarze", value: counts[1], href: "/komentarze" },
     { label: "Zakładki", value: counts[2], href: "/zakladki" },
-    { label: "Kartki w notatniku", value: counts[3], href: "/notatnik" },
   ];
 
   return (
@@ -168,7 +170,12 @@ export function ProfileView({
 
       {hasManuals && (
         <div className="mt-6 space-y-6">
-          <RecentActivity cars={cars} />
+          <RecentActivity
+            cars={cars}
+            filler={
+              myCars.length > 0 ? <UpcomingDeadlines cars={cars} /> : undefined
+            }
+          />
           <TipCard tips={tips} cars={cars} seed={tipSeed} />
         </div>
       )}

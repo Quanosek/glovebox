@@ -44,11 +44,13 @@ export function RemindersView({
   if (myCars.length === 0)
     return (
       <div className="panel p-6">
-        <p className="text-lg">
-          Przypomnienia ustawisz dla aut ze swojego profilu.
+        <p className="type-card">Dodaj auto, aby ustawić terminy</p>
+        <p className="mt-2 max-w-2xl text-graphite">
+          Każde auto ma tu własną listę: badanie techniczne, OC i Twoje terminy,
+          np. wymianę oleju.
         </p>
-        <Link href="/#auta" className="btn btn-primary mt-4">
-          Wybierz auto
+        <Link href="/dodaj-auto" className="btn btn-primary mt-4">
+          Dodaj auto
         </Link>
       </div>
     );

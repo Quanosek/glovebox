@@ -137,12 +137,20 @@ export function Header({ cars }: { cars: CarSummary[] }) {
             <Logo size={34} />
           )}
           <span className="hidden leading-tight sm:block">
-            <span className="block text-sm font-semibold tracking-wide uppercase">
-              {car ? `${car.brand} ${car.model}` : "Moje instrukcje"}
-            </span>
-            <span className="block text-[0.6875rem] tracking-[0.12em] text-steel uppercase">
-              {car ? `Instrukcja · ${car.year}` : "Profil na tym urządzeniu"}
-            </span>
+            {car ? (
+              <>
+                <span className="block text-sm font-semibold tracking-wide uppercase">
+                  {car.brand} {car.model}
+                </span>
+                <span className="block text-[0.6875rem] tracking-[0.12em] text-steel uppercase">
+                  Instrukcja · {car.year}
+                </span>
+              </>
+            ) : (
+              <span className="block text-base font-semibold tracking-wide uppercase">
+                Moje instrukcje
+              </span>
+            )}
           </span>
         </Link>
 

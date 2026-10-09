@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { carName, type CarSummary } from "@/lib/cars";
 import { shorten } from "@/lib/overview";
 import { PROFILE_LIST_LIMIT } from "@/lib/storage/hint";
@@ -16,8 +17,18 @@ const when = (iso: string) =>
     month: "short",
   });
 
-/** Recently read sections and recent highlights/comments of the profile. */
-export function RecentActivity({ cars }: { cars: CarSummary[] }) {
+/**
+ * Recently read sections and recent highlights/comments of the profile. When
+ * only one of the two lists has entries, `filler` takes the free half of the
+ * row; without a filler the single list spans the whole row.
+ */
+export function RecentActivity({
+  cars,
+  filler,
+}: {
+  cars: CarSummary[];
+  filler?: ReactNode;
+}) {
   const hydrated = useHydrated();
   const { history, highlights, lastRead } = useAppData();
   const hint = useLayoutHint();
@@ -31,11 +42,16 @@ export function RecentActivity({ cars }: { cars: CarSummary[] }) {
   const readRows = hydrated ? read.length : hint.read;
   const markRows = hydrated ? marks.length : hint.marks.length;
   if (readRows === 0 && markRows === 0) return null;
+  const single = readRows === 0 || markRows === 0;
+  const span = single && !filler ? "md:col-span-2" : "";
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {readRows > 0 && (
-        <section className="panel" aria-labelledby="recent-read-title">
+        <section
+          className={`panel ${span}`}
+          aria-labelledby="recent-read-title"
+        >
           <h2 id="recent-read-title" className="panel-title">
             Ostatnio czytane
           </h2>
@@ -85,7 +101,10 @@ export function RecentActivity({ cars }: { cars: CarSummary[] }) {
         </section>
       )}
       {markRows > 0 && (
-        <section className="panel" aria-labelledby="recent-marks-title">
+        <section
+          className={`panel ${span}`}
+          aria-labelledby="recent-marks-title"
+        >
           <h2 id="recent-marks-title" className="panel-title">
             Ostatnie zaznaczenia i komentarze
           </h2>
@@ -133,6 +152,7 @@ export function RecentActivity({ cars }: { cars: CarSummary[] }) {
           </div>
         </section>
       )}
+      {single && filler}
     </div>
   );
 }
