@@ -4,8 +4,12 @@ import {
   SCHEMA_VERSION,
   createEmptyData,
   type AppData,
+  FAVORITES_LIMIT,
+  HISTORY_LIMIT,
   type Bookmark,
   type FontSize,
+  type HistoryEntry,
+  type Reminder,
   type Highlight,
   type HighlightColor,
   type NotePage,
@@ -39,6 +43,8 @@ export const MIGRATIONS: Record<number, Migration> = {
   2: migrateV2toV3,
   // v4: cars are assigned to a local profile instead of all being shown by default.
   3: migrateV3toV4,
+  // v5: reading history, service reminders and per-car favourites.
+  4: migrateV4toV5,
 };
 
 const V1_ROUTES = ["/instrukcja", "/navi-950"];
@@ -130,6 +136,30 @@ function migrateV3toV4(data: Record<string, unknown>) {
   return {
     ...data,
     settings: { ...settings, ownedCars: [...ownedCars] },
+  };
+}
+
+function migrateV4toV5(data: Record<string, unknown>) {
+  const settings = isObject(data.settings) ? { ...data.settings } : {};
+  const lr = data.lastRead;
+  const history = isObject(lr)
+    ? [
+        {
+          car: lr.car,
+          book: lr.book,
+          sectionId: lr.sectionId,
+          title: lr.title,
+          href: lr.href,
+          thumb: null,
+          at: lr.at,
+        },
+      ]
+    : [];
+  return {
+    ...data,
+    history,
+    reminders: [],
+    settings: { ...settings, favorites: {} },
   };
 }
 
@@ -247,8 +277,38 @@ export function sanitize(data: Record<string, unknown>): AppData {
     };
   }
 
+  if (Array.isArray(data.history)) {
+    const seen = new Set<string>();
+    out.history = data.history
+      .map(sanitizeHistory)
+      .filter((h): h is HistoryEntry => h !== null)
+      .sort((a, b) => b.at.localeCompare(a.at))
+      .filter((h) => {
+        const key = historyKey(h);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, HISTORY_LIMIT);
+  }
+
+  if (Array.isArray(data.reminders)) {
+    const ids = new Set<string>();
+    out.reminders = data.reminders
+      .map(sanitizeReminder)
+      .filter((r): r is Reminder => {
+        if (!r || ids.has(r.id)) return false;
+        ids.add(r.id);
+        return true;
+      });
+  }
+
   const s = isObject(data.settings) ? data.settings : {};
-  const settings: Settings = { ...DEFAULT_SETTINGS, vehicles: {} };
+  const settings: Settings = {
+    ...DEFAULT_SETTINGS,
+    vehicles: {},
+    favorites: {},
+  };
   if (FONT_SIZES.includes(s.fontSize as FontSize))
     settings.fontSize = s.fontSize as FontSize;
   if (typeof s.showUnavailable === "boolean")
@@ -265,8 +325,79 @@ export function sanitize(data: Record<string, unknown>): AppData {
       if (Object.keys(clean).length > 0) settings.vehicles[car] = clean;
     }
   }
+  if (isObject(s.favorites)) {
+    const bookmarkIds = new Set(out.bookmarks.map((b) => b.id));
+    for (const [car, ids] of Object.entries(s.favorites)) {
+      if (!isValidId(car) || !Array.isArray(ids)) continue;
+      const clean = [
+        ...new Set(
+          ids.filter(
+            (id): id is string =>
+              typeof id === "string" &&
+              id.startsWith(`${car}:`) &&
+              bookmarkIds.has(id),
+          ),
+        ),
+      ].slice(0, FAVORITES_LIMIT);
+      if (clean.length > 0) settings.favorites[car] = clean;
+    }
+  }
   out.settings = settings;
   return out;
+}
+
+/** Key of a history entry: one entry per section. */
+export const historyKey = (
+  h: Pick<HistoryEntry, "car" | "book" | "sectionId">,
+) => `${h.car}:${h.book}:${h.sectionId}`;
+
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+function sanitizeHistory(h: unknown): HistoryEntry | null {
+  if (
+    !isObject(h) ||
+    !isValidId(h.car) ||
+    !isValidId(h.book) ||
+    typeof h.sectionId !== "string" ||
+    typeof h.href !== "string" ||
+    !h.href.startsWith("/auto/")
+  )
+    return null;
+  return {
+    car: h.car,
+    book: h.book,
+    sectionId: h.sectionId,
+    title: str(h.title),
+    href: h.href,
+    // Only local illustrations: the app makes no third-party requests.
+    thumb:
+      typeof h.thumb === "string" && h.thumb.startsWith("/media/")
+        ? h.thumb
+        : null,
+    at: str(h.at, new Date(0).toISOString()),
+  };
+}
+
+function sanitizeReminder(r: unknown): Reminder | null {
+  if (!isObject(r) || typeof r.id !== "string" || !r.id || !isValidId(r.car))
+    return null;
+  const title = str(r.title).trim().slice(0, 120);
+  if (!title) return null;
+  const km =
+    typeof r.dueKm === "number" && Number.isFinite(r.dueKm)
+      ? Math.round(r.dueKm)
+      : null;
+  return {
+    id: r.id,
+    car: r.car,
+    title,
+    dueDate:
+      typeof r.dueDate === "string" && DATE.test(r.dueDate) ? r.dueDate : null,
+    dueKm: km != null && km >= 0 && km <= 5_000_000 ? km : null,
+    done: r.done === true,
+    createdAt: str(r.createdAt, new Date(0).toISOString()),
+    updatedAt: str(r.updatedAt, str(r.createdAt, new Date(0).toISOString())),
+  };
 }
 
 /** Keeps valid states of known features only. */
@@ -377,12 +508,36 @@ export function mergeData(current: AppData, incoming: AppData): AppData {
   const ownedCars = [
     ...new Set([...current.settings.ownedCars, ...incoming.settings.ownedCars]),
   ];
+  const history = new Map<string, HistoryEntry>();
+  for (const h of [...current.history, ...incoming.history]) {
+    const existing = history.get(historyKey(h));
+    if (!existing || existing.at < h.at) history.set(historyKey(h), h);
+  }
+  const reminders = [...current.reminders];
+  const reminderIndex = new Map(reminders.map((r, i) => [r.id, i]));
+  for (const r of incoming.reminders) {
+    const i = reminderIndex.get(r.id);
+    if (i === undefined) {
+      reminderIndex.set(r.id, reminders.length);
+      reminders.push(r);
+    } else if (reminders[i].updatedAt < r.updatedAt) reminders[i] = r;
+  }
+  const favorites = { ...current.settings.favorites };
+  for (const [car, ids] of Object.entries(incoming.settings.favorites))
+    favorites[car] = [...new Set([...(favorites[car] ?? []), ...ids])].slice(
+      0,
+      FAVORITES_LIMIT,
+    );
   return {
     ...current,
     highlights,
     notebook: { pages },
     bookmarks,
     lastRead,
-    settings: { ...current.settings, vehicles, ownedCars },
+    history: [...history.values()]
+      .sort((a, b) => b.at.localeCompare(a.at))
+      .slice(0, HISTORY_LIMIT),
+    reminders,
+    settings: { ...current.settings, vehicles, ownedCars, favorites },
   };
 }

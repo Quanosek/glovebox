@@ -81,13 +81,27 @@ export function equipmentHref(carId: string): string {
   return `/auto/${carId}/wyposazenie`;
 }
 
+/** "Lampki kontrolne" glossary of a car. */
+export function glossaryHref(carId: string): string {
+  return `/auto/${carId}/lampki-kontrolne`;
+}
+
+/** "Dane techniczne" cards of a car. */
+export function techDataHref(carId: string): string {
+  return `/auto/${carId}/dane-techniczne`;
+}
+
 /** Official brand logo of the car's model year (served by `app/logo/[car]`). */
 export function logoHref(carId: string): string {
   return `/logo/${carId}`;
 }
 
 /** Book routes that would clash with fixed pages under `/auto/<car>/`. */
-export const RESERVED_BOOK_ROUTES = ["wyposazenie"];
+export const RESERVED_BOOK_ROUTES = [
+  "wyposazenie",
+  "lampki-kontrolne",
+  "dane-techniczne",
+];
 
 export function bookHref(carId: string, route: string): string {
   return `/auto/${carId}/${route}`;

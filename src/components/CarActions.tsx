@@ -42,7 +42,7 @@ export function CarActions({ carId, label }: { carId: string; label: string }) {
   };
 
   return (
-    <div className="panel">
+    <div id="bez-internetu" className="panel">
       <div className="panel-title">Bez internetu</div>
       <div className="space-y-3 p-4 text-sm">
         <div aria-live="polite">

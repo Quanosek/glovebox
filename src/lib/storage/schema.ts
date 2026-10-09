@@ -7,7 +7,7 @@ import type { FeatureState } from "@/config/vehicle";
  */
 
 export const STORAGE_KEY = "opel-cascada-manual";
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 export const EXPORT_APP_ID = "opel-cascada-manual";
 
 export type HighlightColor = "light" | "silver" | "graphite" | "red";
@@ -66,6 +66,35 @@ export interface LastRead {
   at: string;
 }
 
+/** One recently read section (newest first, see `HISTORY_LIMIT`). */
+export interface HistoryEntry {
+  car: string;
+  book: string;
+  sectionId: string;
+  title: string;
+  href: string;
+  /** First illustration of the section (`/media/…`), if it has one. */
+  thumb: string | null;
+  at: string;
+}
+
+/** Owner's own service reminder for one car (date and/or mileage). */
+export interface Reminder {
+  id: string;
+  car: string;
+  title: string;
+  /** `YYYY-MM-DD` or null. */
+  dueDate: string | null;
+  /** Mileage in km or null. */
+  dueKm: number | null;
+  done: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const HISTORY_LIMIT = 12;
+export const FAVORITES_LIMIT = 6;
+
 export type FontSize = "small" | "normal" | "large" | "xlarge";
 
 export interface Settings {
@@ -83,6 +112,8 @@ export interface Settings {
   ownedCars: string[];
   /** Optional display name of the local profile. */
   profileName: string;
+  /** Bookmarks pinned to the favourites bar of each car: car id → bookmark ids. */
+  favorites: Record<string, string[]>;
 }
 
 export interface AppData {
@@ -91,6 +122,8 @@ export interface AppData {
   notebook: { pages: NotePage[] };
   bookmarks: Bookmark[];
   lastRead: LastRead | null;
+  history: HistoryEntry[];
+  reminders: Reminder[];
   settings: Settings;
 }
 
@@ -107,6 +140,7 @@ export const DEFAULT_SETTINGS: Settings = {
   activeCar: null,
   ownedCars: [],
   profileName: "",
+  favorites: {},
 };
 
 export function createEmptyData(): AppData {
@@ -116,7 +150,9 @@ export function createEmptyData(): AppData {
     notebook: { pages: [] },
     bookmarks: [],
     lastRead: null,
-    settings: { ...DEFAULT_SETTINGS, vehicles: {} },
+    history: [],
+    reminders: [],
+    settings: { ...DEFAULT_SETTINGS, vehicles: {}, favorites: {} },
   };
 }
 

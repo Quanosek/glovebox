@@ -1,6 +1,11 @@
 "use client";
 
-import { updateData, useAppData, useHydrated } from "@/lib/storage/hooks";
+import {
+  updateData,
+  useAppData,
+  useHydrated,
+  withoutBookmark,
+} from "@/lib/storage/hooks";
 
 export function BookmarkButton({
   car,
@@ -21,23 +26,25 @@ export function BookmarkButton({
   const active = hydrated && data.bookmarks.some((b) => b.id === id);
 
   const toggle = () =>
-    updateData((d) => ({
-      ...d,
-      bookmarks: d.bookmarks.some((b) => b.id === id)
-        ? d.bookmarks.filter((b) => b.id !== id)
-        : [
-            ...d.bookmarks,
-            {
-              id,
-              car,
-              book,
-              sectionId,
-              title,
-              href,
-              createdAt: new Date().toISOString(),
-            },
-          ],
-    }));
+    updateData((d) =>
+      d.bookmarks.some((b) => b.id === id)
+        ? withoutBookmark(d, id)
+        : {
+            ...d,
+            bookmarks: [
+              ...d.bookmarks,
+              {
+                id,
+                car,
+                book,
+                sectionId,
+                title,
+                href,
+                createdAt: new Date().toISOString(),
+              },
+            ],
+          },
+    );
 
   return (
     <button

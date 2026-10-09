@@ -5,8 +5,16 @@ import { usePathname } from "next/navigation";
 import type { FeatureState, VehicleProfile } from "@/config/vehicle";
 import type { CarSummary } from "@/lib/cars";
 import { isValidId } from "@/lib/slug";
-import { EMPTY_DATA, type AppData } from "./schema";
-import { getStore } from "./store";
+import { historyKey } from "./migrations";
+import {
+  EMPTY_DATA,
+  FAVORITES_LIMIT,
+  HISTORY_LIMIT,
+  type AppData,
+  type HistoryEntry,
+  type Reminder,
+} from "./schema";
+import { getStore, newId } from "./store";
 
 const getServerSnapshot = () => EMPTY_DATA;
 
@@ -122,4 +130,82 @@ export function setActiveCar(id: string | null): void {
       ? d
       : { ...d, settings: { ...d.settings, activeCar: id } },
   );
+}
+
+/** Puts a section at the top of the reading history (one entry per section). */
+export function recordReading(entry: Omit<HistoryEntry, "at">): void {
+  updateData((d) => {
+    const key = historyKey(entry);
+    return {
+      ...d,
+      history: [
+        { ...entry, at: new Date().toISOString() },
+        ...d.history.filter((h) => historyKey(h) !== key),
+      ].slice(0, HISTORY_LIMIT),
+    };
+  });
+}
+
+/** Pins a bookmark to (or removes it from) the favourites bar of its car. */
+export function toggleFavorite(carId: string, bookmarkId: string): void {
+  updateData((d) => {
+    const current = d.settings.favorites[carId] ?? [];
+    const next = current.includes(bookmarkId)
+      ? current.filter((id) => id !== bookmarkId)
+      : current.length < FAVORITES_LIMIT &&
+          d.bookmarks.some((b) => b.id === bookmarkId)
+        ? [...current, bookmarkId]
+        : current;
+    if (next === current) return d;
+    const favorites = { ...d.settings.favorites };
+    if (next.length > 0) favorites[carId] = next;
+    else delete favorites[carId];
+    return { ...d, settings: { ...d.settings, favorites } };
+  });
+}
+
+/** Removes a bookmark together with its place on the favourites bar. */
+export function withoutBookmark(d: AppData, bookmarkId: string): AppData {
+  const favorites: Record<string, string[]> = {};
+  for (const [car, ids] of Object.entries(d.settings.favorites)) {
+    const rest = ids.filter((id) => id !== bookmarkId);
+    if (rest.length > 0) favorites[car] = rest;
+  }
+  return {
+    ...d,
+    bookmarks: d.bookmarks.filter((b) => b.id !== bookmarkId),
+    settings: { ...d.settings, favorites },
+  };
+}
+
+export function saveReminder(
+  reminder: Omit<Reminder, "id" | "createdAt" | "updatedAt"> & {
+    id?: string;
+  },
+): void {
+  const now = new Date().toISOString();
+  updateData((d) => {
+    const existing = reminder.id
+      ? d.reminders.find((r) => r.id === reminder.id)
+      : undefined;
+    const next: Reminder = {
+      ...reminder,
+      id: existing?.id ?? newId(),
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now,
+    };
+    return {
+      ...d,
+      reminders: existing
+        ? d.reminders.map((r) => (r.id === existing.id ? next : r))
+        : [...d.reminders, next],
+    };
+  });
+}
+
+export function deleteReminder(id: string): void {
+  updateData((d) => ({
+    ...d,
+    reminders: d.reminders.filter((r) => r.id !== id),
+  }));
 }
