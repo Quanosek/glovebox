@@ -48,20 +48,16 @@ function NeighbourLink({
   return (
     <Link
       href={sectionHref(ctx, section)}
-      className={`panel hover-tile group flex h-full items-center gap-3 p-3 ${
+      className={`panel hover-tile group flex h-full min-h-22 items-center gap-3 p-3 ${
         dir === "next" ? "flex-row-reverse text-right" : ""
       }`}
     >
-      <span className="thumb h-16 w-20 shrink-0 p-1">
-        {thumb ? (
-          /* eslint-disable-next-line @next/next/no-img-element -- small local thumbnail */
+      {thumb && (
+        <span className="thumb h-16 w-20 shrink-0 p-1">
+          {/* eslint-disable-next-line @next/next/no-img-element -- small local thumbnail */}
           <img src={thumb} alt="" loading="lazy" />
-        ) : (
-          <span aria-hidden="true" className="text-2xl text-silver">
-            {dir === "prev" ? "‹" : "›"}
-          </span>
-        )}
-      </span>
+        </span>
+      )}
       <span className="min-w-0">
         <span className="block text-xs text-steel">
           {dir === "prev" ? "‹ Poprzedni rozdział" : "Następny rozdział ›"}

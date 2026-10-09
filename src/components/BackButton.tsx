@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
+import { RESERVED_BOOK_ROUTES } from "@/lib/cars";
 import { isValidId } from "@/lib/slug";
 
 /** Main views from the top navigation intentionally have no back button. */
@@ -62,27 +63,33 @@ const Arrow = () => (
   </svg>
 );
 
+/** True for manual pages, where "Wstecz" sits on top of the table of contents. */
+const isReader = (pathname: string) => {
+  const route = /^\/auto\/[^/]+\/([^/]+)/.exec(pathname)?.[1];
+  return route !== undefined && !RESERVED_BOOK_ROUTES.includes(route);
+};
+
 /**
- * "Wstecz" at the left end of the header: a square key in the top row on
- * phones and tablets, the first entry of the navigation row on desktop.
+ * "Wstecz". The header never changes, so the button belongs to the view:
+ * `sidebar` is the first row of the manual's table of contents, `page` sits
+ * above the content of other secondary screens (aligned with `.page-shell`).
  */
-export function BackButton({ variant }: { variant: "key" | "nav" }) {
+export function BackButton({ variant }: { variant: "sidebar" | "page" }) {
+  const pathname = usePathname();
   const back = useBack();
   if (!back) return null;
-  return variant === "key" ? (
-    <button
-      type="button"
-      className="btn btn-ghost h-9 w-9 shrink-0 justify-center px-0 lg:hidden"
-      aria-label="Wstecz"
-      title="Wstecz"
-      onClick={back}
-    >
-      <Arrow />
-    </button>
-  ) : (
-    <button type="button" className="nav-back hidden lg:flex" onClick={back}>
+  if (variant === "page" && isReader(pathname)) return null;
+  return variant === "sidebar" ? (
+    <button type="button" className="sidebar-back print:hidden" onClick={back}>
       <Arrow />
       Wstecz
     </button>
+  ) : (
+    <div className="back-navigation print:hidden">
+      <button type="button" className="btn btn-ghost" onClick={back}>
+        <Arrow />
+        Wstecz
+      </button>
+    </div>
   );
 }

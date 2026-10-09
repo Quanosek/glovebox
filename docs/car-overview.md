@@ -11,12 +11,18 @@ Server-only (reads `src/lib/content.ts`); results are memoised per car and
 
 - `getCarOverview(car)` → `stats` (pages, sections, illustrations, icons, warnings by kind),
   `tiles` ("Najczęściej potrzebne"), `glossaryCount`, `techCount`, `techPreview` (up to four
-  numeric facts) and `serviceHref` (section about periodic service).
+  measured facts) and `serviceHref` (section about periodic service).
 - `getGlossary(car)` → pictograms with their explanation grouped by section. Sections whose
   title chain matches `INDICATOR_SECTION` come first; when a manual has none, all icons are
   used. Duplicates (same image and text) are dropped; at most ~240 symbols.
-- `getTechCards(car)` → tables of sections matching `TECHNICAL_SECTION`; two-column tables
-  become label/value facts (`tableFacts`), others stay tables. Each links to its block.
+- `getTechCards(car)` scans every section so more manuals get "Dane techniczne":
+  - sections matching `TECHNICAL_SECTION` (technical data, specifications, tyre sizes, loads,
+    fluids, tightening torques, …) give all their tables plus `textFacts` groups (≥ 2
+    consecutive "Label: value with unit" lines);
+  - any other section gives only measurement tables (`isMeasurementTable`: ≥ 2 rows, at least
+    half with a value and unit, `hasMeasurement`).
+    Two-column tables become label/value facts (`tableFacts`), others stay tables. Each links to
+    its block. `techPreview` keeps only facts with a measured value.
 - `getSectionThumb(ctx, section)` → first non-icon illustration (≥ 120×80) of a section.
 - `getTips(cars)` → "Czy wiesz, że…" notes (`warning` blocks of kind `note`, ≥ 40 characters),
   at most 30 per car spread over the whole manual.
@@ -43,7 +49,9 @@ re-extraction.
   pinning; the bar is hidden while the car has no bookmarks), `QuickTiles`, books, tools; side
   column: `TechPreview`, `ServiceReminders` (inspection and OC insurance always; a third row
   with the nearest own reminder only once one exists; "Ustaw przypomnienia" links to
-  `/przypomnienia#<car>`), `CarActions`.
+  `/przypomnienia#<car>`). The last, full-width section is `CarActions` ("Bez internetu",
+  `#bez-internetu`: status, progress, "Zapisz ponownie"); the stats strip only shows the status
+  and links there. Removing a car from the profile is done on the profile (`CarPicker`), not here.
 - `/przypomnienia` (`RemindersView`, in the main navigation): one panel per car of the profile
   (`id` = car id) with two fixed yearly deadlines – "Badanie techniczne" and "Ubezpieczenie
   OC" (date field, "za N dni" badge, "Załatwione – za rok" moves the date by one year) – and
@@ -51,7 +59,7 @@ re-extraction.
   to the servicing section of the manual (`CarOverview.serviceHref`).
 - `/auto/<car>/lampki-kontrolne`: symbol cards with a local text filter; each card links to
   the image block (`#<blockId>`) in the manual.
-- `/auto/<car>/dane-techniczne`: fact cards with large values and compact tables, each with
+- `/auto/<car>/dane-techniczne`: fact cards (values in `.type-fact`) and compact tables, each with
   "Pokaż w instrukcji". `lampki-kontrolne` and `dane-techniczne` are reserved book routes
   (`RESERVED_BOOK_ROUTES`) and part of the offline copy (`getCarUrls`).
 - Reader (`/auto/<car>/<book>/<section>`): previous/next links with section thumbnails. From

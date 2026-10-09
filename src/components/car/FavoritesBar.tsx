@@ -49,16 +49,18 @@ export function FavoritesBar({ carId }: { carId: string }) {
               </li>
             );
           return b ? (
-            <li key={b.id} className="fav-key fav-key-on group">
-              <span className="fav-num" aria-hidden="true">
-                {i + 1}
-              </span>
+            <li key={b.id}>
               <Link
                 href={b.href}
-                className="min-w-0 flex-1 truncate font-semibold group-hover:text-red"
+                className="fav-key fav-key-on group h-full"
                 title={b.title}
               >
-                {b.title}
+                <span className="fav-num" aria-hidden="true">
+                  {i + 1}
+                </span>
+                <span className="min-w-0 flex-1 truncate font-semibold group-hover:text-red">
+                  {b.title}
+                </span>
               </Link>
             </li>
           ) : (

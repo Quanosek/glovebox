@@ -29,7 +29,10 @@ export function OfflineStat({ carId }: { carId: string }) {
           ? "zapisywanie"
           : saved
             ? "działa bez internetu"
-            : "bez internetu: jeszcze nie"}
+            : "bez internetu: jeszcze nie"}{" "}
+        <span aria-hidden="true" className="text-red">
+          ›
+        </span>
       </span>
     </a>
   );

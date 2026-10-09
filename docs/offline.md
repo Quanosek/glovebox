@@ -59,7 +59,7 @@ strategy changes.
   (`Record<car, { version, savedAt, total }>`), separate from the versioned app data. It is
   written only when every manifest URL succeeded; otherwise an error is shown and the next
   visit retries. One job per car at a time.
-- UI: the car page panel "Bez internetu" (`CarActions`) shows progress, "Gotowe" with the
+- UI: the car page's last section "Bez internetu" (`CarActions`, `#bez-internetu`) shows progress, "Gotowe" with the
   date, errors and a "Zapisz ponownie" button (`force: true`). Car cards show an "Offline"
   badge; the car page number strip shows the same state.
   `useOnline()` drives the "Bez internetu" badge in the header, the notice on the car list and the

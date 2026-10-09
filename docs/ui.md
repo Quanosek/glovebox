@@ -51,7 +51,8 @@ One size and weight per role; do not combine ad-hoc `text-*` / `font-*` utilitie
 | `.page-title` / `.type-title` | page heading (with / without the red rule)              |
 | `.type-card`                  | name on a card or panel (cars, reminders, warnings)     |
 | `.type-item`                  | link title in a list or tile (books, tools, continue)   |
-| `.type-value`                 | big numbers and measurements (stats, dates, tech data)  |
+| `.type-value`                 | big numbers and measurements (stats, dates)             |
+| `.type-fact`                  | values in technical data (smaller, text-heavy lists)    |
 | `.section-label`              | uppercase label above a group (red dash)                |
 | `.panel-title`                | silver header bar of a `.panel`                         |
 
@@ -87,7 +88,9 @@ last word of a paragraph (up to 10 characters) is bound to the previous one.
 
 - Native `window.confirm`, `alert` and `prompt` are not used anywhere.
 - `confirmDialog({ title, message?, confirmLabel?, cancelLabel?, danger? })` resolves to
-  `true`/`false`; `alertDialog()` shows a single "OK". Requests are queued and rendered one at
+  `true`/`false`; `alertDialog()` shows a single "OK"; `promptDialog({ title, label,
+placeholder?, defaultValue?, maxLength?, ... })` asks for one line of text (e.g. the profile
+  name) and resolves to the text or `null` on cancel – forms are never squeezed into the page. Requests are queued and rendered one at
   a time by `DialogHost` (mounted once in `src/app/layout.tsx`).
 - Rendering: native `<dialog>` opened with `showModal()` (focus trap, top layer, centred by
   `margin: auto`), class `.app-dialog`; `::backdrop` is semi-transparent ink with
@@ -149,12 +152,16 @@ last word of a paragraph (up to 10 characters) is bound to the previous one.
 - Selected-car tools are grouped in a two-column layout and include search and warnings scoped
   to that car. Warnings are opened from this view rather than the global navigation. Comments,
   bookmarks and notes remain in the app-wide navigation.
-- `.hover-tile`: clickable cards/panels (car cards, profile and book tiles) get a darker
-  border and a soft shadow on hover and a 1px press on `:active`.
+- Hover only on what can be clicked: a link/button itself, or a card holding its own buttons
+  (car cards). Static panels, stat cells, tables and free slots have no hover and no movement.
+- `.hover-tile`: clickable cards/panels get a darker border and a soft shadow on hover; only
+  `a`/`button` tiles get the 1px press on `:active` (cards with inner buttons never move).
 - The page backdrop is made from layered, irregular CSS radial gradients in the existing
   neutral palette; it uses no images or additional visual dependencies.
-- "Wstecz" (`BackButton`) lives in the header: the first entry of the navigation row on
-  desktop (`.nav-back`), a square arrow key before the logo on phones and tablets. Main views
+- The global header never changes per view. "Wstecz" (`BackButton`) belongs to the view: in the
+  manual it is the first row of the table of contents (`.sidebar-back`: white key, red arrow,
+  above the book groups); on other secondary screens it sits above the content in
+  `.back-navigation`, aligned with `.page-shell`. Main views
   of the top navigation (`/`, car page, `/auta`, `/przypomnienia`, `/notatnik`, `/komentarze`,
   `/zakladki`, `/ustawienia`) intentionally have none. It returns to the prior same-origin view
   and uses the relevant car, book, or profile as a direct-entry fallback.

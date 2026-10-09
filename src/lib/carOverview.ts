@@ -20,10 +20,13 @@ import {
 import {
   blockToText,
   firstIllustration,
+  hasMeasurement,
   iconEntries,
+  isMeasurementTable,
   isNumeric,
   shorten,
   tableFacts,
+  textFacts,
   type CarStats,
   type GlossaryGroup,
   type QuickTile,
@@ -132,7 +135,11 @@ export function getCarOverview(car: CarFile): CarOverview {
       for (const t of card.tables)
         if (t.kind === "facts")
           for (const f of t.facts)
-            if (techPreview.length < 4 && isNumeric(f.value))
+            if (
+              techPreview.length < 4 &&
+              isNumeric(f.value) &&
+              hasMeasurement(f.value)
+            )
               techPreview.push({
                 label: shorten(f.label, 60),
                 value: shorten(f.value, 40),
@@ -180,17 +187,24 @@ export function getGlossary(car: CarFile): GlossaryGroup[] {
   });
 }
 
-/** Tables from sections about technical data, capacities and pressures. */
+/**
+ * Technical data of a car: every table of the technical chapters (capacities,
+ * pressures, dimensions…) plus "Label: value" lines printed as text there, and
+ * tables elsewhere whose rows mostly carry measured values (bulbs, fuses,
+ * tyre sizes).
+ */
 export function getTechCards(car: CarFile): TechCard[] {
   return cached(car, "tech", () => {
     const cards: TechCard[] = [];
     for (const ctx of bookCtxs(car)) {
       for (const s of getBook(ctx).sections) {
-        if (!chainMatches(ctx, s, TECHNICAL_SECTION)) continue;
+        const technical = chainMatches(ctx, s, TECHNICAL_SECTION);
         const href = sectionHref(ctx, s);
         const tables: TechCard["tables"] = [];
-        for (const b of getBlocks(ctx, s)) {
+        const blocks = getBlocks(ctx, s);
+        for (const b of blocks) {
           if (b.type !== "table" || b.rows.length === 0) continue;
+          if (!technical && !isMeasurementTable(b)) continue;
           const facts = tableFacts(b);
           tables.push(
             facts
@@ -204,6 +218,14 @@ export function getTechCards(car: CarFile): TechCard[] {
                 },
           );
         }
+        if (technical)
+          for (const g of textFacts(blocks))
+            tables.push({
+              kind: "facts",
+              id: `${g.id}-text`,
+              href: `${href}#${g.id}`,
+              facts: g.facts,
+            });
         if (tables.length > 0)
           cards.push({ section: s.title, book: ctx.book.short, href, tables });
       }

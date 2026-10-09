@@ -400,8 +400,7 @@ body {
     padding-inline: var(--gutter);
   }
   /* Header navigation row: the first key starts where the logo starts. */
-  .nav-link,
-  .nav-back {
+  .nav-link {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -410,20 +409,12 @@ body {
     color: var(--color-graphite);
     font-size: 0.875rem;
   }
-  .nav-link:hover,
-  .nav-back:hover {
+  .nav-link:hover {
     border-bottom-color: var(--color-silver);
     color: var(--color-ink);
   }
   .nav-link[aria-current="page"] {
     border-bottom-color: var(--color-red);
-    color: var(--color-ink);
-    font-weight: 600;
-  }
-  .nav-back {
-    margin-right: 0.5rem;
-    border-right: 1px solid var(--color-line);
-    padding-right: 1rem;
     color: var(--color-ink);
     font-weight: 600;
   }
@@ -434,8 +425,44 @@ body {
     li:first-child > .nav-link {
       padding-left: 0;
     }
-    .nav-back + ul li:first-child > .nav-link {
-      padding-left: 0.75rem;
+  }
+
+  /* "Wstecz" above secondary screens, on the .page-shell edges. */
+  .back-navigation {
+    width: 100%;
+    max-width: 72rem;
+    margin-inline: auto;
+    padding: 1rem var(--gutter) 0;
+  }
+  .back-navigation + .page-shell {
+    padding-top: 1rem;
+  }
+  /*
+   * "Wstecz" as the first row of the manual's table of contents: a white key
+   * with a red arrow, set apart from the silver book headers below it.
+   */
+  .sidebar-back {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 0.6rem;
+    border-bottom: 1px solid var(--color-line);
+    background: var(--color-white);
+    padding: 0.7rem var(--gutter);
+    color: var(--color-ink);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-align: left;
+  }
+  .sidebar-back svg {
+    color: var(--color-red);
+  }
+  .sidebar-back:hover {
+    background: var(--color-paper);
+  }
+  @media (min-width: 64rem) {
+    .sidebar-back {
+      padding-inline: 1rem;
     }
   }
 
@@ -504,6 +531,13 @@ body {
     line-height: 1;
     font-variant-numeric: tabular-nums;
   }
+  /* Values in technical data (long, text-heavy lists): smaller than .type-value. */
+  .type-fact {
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1.3;
+    font-variant-numeric: tabular-nums;
+  }
 
   /* Interactive list rows / tiles: gentle background fade on hover. */
   .hover-row {
@@ -522,7 +556,7 @@ body {
     border-color: var(--color-steel);
     box-shadow: 0 2px 6px rgba(43, 46, 49, 0.1);
   }
-  .hover-tile:active {
+  :is(a, button).hover-tile:active {
     transform: translateY(1px);
     box-shadow: 0 1px 2px rgba(43, 46, 49, 0.08);
   }
@@ -733,6 +767,9 @@ body {
   .fav-key-on {
     background: var(--silver-gradient);
   }
+  a.fav-key-on:hover {
+    background: var(--silver-gradient-hover);
+  }
   .fav-num {
     display: inline-flex;
     width: 1.5rem;
@@ -750,17 +787,6 @@ body {
     border-color: var(--color-ink);
     background: var(--color-ink);
     color: var(--color-white);
-  }
-  .fav-remove {
-    width: 1.75rem;
-    height: 1.75rem;
-    flex: 0 0 1.75rem;
-    color: var(--color-steel);
-    font-size: 1.125rem;
-    line-height: 1;
-  }
-  .fav-remove:hover {
-    color: var(--color-red);
   }
   @media (min-width: 48rem) {
     .fav-bar {

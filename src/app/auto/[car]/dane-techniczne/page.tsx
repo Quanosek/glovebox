@@ -54,13 +54,9 @@ export default async function TechDataPage({ params }: Props) {
                   {t.kind === "facts" ? (
                     <dl className="grid gap-px bg-line sm:grid-cols-2 lg:grid-cols-3">
                       {t.facts.map((f, i) => (
-                        <div key={i} className="bg-white px-4 py-3">
+                        <div key={i} className="bg-white px-4 py-2.5">
                           <dt className="text-sm text-graphite">{f.label}</dt>
-                          <dd
-                            className={`mt-1 ${isNumeric(f.value) ? "type-value" : "type-item"}`}
-                          >
-                            {f.value}
-                          </dd>
+                          <dd className="type-fact mt-0.5">{f.value}</dd>
                         </div>
                       ))}
                     </dl>

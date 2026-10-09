@@ -9,12 +9,15 @@ import {
 import type { Block } from "@/content/types";
 import {
   firstIllustration,
+  hasMeasurement,
   iconEntries,
+  isMeasurementTable,
   isNumeric,
   kwToHp,
   shorten,
   specParts,
   tableFacts,
+  textFacts,
 } from "@/lib/overview";
 
 const icon = (id: string): Block => ({
@@ -138,5 +141,59 @@ describe("overview helpers", () => {
     expect(
       specParts({ fuel: "electric", engineCm3: null, powerKw: 100, label: "" }),
     ).toEqual(["100 kW (136 KM)", "elektryczny"]);
+  });
+});
+
+describe("technical data detection", () => {
+  it("recognises measured values", () => {
+    expect(hasMeasurement("4,5 l")).toBe(true);
+    expect(hasMeasurement("2,3 bar (230 kPa)")).toBe(true);
+    expect(hasMeasurement("1 350 kg")).toBe(true);
+    expect(hasMeasurement("H7 55 W")).toBe(true);
+    expect(hasMeasurement("str. 12")).toBe(false);
+    expect(hasMeasurement("2 lata")).toBe(false);
+  });
+
+  it("accepts tables whose rows mostly carry measurements", () => {
+    const table = (rows: string[][]): Block => ({
+      type: "table",
+      id: "b1",
+      header: true,
+      rows,
+    });
+    const bulbs = table([
+      ["Światło", "Moc"],
+      ["Mijania", "55 W"],
+      ["Pozycyjne", "5 W"],
+    ]);
+    const plain = table([
+      ["Przycisk", "Funkcja"],
+      ["A", "Radio"],
+      ["B", "Nawigacja"],
+    ]);
+    expect(bulbs.type === "table" && isMeasurementTable(bulbs)).toBe(true);
+    expect(plain.type === "table" && isMeasurementTable(plain)).toBe(false);
+  });
+
+  it("reads label: value lines printed as text", () => {
+    const blocks: Block[] = [
+      { type: "paragraph", id: "b1", runs: ["Pojemność zbiornika: 52 l"] },
+      {
+        type: "list",
+        id: "b2",
+        ordered: false,
+        items: [["Olej silnikowy: 4,0 l"], ["Uwaga: patrz str. 3"]],
+      },
+      { type: "paragraph", id: "b3", runs: ["Ciśnienie: 2,3 bar"] },
+    ];
+    expect(textFacts(blocks)).toEqual([
+      {
+        id: "b1",
+        facts: [
+          { label: "Pojemność zbiornika", value: "52 l" },
+          { label: "Olej silnikowy", value: "4,0 l" },
+        ],
+      },
+    ]);
   });
 });

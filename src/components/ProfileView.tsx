@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import type { CarSummary } from "@/lib/cars";
 import { carName } from "@/lib/cars";
 import { updateData, useAppData, useHydrated } from "@/lib/storage/hooks";
 import { CarPicker } from "./CarPicker";
+import { promptDialog } from "./Dialog";
 import { ContinueReading } from "./ContinueReading";
 import { Markdown } from "./Markdown";
 import { Skeleton } from "./Skeleton";
@@ -27,8 +27,6 @@ export function ProfileView({
   tips: Tip[];
   tipSeed: number;
 }) {
-  const [editingName, setEditingName] = useState(false);
-  const [draftName, setDraftName] = useState("");
   const data = useAppData();
   const hydrated = useHydrated();
   // Until the browser data is read, the layout hint (cookie) stands in for it
@@ -82,9 +80,23 @@ export function ProfileView({
               className="btn btn-ghost h-9 w-9 justify-center p-0"
               aria-label="Edytuj imię"
               title="Edytuj imię"
-              onClick={() => {
-                setDraftName(settings.profileName);
-                setEditingName(true);
+              onClick={async () => {
+                const next = await promptDialog({
+                  title: "Twoje imię",
+                  label: "Jak mamy się do Ciebie zwracać?",
+                  placeholder: "Wpisz imię",
+                  defaultValue: settings.profileName,
+                  maxLength: 80,
+                  confirmLabel: "Zapisz",
+                });
+                if (next === null) return;
+                updateData((d) => ({
+                  ...d,
+                  settings: {
+                    ...d.settings,
+                    profileName: next.trim().slice(0, 80),
+                  },
+                }));
               }}
             >
               <svg
@@ -103,46 +115,6 @@ export function ProfileView({
               </svg>
             </button>
           </div>
-          {editingName && (
-            <form
-              className="mt-3 flex max-w-md flex-wrap items-end gap-2"
-              onSubmit={(event) => {
-                event.preventDefault();
-                updateData((d) => ({
-                  ...d,
-                  settings: {
-                    ...d.settings,
-                    profileName: draftName.slice(0, 80),
-                  },
-                }));
-                setEditingName(false);
-              }}
-            >
-              <label className="min-w-48 flex-1 text-sm text-graphite">
-                <span className="mb-1 block">
-                  Jak mamy się do Ciebie zwracać?
-                </span>
-                <input
-                  autoFocus
-                  className="field h-9"
-                  placeholder="Wpisz imię"
-                  maxLength={80}
-                  value={draftName}
-                  onChange={(event) => setDraftName(event.target.value)}
-                />
-              </label>
-              <button type="submit" className="btn btn-primary h-9">
-                Zapisz
-              </button>
-              <button
-                type="button"
-                className="btn h-9"
-                onClick={() => setEditingName(false)}
-              >
-                Anuluj
-              </button>
-            </form>
-          )}
         </div>
       </section>
 

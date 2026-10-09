@@ -91,4 +91,4 @@ export const INDICATOR_SECTION =
 
 /** Sections whose tables form the "Dane techniczne" cards. */
 export const TECHNICAL_SECTION =
-  /dane techniczne|dane (silnika|pojazdu)|pojemnoś|ciśnieni\w* (w )?(opon|ogumieni)|wymiary|\bmas[ay]\b|osiągi|zużyci\w* paliwa|olej\w* silnikow|płyny i smary|identyfikacj/i;
+  /dane techniczne|dane (silnika|pojazdu)|specyfikacj|parametr\w* techn|pojemnoś|ciśnieni\w* (w )?(opon|ogumieni)|rozmiar\w* (opon|kół)|wymiary|\bmas[ay]\b|ładownoś|obciążeni\w* (dachu|osi|haka)|osiągi|zużyci\w* paliwa|emisj\w* co|olej\w* silnikow|płyny (eksploatacyjne|i smary)|środki smarne|momenty? dokręcani|identyfikacj/i;

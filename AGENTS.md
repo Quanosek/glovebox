@@ -111,7 +111,7 @@ src/
     przypomnienia/              reminders per car of the profile (inspection, OC, own)
     szukaj, ostrzezenia, komentarze, zakladki, notatnik, ustawienia
   components/                   UI (server: BlockRenderer; the rest are client components)
-  components/Dialog.tsx         confirmDialog()/alertDialog() + DialogHost (root layout)
+  components/Dialog.tsx         confirmDialog()/alertDialog()/promptDialog() + DialogHost
   components/EquipmentEditor.tsx  per-car equipment checklist (wizard + equipment page)
   components/CarLogo.tsx        brand logo of the active car (header, car page), falls back to Logo
   components/Header.tsx         header, main navigation (due reminders badge) and Navi-like clock
@@ -202,7 +202,7 @@ which then shows the equipment step.
   page show the official brand logo of the car's model year instead (`CarLogo`,
   `docs/logos.md`); brand logos keep their own colours (content, not UI chrome).
 - **Never use native `window.confirm` / `alert` / `prompt`.** Use `confirmDialog()` /
-  `alertDialog()` from `src/components/Dialog.tsx` (centred `<dialog>` over a blurred
+  `alertDialog()` / `promptDialog()` from `src/components/Dialog.tsx` (centred `<dialog>` over a blurred
   backdrop, Esc / backdrop click = cancel, `danger` focuses "Anuluj").
 - Interaction: `.btn` fades on hover and "presses in" on `:active` (1px down + inset shadow);
   `.field` has exactly one focus cue (graphite border, no ring/underline); `.hover-tile` for

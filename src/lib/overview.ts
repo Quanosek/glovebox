@@ -113,6 +113,63 @@ export function tableFacts(table: TableBlock): TableFact[] | null {
   return facts.length > 0 ? facts : null;
 }
 
+/** A number followed by a unit of measurement ("4,5 l", "2,3 bar", "1 350 kg"). */
+const MEASUREMENT =
+  /\d(?:[\d\s.,–-]*\d)?\s?(?:l|ml|dm3|dm³|cm3|cm³|bar|kpa|psi|kg|t|mm|cm|m|km\/h|kw|km|nm|v|a|w|ah|obr\/min|°c|%|l\/100\s?km|g\/km)(?![a-ząćęłńóśźż0-9])/i;
+
+/** True when the text carries a measured value. */
+export const hasMeasurement = (text: string) => MEASUREMENT.test(text);
+
+/**
+ * True when a table outside the technical chapters still holds technical
+ * data: at least two body rows and most of them carry a measured value.
+ */
+export function isMeasurementTable(table: TableBlock): boolean {
+  const rows = table.header ? table.rows.slice(1) : table.rows;
+  if (rows.length < 2) return false;
+  const measured = rows.filter((r) => r.some(hasMeasurement)).length;
+  return measured * 2 >= rows.length;
+}
+
+const TEXT_FACT = /^([^:\n]{3,60}?)\s*:\s*([^\n]{1,40})$/;
+
+/**
+ * "Label: value" lines with a measured value from paragraphs and lists (many
+ * manuals print technical data as text instead of tables). Each run of at
+ * least two consecutive facts becomes one group, keyed by its first block.
+ */
+export function textFacts(
+  blocks: Block[],
+): { id: string; facts: TableFact[] }[] {
+  const groups: { id: string; facts: TableFact[] }[] = [];
+  let current: { id: string; facts: TableFact[] } | null = null;
+  const flush = () => {
+    if (current && current.facts.length >= 2) groups.push(current);
+    current = null;
+  };
+  for (const b of blocks) {
+    const lines =
+      b.type === "paragraph"
+        ? [runsToText(b.runs)]
+        : b.type === "list"
+          ? b.items.map(runsToText)
+          : null;
+    if (!lines) {
+      flush();
+      continue;
+    }
+    for (const line of lines) {
+      const m = TEXT_FACT.exec(line.trim());
+      if (m && hasMeasurement(m[2])) {
+        current ??= { id: b.id, facts: [] };
+        current.facts.push({ label: m[1].trim(), value: m[2].trim() });
+      } else flush();
+    }
+  }
+  flush();
+  return groups;
+}
+
 /** True when a value is worth showing large (it carries a number). */
 export const isNumeric = (value: string) => /\d/.test(value);
 

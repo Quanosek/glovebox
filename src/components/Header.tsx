@@ -8,7 +8,6 @@ import { useOnline } from "@/lib/offline";
 import { dueSoon, todayIso } from "@/lib/reminders";
 import { useLayoutHint } from "@/lib/storage/hintContext";
 import { useActiveCar, useAppData, useHydrated } from "@/lib/storage/hooks";
-import { BackButton } from "./BackButton";
 import { CarLogo } from "./CarLogo";
 import { Logo } from "./Logo";
 
@@ -127,7 +126,6 @@ export function Header({ cars }: { cars: CarSummary[] }) {
       className="silver-bar sticky top-0 z-40 border-t-4 border-t-red print:hidden"
     >
       <div className="app-frame flex h-14 items-center gap-3">
-        <BackButton variant="key" />
         <Link
           href="/"
           className="flex shrink-0 items-center gap-2.5 text-black"
@@ -201,7 +199,6 @@ export function Header({ cars }: { cars: CarSummary[] }) {
         className={`${open ? "block" : "hidden"} border-t border-line bg-white lg:block lg:bg-transparent`}
       >
         <div className="app-frame flex items-center">
-          <BackButton variant="nav" />
           <ul className="flex min-w-0 flex-1 flex-col lg:flex-row lg:flex-wrap">
             {nav.map((item) => {
               const active =

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
+import { BackButton } from "@/components/BackButton";
 import { ClientEffects } from "@/components/ClientEffects";
 import { DialogHost } from "@/components/Dialog";
 import { Header } from "@/components/Header";
@@ -48,6 +49,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             Przejdź do treści
           </a>
           <Header cars={listCarSummaries()} />
+          <BackButton variant="page" />
           <ClientEffects />
           {children}
           <DialogHost />

@@ -10,6 +10,7 @@ import {
   useVehicleProfile,
 } from "@/lib/storage/hooks";
 import type { VehicleProfile } from "@/config/vehicle";
+import { BackButton } from "./BackButton";
 
 export interface SidebarNode {
   id: string;
@@ -48,7 +49,8 @@ export function Sidebar({
   }, [pathname]);
 
   return (
-    <aside className="border-b border-line bg-paper lg:sticky lg:top-(--header-h) lg:h-[calc(100vh-var(--header-h))] lg:w-80 lg:shrink-0 lg:border-x lg:border-b-0 print:hidden">
+    <aside className="border-b border-line bg-paper lg:sticky lg:top-(--header-h) lg:flex lg:h-[calc(100vh-var(--header-h))] lg:w-80 lg:shrink-0 lg:flex-col lg:border-x lg:border-b-0 print:hidden">
+      <BackButton variant="sidebar" />
       <button
         type="button"
         className="btn btn-ghost w-full justify-between px-(--gutter) lg:hidden"
@@ -62,7 +64,7 @@ export function Sidebar({
         id="toc"
         ref={navRef}
         aria-label="Spis treści"
-        className={`${open ? "block" : "hidden"} max-h-[70vh] overflow-y-auto py-2 lg:block lg:h-full lg:max-h-none`}
+        className={`${open ? "block" : "hidden"} max-h-[70vh] overflow-y-auto py-2 lg:block lg:max-h-none lg:min-h-0 lg:flex-1`}
       >
         {books.map((book) => {
           const isOpen = openBooks[book.href] ?? book.href === current;

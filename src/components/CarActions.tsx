@@ -1,16 +1,15 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { confirmDialog } from "@/components/Dialog";
 import { saveCarOffline, useOfflineState, useOnline } from "@/lib/offline";
 import { useLayoutHint } from "@/lib/storage/hintContext";
-import { removeOwnedCar, useHydrated } from "@/lib/storage/hooks";
+import { useHydrated } from "@/lib/storage/hooks";
 import { Skeleton } from "./Skeleton";
 
-/** Offline copy status and the profile removal action of the car page. */
-export function CarActions({ carId, label }: { carId: string; label: string }) {
-  const router = useRouter();
+/**
+ * Offline copy of the car, the last section of the car page. The stats strip
+ * at the top only shows the status and links here (`#bez-internetu`).
+ */
+export function CarActions({ carId }: { carId: string }) {
   const hydrated = useHydrated();
   const online = useOnline();
   const offline = useOfflineState();
@@ -20,37 +19,13 @@ export function CarActions({ carId, label }: { carId: string; label: string }) {
   const hasCopy = hydrated ? Boolean(saved) : hint.offline.includes(carId);
   const progress = offline.running[carId];
   const offlineError = offline.errors[carId];
-  const [deleting, setDeleting] = useState(false);
-
-  const remove = async () => {
-    const ok = await confirmDialog({
-      title: "Usunąć auto z Twoich aut?",
-      message: (
-        <>
-          <p>
-            <strong>{label}</strong> zniknie z Twojej listy aut. Instrukcje
-            pozostaną dostępne i możesz dodać to auto ponownie.
-          </p>
-          <p className="mt-2 text-graphite">
-            Twoje zaznaczenia, notatki i ustawienia nie zostaną usunięte.
-          </p>
-        </>
-      ),
-      confirmLabel: "Usuń z listy",
-      danger: true,
-    });
-    if (!ok) return;
-    setDeleting(true);
-    removeOwnedCar(carId);
-    router.push("/");
-    router.refresh();
-  };
-
   return (
-    <div id="bez-internetu" className="panel">
-      <div className="panel-title">Bez internetu</div>
-      <div className="space-y-3 p-4 text-sm">
-        <div aria-live="polite">
+    <section id="bez-internetu" aria-labelledby="car-offline-title">
+      <h2 id="car-offline-title" className="section-label">
+        Bez internetu
+      </h2>
+      <div className="panel flex flex-col gap-4 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 sm:max-w-2xl" aria-live="polite">
           {progress ? (
             <>
               <p className="font-semibold">
@@ -91,34 +66,24 @@ export function CarActions({ carId, label }: { carId: string; label: string }) {
           {offlineError && !progress && (
             <p className="mt-2 text-red">{offlineError}</p>
           )}
+          {!online && (
+            <p className="mt-2 text-xs text-steel">
+              Nie ma internetu – zapisane instrukcje działają, ale nie można ich
+              teraz odświeżyć.
+            </p>
+          )}
         </div>
         {!progress && (
           <button
             type="button"
-            className="btn"
+            className="btn shrink-0"
             disabled={!online}
             onClick={() => void saveCarOffline(carId, { force: true })}
           >
             {hasCopy ? "Zapisz ponownie" : "Zapisz teraz"}
           </button>
         )}
-        {!online && (
-          <p className="text-xs text-steel">
-            Nie ma internetu – zapisane instrukcje działają, ale nie można ich
-            teraz odświeżyć.
-          </p>
-        )}
-        <div className="border-t border-line pt-3">
-          <button
-            type="button"
-            className="btn"
-            onClick={remove}
-            disabled={deleting}
-          >
-            {deleting ? "Usuwanie…" : "Usuń z moich aut"}
-          </button>
-        </div>
       </div>
-    </div>
+    </section>
   );
 }
