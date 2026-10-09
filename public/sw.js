@@ -22,6 +22,7 @@ const SHELL = [
   "/notatnik",
   "/komentarze",
   "/zakladki",
+  "/przypomnienia",
   "/ustawienia",
   "/dodaj-auto",
 ];

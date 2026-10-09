@@ -32,8 +32,11 @@ komputerze: folder `database/` jest w `.gitignore` i nie trafia do repozytorium.
 - **Widok auta** — duża karta auta (logo, model, rocznik, silnik), liczby z instrukcji, kafle
   „Najczęściej potrzebne” (np. ciśnienie w oponach, bezpieczniki, żarówki – tylko te, które
   są w instrukcji), pasek „Ulubione” z sześcioma przypiętymi zakładkami, podgląd danych
-  technicznych, własne przypomnienia serwisowe (data, przebieg) oraz wyszukiwanie,
-  ostrzeżenia i wyposażenie.
+  technicznych, najbliższe przypomnienia oraz wyszukiwanie, ostrzeżenia i wyposażenie.
+- **Przypomnienia** — dla każdego Twojego auta termin badania technicznego, ubezpieczenia OC
+  i własne przypomnienia (data, przebieg). Na 30 dni przed terminem liczba przy
+  „Przypomnienia” w menu podpowiada, że coś się zbliża. Terminy zostają tylko w tej
+  przeglądarce.
 - **Lampki kontrolne** — symbole z instrukcji razem z opisem; kliknięcie prowadzi do
   fragmentu instrukcji.
 - **Dane techniczne** — pojemności, ciśnienia i wymiary z instrukcji jako czytelne karty.

@@ -57,12 +57,12 @@ export function ServiceReminders({
                 {hydrated || i < FIXED_REMINDERS.length ? (
                   row.label
                 ) : (
-                  <Skeleton className="my-0.5 h-5 w-36" />
+                  <Skeleton className="w-36" />
                 )}
               </p>
               <p className="truncate text-sm text-graphite">
                 {!hydrated ? (
-                  <Skeleton className="mt-1 h-4 w-28" />
+                  <Skeleton className="w-28" />
                 ) : row.date ? (
                   formatDate(row.date)
                 ) : "km" in row && row.km != null ? (

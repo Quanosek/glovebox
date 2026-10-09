@@ -108,12 +108,14 @@ src/
     api/search-index?car=       GET search corpus of one car
     media/[...path]             GET images from database/<car>/assets (webp/png/jpg only)
     logo/[car]                  GET brand logo of the car's model year (404 = app icon)
+    przypomnienia/              reminders per car of the profile (inspection, OC, own)
     szukaj, ostrzezenia, komentarze, zakladki, notatnik, ustawienia
   components/                   UI (server: BlockRenderer; the rest are client components)
   components/Dialog.tsx         confirmDialog()/alertDialog() + DialogHost (root layout)
   components/EquipmentEditor.tsx  per-car equipment checklist (wizard + equipment page)
   components/CarLogo.tsx        brand logo of the active car (header, car page), falls back to Logo
-  components/StatusBar.tsx      Navi-like status line under the header (car, connection, time)
+  components/Header.tsx         header, main navigation (due reminders badge) and Navi-like clock
+  components/reminders/         /przypomnienia: inspection, OC insurance, own reminders per car
   components/car/               car overview parts (CarHero, CarStatsStrip, QuickTiles, ...)
   components/profile/, reader/  profile activity/tips, reader side column highlights
   config/quickTopics.ts         title rules for "Najczęściej potrzebne", glossary, technical data
@@ -127,7 +129,9 @@ src/
   lib/catalog.ts                client-safe catalogue types + name normalisation
   lib/logos.ts                  brand logo matching + year selection (pure, tested)
   lib/cars.ts, lib/slug.ts      client-safe car types/helpers and id rules
-  lib/storage/                  localStorage store, schema, migrations, React hooks
+  lib/storage/                  localStorage store, schema, migrations, React hooks,
+                                layout hint cookie (hint.ts, hintContext.tsx)
+  lib/reminders.ts              reminder dates, due/soon rules (pure, tested)
   lib/anchoring/                text-quote/position anchoring + DOM helpers
   lib/markdown.ts               safe Markdown subset parser (notebook)
   lib/typography.ts             Polish line-breaking rules (+ typographyDom.ts client pass)
@@ -154,6 +158,10 @@ route)`, `getBook`, `getSection`, `sectionHref`, `getTocTree`, `getPrevNext`,
   depends on stored data must wait for `useHydrated()` to avoid hydration mismatches.
   `useActiveCar(cars)` resolves the current car (URL `/auto/<id>` first, then
   `settings.activeCar`).
+- First paint = final layout: the `ocm-layout` cookie (`src/lib/storage/hint.ts`) mirrors a
+  small summary of the browser data; the root layout reads it and `useLayoutHint()` gives
+  client components the car ids, counts and "Czytaj dalej" card before hydration. Placeholders
+  must match the real element boxes exactly (`docs/ui.md`, `docs/storage.md`).
 
 ## Import pipeline (wizard `/dodaj-auto`)
 
@@ -246,7 +254,8 @@ AppData {
   bookmarks: { id: `${car}:${book}:${sectionId}`, car, book, sectionId, title, href, createdAt }[];
   lastRead: { car, book, sectionId, title, href, scrollY, at } | null;
   history: { car, book, sectionId, title, href, thumb: string | null, at }[]; // newest first, ≤ 12
-  reminders: { id, car, title, dueDate: string | null, dueKm: number | null, done,
+  reminders: { id, car, kind: "inspection" | "insurance" | "custom", title,
+    dueDate: string | null, dueKm: number | null, done,
     createdAt, updatedAt }[];
   settings: { fontSize, showUnavailable, ownedCars,
     vehicles: Record<carId, Record<featureId, FeatureState>>,

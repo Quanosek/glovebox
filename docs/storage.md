@@ -39,9 +39,12 @@ See `AGENTS.md` → Storage schema. Notes:
   entry per `car:book:sectionId` (`historyKey`). `ReadingTracker` calls `recordReading` with the
   section's first illustration as `thumb` (only `/media/…` URLs survive `sanitize`; links must
   start with `/auto/`). The profile shows it under "Ostatnio czytane".
-- `reminders` (v5) are the owner's service reminders per car: `title` (required, ≤ 120
-  characters), optional `dueDate` (`YYYY-MM-DD`) and `dueKm` (0–5 000 000), `done`. Invalid dates
-  or mileages become `null`.
+- `reminders` (v5) are the owner's reminders per car: `kind` (`inspection` = yearly technical
+  inspection, `insurance` = OC insurance, `custom` = own entry; unknown values become
+  `custom`), `title` (required, ≤ 120 characters), optional `dueDate` (`YYYY-MM-DD`) and
+  `dueKm` (0–5 000 000), `done`. Invalid dates or mileages become `null`. `inspection` and
+  `insurance` have one entry per car with the fixed id `${kind}:${car}` (`fixedReminderId`;
+  `sanitize` rewrites their ids, so duplicates collapse and merging matches them).
 - `settings.favorites[carId]` (v5) lists up to `FAVORITES_LIMIT` (6) bookmark ids pinned to the
   car page "Ulubione" bar. Only ids of existing bookmarks of that car are kept; removing a
   bookmark (`withoutBookmark`) also unpins it.
@@ -98,3 +101,22 @@ Migrations run in memory on load; the upgraded shape is written on the next chan
 - `opel-cascada-manual:offline` — status of offline car copies (`src/lib/offline.ts`). It is
   derived state (rebuilt on the next car visit), deliberately not part of `AppData`, the
   export file or the schema version.
+
+## Layout hint cookie
+
+- `ocm-layout` (`src/lib/storage/hint.ts`) is a small JSON summary of the browser data,
+  written by `ClientEffects` after hydration on every data or offline-state change
+  (`Path=/; Max-Age=31536000; SameSite=Strict`, kept below ~3.6 kB). It holds only what the
+  first paint needs: active and owned car ids, font size, profile name, the four profile
+  counters, the "Czytaj dalej" card (title, link, preformatted date, thumbnail), the number of
+  "Ostatnio czytane" rows, which recent highlights have a comment, cars with an offline copy,
+  pinned favourites and own reminders per car, and the due reminder count. No notes,
+  highlight text or comments.
+- The root layout reads it with `cookies()` (`parseHint` validates every field, ids with
+  `isValidId`, links must start with `/auto/` and thumbnails with `/media/`), sets
+  `<html data-font-size>` and provides it through `LayoutHintProvider`
+  (`src/lib/storage/hintContext.tsx`). Client components use `useLayoutHint()` only while
+  `useHydrated()` is false; `useActiveCar` falls back to `hint.activeCar`, so the header shows
+  the car logo from the first paint.
+- It is derived state, never trusted for anything but layout, not part of `AppData`, the
+  export file or the schema version. A missing or stale cookie only costs one layout change.

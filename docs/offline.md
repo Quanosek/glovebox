@@ -23,7 +23,7 @@ Cache API needs a secure context (`localhost` or HTTPS); on plain-HTTP LAN addre
 | `opel-cascada-manual-offline-v1` | `saveCarOffline()` — every page/image/script of one car |
 
 `install` fetches the app shell (`SHELL`: `/`, `/auta`, `/notatnik`, `/komentarze`,
-`/zakladki`, `/ustawienia`, `/dodaj-auto`), scans each HTML for `/_next/static/*` URLs (HTML
+`/zakladki`, `/przypomnienia`, `/ustawienia`, `/dodaj-auto`), scans each HTML for `/_next/static/*` URLs (HTML
 and the inline RSC payload) and pre-caches those scripts/styles too, so every shell page
 hydrates offline even if it was never visited. Then `skipWaiting()`. `activate` deletes
 other `opel-cascada-manual-*` caches and claims clients. Bump the cache name when the
@@ -61,8 +61,8 @@ strategy changes.
   visit retries. One job per car at a time.
 - UI: the car page panel "Bez internetu" (`CarActions`) shows progress, "Gotowe" with the
   date, errors and a "Zapisz ponownie" button (`force: true`). Car cards show an "Offline"
-  badge; the car page number strip and the status line under the header show the same state.
-  `useOnline()` drives the status line, the notice on the car list and the
+  badge; the car page number strip shows the same state.
+  `useOnline()` drives the "Bez internetu" badge in the header, the notice on the car list and the
   "Brak połączenia" message in the add-car wizard.
 - Deleting a car calls `forgetCarOffline(car)` (removes its status and cached
   `/auto/<car>…`, `/media/<car>/…` and search-index entries).

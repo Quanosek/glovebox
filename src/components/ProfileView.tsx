@@ -78,30 +78,30 @@ export function ProfileView({
               {name ? `Cześć, ${name}` : "Twój profil"}
             </h1>
             <button
-                type="button"
-                className="btn btn-ghost h-9 w-9 justify-center p-0"
-                aria-label="Edytuj imię"
-                title="Edytuj imię"
-                onClick={() => {
-                  setDraftName(settings.profileName);
-                  setEditingName(true);
-                }}
+              type="button"
+              className="btn btn-ghost h-9 w-9 justify-center p-0"
+              aria-label="Edytuj imię"
+              title="Edytuj imię"
+              onClick={() => {
+                setDraftName(settings.profileName);
+                setEditingName(true);
+              }}
+            >
+              <svg
+                viewBox="0 0 20 20"
+                width="18"
+                height="18"
+                fill="none"
+                aria-hidden="true"
               >
-                <svg
-                  viewBox="0 0 20 20"
-                  width="18"
-                  height="18"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="m12.8 3.2 4 4M3 17l3.8-.8L16.3 6.7a1.8 1.8 0 0 0-2.5-2.5L4.3 13.7 3 17Z"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
+                <path
+                  d="m12.8 3.2 4 4M3 17l3.8-.8L16.3 6.7a1.8 1.8 0 0 0-2.5-2.5L4.3 13.7 3 17Z"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
           </div>
           {editingName && (
             <form

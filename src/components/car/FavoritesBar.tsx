@@ -40,9 +40,7 @@ export function FavoritesBar({ carId }: { carId: string }) {
             className="field h-9 w-auto max-w-64 py-1 text-sm"
             value=""
             disabled={
-              !hydrated ||
-              free.length === 0 ||
-              pinned.length >= FAVORITES_LIMIT
+              !hydrated || free.length === 0 || pinned.length >= FAVORITES_LIMIT
             }
             onChange={(e) => {
               if (e.target.value) toggleFavorite(carId, e.target.value);

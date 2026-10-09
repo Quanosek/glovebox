@@ -75,7 +75,12 @@ export function Header({ cars }: { cars: CarSummary[] }) {
   const due = hydrated
     ? dueSoon(data.reminders, todayIso(), data.settings.ownedCars).length
     : hint.due;
-  const nav: { href: string; label: string; exact?: boolean; badge?: number }[] = [
+  const nav: {
+    href: string;
+    label: string;
+    exact?: boolean;
+    badge?: number;
+  }[] = [
     { href: "/", label: "Profil", exact: true },
     ...(car
       ? [{ href: car.href, label: `${car.brand} ${car.model}` }]
@@ -194,38 +199,38 @@ export function Header({ cars }: { cars: CarSummary[] }) {
         className={`${open ? "block" : "hidden"} border-t border-line bg-white lg:block lg:bg-transparent`}
       >
         <div className="mx-auto flex max-w-app items-center">
-        <ul className="flex min-w-0 flex-1 flex-col lg:flex-row lg:flex-wrap lg:px-3">
-          {nav.map((item) => {
-            const active =
-              pathname === item.href ||
-              (!item.exact && pathname.startsWith(`${item.href}/`));
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  onClick={() => setOpen(false)}
-                  aria-current={active ? "page" : undefined}
-                  className={`flex items-center gap-2 border-b-2 px-4 py-2 text-sm lg:px-3 ${
-                    active
-                      ? "border-red font-semibold text-ink"
-                      : "border-transparent text-graphite hover:border-silver hover:text-ink"
-                  }`}
-                >
-                  {item.label}
-                  {item.badge ? (
-                    <span
-                      className="nav-count"
-                      title="Terminy, które minęły albo mijają w ciągu 30 dni"
-                    >
-                      {item.badge}
-                    </span>
-                  ) : null}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-        <Clock />
+          <ul className="flex min-w-0 flex-1 flex-col lg:flex-row lg:flex-wrap lg:px-3">
+            {nav.map((item) => {
+              const active =
+                pathname === item.href ||
+                (!item.exact && pathname.startsWith(`${item.href}/`));
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    aria-current={active ? "page" : undefined}
+                    className={`flex items-center gap-2 border-b-2 px-4 py-2 text-sm lg:px-3 ${
+                      active
+                        ? "border-red font-semibold text-ink"
+                        : "border-transparent text-graphite hover:border-silver hover:text-ink"
+                    }`}
+                  >
+                    {item.label}
+                    {item.badge ? (
+                      <span
+                        className="nav-count"
+                        title="Terminy, które minęły albo mijają w ciągu 30 dni"
+                      >
+                        {item.badge}
+                      </span>
+                    ) : null}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          <Clock />
         </div>
       </nav>
     </header>

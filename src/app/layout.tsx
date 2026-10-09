@@ -42,23 +42,23 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="flex min-h-full flex-col">
         <LayoutHintProvider hint={hint}>
-        <a
-          href="#main"
-          className="sr-only z-50 bg-white p-2 focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
-        >
-          Przejdź do treści
-        </a>
-        <Header cars={listCarSummaries()} />
-        <BackButton />
-        <ClientEffects />
-        {children}
-        <DialogHost />
-        <footer className="mt-auto border-t border-line bg-paper px-5 py-3 text-xs text-steel print:hidden">
-          <p className="mx-auto max-w-app">
-            Treść instrukcji należy do producentów aut i służy wyłącznie do
-            użytku prywatnego. Notatki zapisują się tylko w tej przeglądarce.
-          </p>
-        </footer>
+          <a
+            href="#main"
+            className="sr-only z-50 bg-white p-2 focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
+          >
+            Przejdź do treści
+          </a>
+          <Header cars={listCarSummaries()} />
+          <BackButton />
+          <ClientEffects />
+          {children}
+          <DialogHost />
+          <footer className="mt-auto border-t border-line bg-paper px-5 py-3 text-xs text-steel print:hidden">
+            <p className="mx-auto max-w-app">
+              Treść instrukcji należy do producentów aut i służy wyłącznie do
+              użytku prywatnego. Notatki zapisują się tylko w tej przeglądarce.
+            </p>
+          </footer>
         </LayoutHintProvider>
       </body>
     </html>

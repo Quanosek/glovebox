@@ -38,8 +38,15 @@ re-extraction.
 - Car page `/auto/<car>`: `CarHero` (logo, brand, model + year, engine chips from
   `specParts`: capacity, kW and KM, fuel), `CarStatsStrip` (warnings link to
   `/ostrzezenia?car=`; the last cell is the offline copy state and jumps to `#bez-internetu`),
-  "Czytaj dalej", `FavoritesBar`, `QuickTiles`, books, tools; side column: `TechPreview`,
-  `ServiceReminders`, `CarActions`.
+  "Czytaj dalej", `FavoritesBar` (always six keys; the pin list is disabled when there is
+  nothing to pin), `QuickTiles`, books, tools; side column: `TechPreview`,
+  `ServiceReminders` (fixed three-row summary: inspection, OC insurance, nearest own reminder;
+  "Ustaw przypomnienia" links to `/przypomnienia#<car>`), `CarActions`.
+- `/przypomnienia` (`RemindersView`, in the main navigation): one panel per car of the profile
+  (`id` = car id) with two fixed yearly deadlines – "Badanie techniczne" and "Ubezpieczenie
+  OC" (date field, "za N dni" badge, "Załatwione – za rok" moves the date by one year) – and
+  "Inne przypomnienia" (own entries with date and/or mileage, `CustomReminders`) plus a link
+  to the servicing section of the manual (`CarOverview.serviceHref`).
 - `/auto/<car>/lampki-kontrolne`: symbol cards with a local text filter; each card links to
   the image block (`#<blockId>`) in the manual.
 - `/auto/<car>/dane-techniczne`: fact cards with large values and compact tables, each with
@@ -50,12 +57,14 @@ re-extraction.
   "Na tej stronie" (level 2–3 headings), the warnings of the section by kind and "Moje
   zaznaczenia" (client, `#hl-<id>` links).
 - Profile `/`: "Czytaj dalej" with the history thumbnail, "Ostatnio czytane" (history),
-  "Ostatnie zaznaczenia i komentarze" and `TipCard` (random tip of the profile's cars, picked
-  only after hydration).
+  "Ostatnie zaznaczenia i komentarze" and `TipCard` (random tip of the profile's cars; the
+  server picks the seed, so the tip is rendered on the first paint). Before hydration all of
+  them render from the layout hint (`docs/storage.md`), with placeholder rows of the same size.
 - Add-car wizard: step 2 film strip, step 4 `CarHero` from `GET /api/cars/<id>`.
 
 ## Browser data (schema v5, `docs/storage.md`)
 
-`history`, `reminders` and `settings.favorites` back "Ostatnio czytane", "Przypomnienia
-serwisowe" and "Ulubione". Reminders are not notifications: they are shown on the car page
-with "termin minął" / "za N dni" computed on the device.
+`history`, `reminders` and `settings.favorites` back "Ostatnio czytane", "Przypomnienia"
+and "Ulubione". Reminders are not system notifications: they are shown on `/przypomnienia`,
+on the car page and as a count in the navigation, with "termin minął" / "za N dni" computed
+on the device (`src/lib/reminders.ts`, local calendar days, "soon" = 30 days).

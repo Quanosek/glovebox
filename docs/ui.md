@@ -82,12 +82,23 @@ last word of a paragraph (up to 10 characters) is bound to the previous one.
   A soft radial sheen sweeps across the silver button and fades to transparent at its edges;
   `.btn-primary` and `.btn-ghost` have matching pressed states.
 - `.btn-primary` (red) uses one smooth vertical gradient (`--red-gradient`, light top edge,
-  deeper bottom) with a faint inner top highlight. Its hover never swaps the background and
-  has no moving sheen: a single top-light overlay fades in by opacity only. Do not stack
-  radial gradients on red surfaces – they band visibly on small buttons.
-- Status line (`StatusBar`, inside the sticky header): active car, its copy on this device,
-  connection and the local date/time (rendered only after hydration, refreshed every 15 s).
-  It makes no requests.
+  deeper bottom) painted under a transparent border (`border-box`), so no darker rim shows.
+  Its hover never swaps the red background: it reuses the silver sweep (`.btn::before`, same
+  ellipse, position and timing) with a softer white light that fades out before the edges.
+  Do not change the red background on hover or layer extra gradients on it – that bands.
+- Header: the navigation row ends with the local weekday, date and time (`Clock` in
+  `Header.tsx`, desktop only, filled after hydration and refreshed every 15 s; no requests)
+  and a red "Bez internetu" badge when offline. "Przypomnienia" carries a `.nav-count` badge
+  with reminders that passed or are due within 30 days. There is no separate status bar.
+- No layout jumps on load: client parts that depend on browser data render their final
+  layout before hydration from the layout hint (`useLayoutHint()`, `docs/storage.md`). A
+  placeholder must have the exact box of what replaces it: same element structure, fixed
+  heights (`h-40` note bodies, single-line `truncate` rows) and `Skeleton` without a height
+  class, which is exactly one text line of the surrounding font size. Never render a
+  generic skeleton block of a different size, and never gate a whole section on
+  `useHydrated()` when the hint can say whether it exists. Static UI text that is rendered
+  before hydration may be passed through `polishTypography()` so the client typography pass
+  does not reflow it.
 - Car overview screens (car page, "Lampki kontrolne", "Dane techniczne") and the reader side
   column are described in `docs/car-overview.md`; their classes are `.car-hero`,
   `.car-hero-logo`, `.car-hero-spec`, `.stat-strip`/`.stat-cell`, `.nav-key`, `.section-label`
@@ -127,7 +138,7 @@ last word of a paragraph (up to 10 characters) is bound to the previous one.
 
 ## Connection state
 
-`useOnline()` (`src/lib/offline.ts`) drives the status line under the header ("Połączono" /
-"Bez internetu" in red), the notice above the
+`useOnline()` (`src/lib/offline.ts`) drives the red "Bez internetu" badge next to the clock
+in the header, the notice above the
 car list and the "Brak połączenia" message in the add-car wizard. Reading saved cars never
 depends on it.
