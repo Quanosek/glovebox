@@ -10,7 +10,6 @@ const PRIMARY_PATHS = new Set([
   "/komentarze",
   "/zakladki",
   "/ustawienia",
-  "/dodaj-auto",
 ]);
 
 export function BackButton() {
