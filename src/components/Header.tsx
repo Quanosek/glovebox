@@ -4,15 +4,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { hasReadableManual, type CarSummary } from "@/lib/cars";
-import { useOnline } from "@/lib/offline";
 import { useActiveCar } from "@/lib/storage/hooks";
 import { CarLogo } from "./CarLogo";
 import { Logo } from "./Logo";
+import { StatusBar } from "./StatusBar";
 
 export function Header({ cars }: { cars: CarSummary[] }) {
   const pathname = usePathname();
   const car = useActiveCar(cars);
-  const online = useOnline();
   const hasManuals = hasReadableManual(cars);
   const nav = [
     { href: "/", label: "Profil", exact: true },
@@ -78,15 +77,6 @@ export function Header({ cars }: { cars: CarSummary[] }) {
             </span>
           </span>
         </Link>
-
-        {!online && (
-          <span
-            className="badge badge-dark hidden shrink-0 sm:inline-flex"
-            title="Brak internetu – działają instrukcje zapisane na tym urządzeniu"
-          >
-            Bez internetu
-          </span>
-        )}
 
         <form
           onSubmit={onSearch}
@@ -164,6 +154,7 @@ export function Header({ cars }: { cars: CarSummary[] }) {
           })}
         </ul>
       </nav>
+      <StatusBar car={car} />
     </header>
   );
 }

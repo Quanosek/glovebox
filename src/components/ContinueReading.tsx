@@ -13,7 +13,7 @@ export function ContinueReading({
   car?: string;
   carLabel?: string;
 }) {
-  const { lastRead } = useAppData();
+  const { lastRead, history } = useAppData();
   const hydrated = useHydrated();
   if (!hydrated)
     return (
@@ -31,13 +31,20 @@ export function ContinueReading({
       </div>
     );
   if (!lastRead || (car && lastRead.car !== car)) return null;
+  const thumb = history.find((h) => h.href === lastRead.href)?.thumb ?? null;
 
   return (
     <div className="panel">
-      <div className="panel-title">Ostatnio czytane</div>
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4">
-        <div>
-          <p className="font-semibold">{lastRead.title}</p>
+      <div className="panel-title">Czytaj dalej</div>
+      <div className="flex flex-wrap items-center gap-4 p-4">
+        {thumb && (
+          <span className="thumb h-20 w-28 shrink-0 p-1">
+            {/* eslint-disable-next-line @next/next/no-img-element -- local manual illustration */}
+            <img src={thumb} alt="" />
+          </span>
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="text-lg leading-snug font-semibold">{lastRead.title}</p>
           <p className="text-xs text-steel">
             {carLabel ? `${carLabel} · ` : ""}
             {new Date(lastRead.at).toLocaleString("pl-PL")}

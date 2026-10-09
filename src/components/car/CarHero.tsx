@@ -16,6 +16,7 @@ export function CarHero({
   variant,
   spec,
   badge,
+  heading: Heading = "h1",
   children,
 }: {
   carId: string;
@@ -25,6 +26,8 @@ export function CarHero({
   variant?: string;
   spec?: CarSpec;
   badge?: string;
+  /** Heading level of the model name (h2 inside the wizard). */
+  heading?: "h1" | "h2";
   children?: ReactNode;
 }) {
   const engine = spec ? specParts(spec) : [];
@@ -39,9 +42,9 @@ export function CarHero({
           <p className="text-sm font-semibold tracking-[0.14em] text-steel uppercase">
             {brand}
           </p>
-          <h1 className="text-4xl leading-tight font-semibold tracking-tight sm:text-5xl">
+          <Heading className="text-4xl leading-tight font-semibold tracking-tight sm:text-5xl">
             {model} <span className="font-normal text-steel">{year}</span>
-          </h1>
+          </Heading>
           {engine.length > 0 ? (
             <ul className="mt-3 flex flex-wrap gap-2 text-sm">
               {engine.map((part) => (

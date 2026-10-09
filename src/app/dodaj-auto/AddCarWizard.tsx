@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import { EquipmentEditor } from "@/components/EquipmentEditor";
+import { CarHero } from "@/components/car/CarHero";
 import { Skeleton } from "@/components/Skeleton";
 import { suggestFromSpec } from "@/config/vehicle";
 import type {
@@ -1011,6 +1012,7 @@ export function AddCarWizard({
         <StepProcessing
           upload={upload}
           job={job}
+          picked={docs.map((d) => ({ title: d.title, preview: d.preview }))}
           error={submitError}
           onBack={() => {
             setSubmitError(null);
@@ -1257,11 +1259,14 @@ const DOC_STATE: Record<JobDoc["state"], string> = {
 function StepProcessing({
   upload,
   job,
+  picked,
   error,
   onBack,
 }: {
   upload: number | null;
   job: Job | null;
+  /** Files chosen in step 1, in upload order (empty after reopening). */
+  picked: { title: string; preview: string | null }[];
   error: string | null;
   onBack: () => void;
 }) {
@@ -1311,65 +1316,102 @@ function StepProcessing({
           )}
         </div>
       </div>
-      {job && job.docs.length > 0 && (
-        <ul className="grid gap-3 sm:grid-cols-2">
-          {job.docs.map((d) => (
-            <li key={d.bookId} className="border border-line bg-white">
-              <div
-                className={`flex items-center justify-between gap-2 border-b px-3 py-2 ${
-                  d.state === "error"
-                    ? "border-b-red"
-                    : d.state === "running"
-                      ? "silver-bar border-b-line"
-                      : "border-b-line"
-                }`}
-              >
-                <span className="truncate font-semibold" title={d.title}>
-                  {d.title}
-                </span>
-                <span
-                  className={`badge ${
-                    d.state === "error"
-                      ? "badge-red"
-                      : d.state === "done"
-                        ? "badge-dark"
-                        : ""
-                  }`}
-                >
-                  {DOC_STATE[d.state]}
-                </span>
-              </div>
-              <div className="px-3 py-2 text-xs text-graphite">
-                <p>
-                  {d.name} · {formatSize(d.size)}
-                  {d.pages != null ? ` · ${d.pages} str.` : ""}
-                </p>
-                {d.state === "done" && (
-                  <p className="mt-1">
-                    Rozdziały i podrozdziały:{" "}
-                    <strong>{d.sections ?? "?"}</strong> · ilustracje:{" "}
-                    <strong>{d.images ?? "?"}</strong>
-                  </p>
-                )}
-                {d.error && (
-                  <p className="mt-1 text-red">
-                    Nie udało się odczytać tego pliku.
-                  </p>
-                )}
-                {d.state === "error" && (d.error || d.log.length > 0) && (
-                  <details className="mt-1">
-                    <summary className="text-steel">
-                      Szczegóły (dla osoby technicznej)
-                    </summary>
-                    <pre className="mt-1 max-h-24 overflow-auto bg-paper px-2 py-1 text-[11px] whitespace-pre-wrap">
-                      {[d.error, ...d.log.slice(-4)].filter(Boolean).join("\n")}
-                    </pre>
-                  </details>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
+      {(job?.docs.length || picked.length) > 0 && (
+        <ol className="film-strip" aria-label="Instrukcje">
+          {(job?.docs.length
+            ? job.docs.map((d, i) => ({ doc: d, preview: picked[i]?.preview }))
+            : picked.map((p) => ({ doc: null, preview: p.preview, title: p.title }))
+          ).map((item, i) => {
+            const d = item.doc;
+            const state = d?.state ?? "queued";
+            const title = d?.title ?? ("title" in item ? item.title : "");
+            return (
+              <li key={d?.bookId ?? i} className="film-frame" data-state={state}>
+                <div className="relative flex aspect-3/4 items-center justify-center overflow-hidden border-b border-line bg-paper">
+                  {item.preview ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- local object URL
+                    <img
+                      src={item.preview}
+                      alt=""
+                      className="h-full w-full object-contain"
+                    />
+                  ) : (
+                    <span className="px-2 text-center text-xs text-steel">
+                      {title}
+                    </span>
+                  )}
+                  <span className="absolute top-0 left-0 bg-ink px-1.5 py-0.5 text-xs text-white">
+                    {i + 1}
+                  </span>
+                  <span
+                    className="film-progress"
+                    role="progressbar"
+                    aria-label={`${title}: ${DOC_STATE[state]}`}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={
+                      state === "done" || state === "error"
+                        ? 100
+                        : state === "queued"
+                          ? 0
+                          : undefined
+                    }
+                  >
+                    <span />
+                  </span>
+                </div>
+                <div className="flex flex-1 flex-col gap-1 p-2 text-xs text-graphite">
+                  <span
+                    className="truncate text-sm font-semibold text-ink"
+                    title={title}
+                  >
+                    {title}
+                  </span>
+                  <span
+                    className={
+                      state === "error"
+                        ? "font-semibold text-red"
+                        : state === "running"
+                          ? "font-semibold text-ink"
+                          : ""
+                    }
+                  >
+                    {DOC_STATE[state]}
+                  </span>
+                  {d?.pages != null && (
+                    <span>
+                      {d.pages} {plural(d.pages, "strona", "strony", "stron")}
+                    </span>
+                  )}
+                  {d?.state === "done" && d.sections != null && (
+                    <span>
+                      {d.sections}{" "}
+                      {plural(d.sections, "rozdział", "rozdziały", "rozdziałów")}
+                    </span>
+                  )}
+                  {d?.state === "done" && d.images != null && (
+                    <span>
+                      {d.images}{" "}
+                      {plural(d.images, "ilustracja", "ilustracje", "ilustracji")}
+                    </span>
+                  )}
+                  {d?.state === "error" && (d.error || d.log.length > 0) && (
+                    <details className="mt-1">
+                      <summary className="text-steel">
+                        Szczegóły (dla osoby technicznej)
+                      </summary>
+                      <pre className="mt-1 max-h-24 overflow-auto bg-paper px-2 py-1 text-[11px] whitespace-pre-wrap">
+                        {[d.error, ...d.log.slice(-4)]
+                          .filter(Boolean)
+                          .join("\n")}
+                      </pre>
+                    </details>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ol>
       )}
     </section>
   );
@@ -1487,42 +1529,81 @@ function StepDone({
   onOpen: () => void;
   onAgain: () => void;
 }) {
+  const [car, setCar] = useState<CarSummary | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/cars/${encodeURIComponent(job.carId)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body: { car?: CarSummary } | null) => {
+        if (alive && body?.car) setCar(body.car);
+      })
+      .catch(() => {
+        // The card falls back to the job label.
+      });
+    return () => {
+      alive = false;
+    };
+  }, [job.carId]);
+
+  const sum = (key: "pages" | "sections" | "images") =>
+    job.docs.reduce((n, d) => n + (d[key] ?? 0), 0);
+  const numbers = [
+    {
+      n: job.docs.length,
+      label: plural(job.docs.length, "instrukcja", "instrukcje", "instrukcji"),
+    },
+    { n: sum("pages"), label: plural(sum("pages"), "strona", "strony", "stron") },
+    {
+      n: sum("sections"),
+      label: plural(sum("sections"), "rozdział", "rozdziały", "rozdziałów"),
+    },
+    {
+      n: sum("images"),
+      label: plural(sum("images"), "ilustracja", "ilustracje", "ilustracji"),
+    },
+  ].filter((x) => x.n > 0);
+
   return (
     <section className="mt-6 grid gap-6 lg:grid-cols-[3fr_2fr]">
-      <div className="panel">
-        <h2 className="panel-title">Dodano: {job.label}</h2>
-        <div className="p-4 text-sm">
-          <ul className="border-t border-line">
-            {job.docs.map((d) => (
-              <li
-                key={d.bookId}
-                className="flex flex-wrap justify-between gap-2 border-b border-line py-2"
-              >
-                <span className="font-semibold">{d.title}</span>
-                <span className="text-graphite">
-                  {d.pages ?? "?"}{" "}
-                  {d.pages == null
-                    ? "str."
-                    : plural(d.pages, "strona", "strony", "stron")}{" "}
-                  · {d.sections ?? "?"}{" "}
-                  {d.sections == null
-                    ? "rozdziałów"
-                    : plural(
-                        d.sections,
-                        "rozdział",
-                        "rozdziały",
-                        "rozdziałów",
-                      )}{" "}
-                  · {d.images ?? "?"}{" "}
-                  {d.images == null
-                    ? "ilustracji"
-                    : plural(
-                        d.images,
-                        "ilustracja",
-                        "ilustracje",
-                        "ilustracji",
-                      )}
+      <div className="min-w-0 space-y-px">
+        {car ? (
+          <CarHero
+            carId={car.id}
+            brand={car.brand}
+            model={car.model}
+            year={car.year}
+            variant={car.variant}
+            spec={car.spec}
+            badge="Dodano"
+            heading="h2"
+          />
+        ) : (
+          <div className="car-hero p-5 sm:p-7">
+            <span className="badge badge-red mb-2">Dodano</span>
+            <h2 className="text-3xl font-semibold tracking-tight">
+              {job.label}
+            </h2>
+          </div>
+        )}
+        {numbers.length > 0 && (
+          <ul className="stat-strip" aria-label="Odczytane instrukcje">
+            {numbers.map((x) => (
+              <li key={x.label} className="stat-cell">
+                <span className="block text-2xl leading-none font-semibold tabular-nums sm:text-3xl">
+                  {x.n.toLocaleString("pl-PL")}
                 </span>
+                <span className="mt-1.5 block text-xs text-graphite">
+                  {x.label}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="border border-line bg-white p-4 text-sm">
+          <ul className="flex flex-wrap gap-2">
+            {job.docs.map((d) => (
+              <li key={d.bookId} className="car-hero-spec font-normal">
+                {d.title}
               </li>
             ))}
           </ul>

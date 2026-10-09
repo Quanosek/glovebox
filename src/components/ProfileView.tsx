@@ -9,11 +9,20 @@ import { CarPicker } from "./CarPicker";
 import { ContinueReading } from "./ContinueReading";
 import { Markdown } from "./Markdown";
 import { Skeleton } from "./Skeleton";
+import { RecentActivity } from "./profile/RecentActivity";
+import { TipCard } from "./profile/TipCard";
+import type { Tip } from "@/lib/overview";
 import { plural } from "@/lib/typography";
 import { hasReadableManual } from "@/lib/cars";
 
 /** Local, login-free profile: car selection and the personal notebook. */
-export function ProfileView({ cars }: { cars: CarSummary[] }) {
+export function ProfileView({
+  cars,
+  tips,
+}: {
+  cars: CarSummary[];
+  tips: Tip[];
+}) {
   const [editingName, setEditingName] = useState(false);
   const [draftName, setDraftName] = useState("");
   const data = useAppData();
@@ -185,6 +194,13 @@ export function ProfileView({ cars }: { cars: CarSummary[] }) {
                 : undefined
             }
           />
+        </div>
+      )}
+
+      {hasManuals && (
+        <div className="mt-6 space-y-6">
+          <RecentActivity cars={cars} />
+          <TipCard tips={tips} cars={cars} />
         </div>
       )}
 
