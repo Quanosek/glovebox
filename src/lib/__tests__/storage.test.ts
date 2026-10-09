@@ -345,6 +345,7 @@ describe("schema v5", () => {
         kind: "custom",
         title: "Olej",
         dueDate: null,
+        eventDate: null,
         dueKm: 30000,
         done: true,
         createdAt: "2026-01-01T00:00:00.000Z",
