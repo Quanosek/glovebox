@@ -79,6 +79,7 @@ last word of a paragraph (up to 10 characters) is bound to the previous one.
 - Links, buttons and `summary` get a 160 ms colour/background/border fade (base layer).
 - `.btn`: hover lightens the silver gradient and darkens the border; `:active` moves the
   button 1px down, flips the gradient and adds a faint inset shadow — a subtle "pressed key".
+  A soft radial sheen sweeps across the button and fades to transparent at its edges;
   `.btn-primary` and `.btn-ghost` have matching pressed states.
 - `.field` (inputs, selects, textareas): hover darkens the border; focus shows exactly one
   cue — a graphite border. No outline ring, underline or shadow on top of it. Other
@@ -93,6 +94,8 @@ last word of a paragraph (up to 10 characters) is bound to the previous one.
   scoped to that car; comments, bookmarks and notes remain in the app-wide navigation.
 - `.hover-tile`: clickable cards/panels (car cards, profile and book tiles) get a darker
   border and a soft shadow on hover and a 1px press on `:active`.
+- The page backdrop is made from layered, irregular CSS radial gradients in the existing
+  neutral palette; it uses no images or additional visual dependencies.
 - `prefers-reduced-motion: reduce` shortens all transitions/animations to 1 ms and removes
   the press movement.
 

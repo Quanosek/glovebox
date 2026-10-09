@@ -91,22 +91,35 @@ body {
   background-color: var(--color-white);
   background-image:
     radial-gradient(
-      ellipse at 8% 8%,
-      rgba(184, 188, 192, 0.13),
-      transparent 32rem
+      ellipse 82% 36% at 2% 9%,
+      rgba(184, 188, 192, 0.2) 0%,
+      rgba(217, 220, 223, 0.1) 42%,
+      transparent 76%
     ),
     radial-gradient(
-      ellipse at 96% 34%,
-      rgba(217, 220, 223, 0.16),
-      transparent 35rem
+      ellipse 72% 28% at 102% 24%,
+      rgba(217, 220, 223, 0.2) 0%,
+      rgba(184, 188, 192, 0.08) 46%,
+      transparent 78%
     ),
-    repeating-linear-gradient(
-      137deg,
-      transparent 0,
-      transparent 5.5rem,
-      rgba(184, 188, 192, 0.045) 5.6rem,
-      rgba(255, 255, 255, 0.34) 6rem,
-      transparent 6.7rem
+    radial-gradient(
+      ellipse 90% 24% at 7% 13%,
+      transparent 38%,
+      rgba(184, 188, 192, 0.12) 49%,
+      rgba(255, 255, 255, 0.5) 59%,
+      transparent 74%
+    ),
+    radial-gradient(
+      ellipse 76% 22% at 100% 31%,
+      transparent 37%,
+      rgba(184, 188, 192, 0.1) 49%,
+      rgba(255, 255, 255, 0.44) 60%,
+      transparent 76%
+    ),
+    radial-gradient(
+      ellipse 68% 26% at 42% 88%,
+      rgba(217, 220, 223, 0.12) 0%,
+      transparent 74%
     );
   background-attachment: fixed;
   color: var(--color-ink);
@@ -193,26 +206,22 @@ body {
   .btn::before {
     position: absolute;
     z-index: -1;
-    inset: -55% auto -55% -18%;
-    width: 68%;
+    inset: 0;
     content: "";
     opacity: 0;
-    clip-path: polygon(8% 0, 92% 0, 100% 28%, 88% 82%, 72% 100%, 0 88%);
-    background:
-      radial-gradient(
-        ellipse at 25% 48%,
-        rgba(255, 255, 255, 0.78),
-        transparent 58%
-      ),
-      radial-gradient(
-        ellipse at 78% 52%,
-        rgba(255, 255, 255, 0.4),
-        transparent 64%
-      );
-    transform: rotate(-12deg) translateX(-5%);
+    background-image: radial-gradient(
+      ellipse 48% 105% at 50% 50%,
+      rgba(255, 255, 255, 0.68) 0%,
+      rgba(255, 255, 255, 0.34) 43%,
+      rgba(255, 255, 255, 0.1) 70%,
+      transparent 100%
+    );
+    background-repeat: no-repeat;
+    background-position: -120% 50%;
+    background-size: 76% 150%;
     transition:
-      opacity 220ms var(--ease-ui),
-      transform 420ms var(--ease-ui);
+      opacity 180ms var(--ease-ui),
+      background-position 680ms var(--ease-ui);
     pointer-events: none;
   }
   .btn:hover {
@@ -220,8 +229,8 @@ body {
     border-color: var(--color-steel);
   }
   .btn:hover::before {
-    opacity: 0.72;
-    transform: rotate(-7deg) translateX(12%);
+    opacity: 0.78;
+    background-position: 220% 50%;
   }
   /* Very subtle "pushed in" feel: 1px down, inner shadow, flipped gradient. */
   .btn:active:not(:disabled) {
