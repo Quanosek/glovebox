@@ -186,8 +186,12 @@ which then shows the equipment step.
   `graphite #5C6166`, `ink #2B2E31`, `black`, `red #C8102E`, `red-bright #E4002B`.
   No blue, green or other hues (including focus rings, links, success messages).
 - Highlight palette (`src/lib/highlightColors.ts`): `light`, `silver`, `graphite`, `red`.
-- System sans-serif font stack; responsive for phone, tablet and desktop. App width is capped
-  at `max-w-app` (90rem); long unbroken strings must wrap inside their box
+- System sans-serif font stack; responsive for phone, tablet and desktop. Three alignment
+  levels share one side gutter (`--gutter`): the frame (`.app-frame`, `max-w-app` 90rem:
+  header rows, footer, reader), page content (`.page-shell`, 72rem) and the reader text
+  column (`.reader-column`, 48rem). Headings and numbers use the type scale classes
+  (`.type-display`, `.page-title` / `.type-title`, `.type-card`, `.type-item`, `.type-value`,
+  `.section-label`, `.panel-title`; `docs/ui.md`). Long unbroken strings must wrap inside their box
   (`overflow-wrap: anywhere` on `body`) — never let text overflow a panel or notice.
 - Polish typography: no one-letter words at line ends and no lone last word in paragraphs —
   `polishTypography()` (`src/lib/typography.ts`) on the server for manual content,
@@ -259,7 +263,6 @@ AppData {
     createdAt, updatedAt }[];
   settings: { fontSize, showUnavailable, ownedCars,
     vehicles: Record<carId, Record<featureId, FeatureState>>,
-    favorites: Record<carId, bookmarkId[]>, // pinned "Ulubione", ≤ 6 per car
     activeCar: string | null, profileName: string };
 }
 ```

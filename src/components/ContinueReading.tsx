@@ -40,7 +40,7 @@ export function ContinueReading({
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <p className="text-lg leading-snug font-semibold">{view.title}</p>
+          <p className="type-item">{view.title}</p>
           <p className="text-xs text-steel">
             {carLabel ? `${carLabel} · ` : ""}
             {view.when}

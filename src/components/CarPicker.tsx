@@ -89,7 +89,7 @@ export function CarPicker({
                 </span>
               </div>
               <div className="flex flex-1 flex-col p-4">
-                <h3 className="text-lg leading-tight font-semibold">
+                <h3 className="type-card">
                   {car.model}{" "}
                   <span className="font-normal text-steel">{car.year}</span>
                 </h3>

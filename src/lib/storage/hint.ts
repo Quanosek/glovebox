@@ -1,6 +1,6 @@
 import { isValidId } from "@/lib/slug";
 import { dueSoon, todayIso } from "@/lib/reminders";
-import type { AppData, FontSize } from "./schema";
+import { FAVORITES_LIMIT, type AppData, type FontSize } from "./schema";
 
 /**
  * Layout hint: a tiny summary of the browser data, mirrored to a cookie so the
@@ -40,8 +40,8 @@ export interface LayoutHint {
   marks: boolean[];
   /** Cars with a saved offline copy. */
   offline: string[];
-  /** Pinned favourites per car. */
-  favorites: Record<string, number>;
+  /** Keys on the favourites bar (the car's bookmarks, at most six) per car. */
+  bookmarks: Record<string, number>;
   /** Own ("custom") reminders per car. */
   reminders: Record<string, number>;
   /** Reminders due within 30 days or overdue (header badge). */
@@ -58,7 +58,7 @@ export const EMPTY_HINT: LayoutHint = {
   read: 0,
   marks: [],
   offline: [],
-  favorites: {},
+  bookmarks: {},
   reminders: {},
   due: 0,
 };
@@ -79,11 +79,10 @@ export function buildHint(
   const highlights = Object.values(data.highlights);
   const lastRead = data.lastRead;
   const ownedCars = settings.ownedCars.slice(0, MAX_CARS);
-  const favorites: Record<string, number> = {};
-  for (const car of ownedCars) {
-    const n = settings.favorites[car]?.length ?? 0;
-    if (n > 0) favorites[car] = n;
-  }
+  const bookmarks: Record<string, number> = {};
+  for (const b of data.bookmarks)
+    if (ownedCars.includes(b.car))
+      bookmarks[b.car] = Math.min(FAVORITES_LIMIT, (bookmarks[b.car] ?? 0) + 1);
   const reminders: Record<string, number> = {};
   for (const r of data.reminders)
     if (r.kind === "custom" && ownedCars.includes(r.car))
@@ -118,7 +117,7 @@ export function buildHint(
       .slice(0, PROFILE_LIST_LIMIT)
       .map((h) => h.comment.trim() !== ""),
     offline: offlineCars.filter((id) => ownedCars.includes(id)),
-    favorites,
+    bookmarks,
     reminders,
     due: dueSoon(data.reminders, today, settings.ownedCars).length,
   };
@@ -132,7 +131,7 @@ export function serializeHint(hint: LayoutHint): string {
       JSON.stringify({
         ...hint,
         lastRead: null,
-        favorites: {},
+        bookmarks: {},
         reminders: {},
         offline: [],
       }),
@@ -209,7 +208,7 @@ export function parseHint(value: string | undefined | null): LayoutHint {
       ? raw.marks.slice(0, PROFILE_LIST_LIMIT).map((m) => m === true)
       : [],
     offline: ids(raw.offline),
-    favorites: perCar(raw.favorites, 6),
+    bookmarks: perCar(raw.bookmarks, FAVORITES_LIMIT),
     reminders: perCar(raw.reminders, 50),
     due: count(raw.due, 999),
   };

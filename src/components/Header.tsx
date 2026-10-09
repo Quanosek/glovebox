@@ -8,6 +8,7 @@ import { useOnline } from "@/lib/offline";
 import { dueSoon, todayIso } from "@/lib/reminders";
 import { useLayoutHint } from "@/lib/storage/hintContext";
 import { useActiveCar, useAppData, useHydrated } from "@/lib/storage/hooks";
+import { BackButton } from "./BackButton";
 import { CarLogo } from "./CarLogo";
 import { Logo } from "./Logo";
 
@@ -28,7 +29,7 @@ function Clock() {
   const now = useClock();
   const online = useOnline();
   return (
-    <span className="ml-auto hidden items-center gap-3 px-3 text-sm text-graphite tabular-nums lg:flex">
+    <span className="ml-auto hidden items-center gap-3 pl-3 text-sm text-graphite tabular-nums lg:flex">
       {!online && (
         <span
           className="badge badge-red"
@@ -125,7 +126,8 @@ export function Header({ cars }: { cars: CarSummary[] }) {
       ref={ref}
       className="silver-bar sticky top-0 z-40 border-t-4 border-t-red print:hidden"
     >
-      <div className="mx-auto flex h-14 max-w-app items-center gap-3 px-3 lg:px-5">
+      <div className="app-frame flex h-14 items-center gap-3">
+        <BackButton variant="key" />
         <Link
           href="/"
           className="flex shrink-0 items-center gap-2.5 text-black"
@@ -198,8 +200,9 @@ export function Header({ cars }: { cars: CarSummary[] }) {
         aria-label="Główna nawigacja"
         className={`${open ? "block" : "hidden"} border-t border-line bg-white lg:block lg:bg-transparent`}
       >
-        <div className="mx-auto flex max-w-app items-center">
-          <ul className="flex min-w-0 flex-1 flex-col lg:flex-row lg:flex-wrap lg:px-3">
+        <div className="app-frame flex items-center">
+          <BackButton variant="nav" />
+          <ul className="flex min-w-0 flex-1 flex-col lg:flex-row lg:flex-wrap">
             {nav.map((item) => {
               const active =
                 pathname === item.href ||
@@ -210,11 +213,7 @@ export function Header({ cars }: { cars: CarSummary[] }) {
                     href={item.href}
                     onClick={() => setOpen(false)}
                     aria-current={active ? "page" : undefined}
-                    className={`flex items-center gap-2 border-b-2 px-4 py-2 text-sm lg:px-3 ${
-                      active
-                        ? "border-red font-semibold text-ink"
-                        : "border-transparent text-graphite hover:border-silver hover:text-ink"
-                    }`}
+                    className="nav-link"
                   >
                     {item.label}
                     {item.badge ? (

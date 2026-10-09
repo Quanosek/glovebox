@@ -230,10 +230,9 @@ describe("schema v5", () => {
       { ...entry("a", "2026-01-02T00:00:00.000Z") },
     ]);
     expect(data.reminders).toEqual([]);
-    expect(data.settings.favorites).toEqual({});
   });
 
-  it("sanitizes history, reminders and favourites", () => {
+  it("sanitizes history and reminders, dropping retired favourites", () => {
     const bookmark = {
       id: `${car}:manual:a`,
       car,
@@ -280,7 +279,8 @@ describe("schema v5", () => {
     expect(data.reminders.map((r) => r.id)).toEqual(["r1", "r3"]);
     expect(data.reminders.map((r) => r.kind)).toEqual(["custom", "custom"]);
     expect(data.reminders[1].dueDate).toBeNull();
-    expect(data.settings.favorites).toEqual({ [car]: [bookmark.id] });
+    expect(data.bookmarks.map((b) => b.id)).toEqual([bookmark.id]);
+    expect("favorites" in data.settings).toBe(false);
   });
 
   it("keeps one inspection and one OC reminder per car", () => {

@@ -23,10 +23,7 @@ export function AvailableCars({ cars }: { cars: CarSummary[] }) {
 
   return (
     <section aria-labelledby="available-cars-title" className="mt-6">
-      <h2
-        id="available-cars-title"
-        className="mb-3 text-xs font-semibold tracking-[0.08em] text-graphite uppercase"
-      >
+      <h2 id="available-cars-title" className="section-label">
         Auta z gotowymi instrukcjami
       </h2>
       {available.length === 0 ? (
@@ -41,7 +38,7 @@ export function AvailableCars({ cars }: { cars: CarSummary[] }) {
             <li key={car.id} className="panel flex flex-col">
               <div className="panel-title">{car.brand}</div>
               <div className="flex flex-1 flex-col p-4">
-                <h3 className="text-lg leading-tight font-semibold">
+                <h3 className="type-card">
                   {car.model}{" "}
                   <span className="font-normal text-steel">{car.year}</span>
                 </h3>

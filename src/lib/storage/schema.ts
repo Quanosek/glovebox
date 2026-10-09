@@ -132,8 +132,6 @@ export interface Settings {
   ownedCars: string[];
   /** Optional display name of the local profile. */
   profileName: string;
-  /** Bookmarks pinned to the favourites bar of each car: car id → bookmark ids. */
-  favorites: Record<string, string[]>;
 }
 
 export interface AppData {
@@ -160,7 +158,6 @@ export const DEFAULT_SETTINGS: Settings = {
   activeCar: null,
   ownedCars: [],
   profileName: "",
-  favorites: {},
 };
 
 export function createEmptyData(): AppData {
@@ -172,7 +169,7 @@ export function createEmptyData(): AppData {
     lastRead: null,
     history: [],
     reminders: [],
-    settings: { ...DEFAULT_SETTINGS, vehicles: {}, favorites: {} },
+    settings: { ...DEFAULT_SETTINGS, vehicles: {} },
   };
 }
 

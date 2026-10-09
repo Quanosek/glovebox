@@ -57,9 +57,7 @@ export default async function TechDataPage({ params }: Props) {
                         <div key={i} className="bg-white px-4 py-3">
                           <dt className="text-sm text-graphite">{f.label}</dt>
                           <dd
-                            className={`mt-1 leading-tight font-semibold tabular-nums ${
-                              isNumeric(f.value) ? "text-2xl" : "text-lg"
-                            }`}
+                            className={`mt-1 ${isNumeric(f.value) ? "type-value" : "type-item"}`}
                           >
                             {f.value}
                           </dd>

@@ -14,7 +14,7 @@ Nothing is sent anywhere.
 - `hooks.ts` — `useAppData()`, `useHydrated()`, `useVehicleProfile(carId?)`,
   `setFeatureState(car, id, state | null)`, `setVehicleProfile(car, profile)`,
   `useActiveCar(cars)`, `setActiveCar(id)`, `updateData(fn)`, `recordReading(entry)`,
-  `toggleFavorite(car, bookmarkId)`, `withoutBookmark(data, id)`, `saveReminder(r)`,
+  `withoutBookmark(data, id)`, `saveReminder(r)`,
   `deleteReminder(id)`.
 
 `updateData` takes a pure function `(data) => newData`; never mutate the snapshot.
@@ -45,9 +45,9 @@ See `AGENTS.md` → Storage schema. Notes:
   `dueKm` (0–5 000 000), `done`. Invalid dates or mileages become `null`. `inspection` and
   `insurance` have one entry per car with the fixed id `${kind}:${car}` (`fixedReminderId`;
   `sanitize` rewrites their ids, so duplicates collapse and merging matches them).
-- `settings.favorites[carId]` (v5) lists up to `FAVORITES_LIMIT` (6) bookmark ids pinned to the
-  car page "Ulubione" bar. Only ids of existing bookmarks of that car are kept; removing a
-  bookmark (`withoutBookmark`) also unpins it.
+- The car page "Ulubione" bar is derived from `bookmarks` (the newest `FAVORITES_LIMIT` = 6
+  of the car); there is no separate favourites list. A `settings.favorites` object left by an
+  earlier development build is dropped by `sanitize`.
 - `lastRead.scrollY` is restored only when the user clicks "Kontynuuj czytanie"
   (a one-shot sessionStorage flag, `opel-cascada-manual:restore-scroll`).
 
@@ -65,7 +65,7 @@ See `AGENTS.md` → Storage schema. Notes:
   equipment, highlights, bookmarks or last-read location), rather than claiming every car in the
   manuals library.
 - `4 → 5`: adds `history` (seeded with the `lastRead` section, without thumbnail), empty
-  `reminders` and empty `settings.favorites`.
+  `reminders`.
 
 Migrations run in memory on load; the upgraded shape is written on the next change.
 
@@ -88,8 +88,7 @@ Migrations run in memory on load; the upgraded shape is written on the next chan
 - Import: export file or bare `AppData`; `merge` mode keeps current data and takes the newer
   entry per id (`updatedAt`/`createdAt`), notebook pages and bookmarks are merged by id,
   equipment profiles per car and feature (the current state wins), history per section
-  (newest `at` wins), reminders by id (newest `updatedAt` wins) and favourites per car
-  (union, at most six);
+  (newest `at` wins), reminders by id (newest `updatedAt` wins);
   `replace` mode overwrites everything.
 - UI labels: "Pobierz kopię zapasową" (export), "Wczytaj kopię z pliku…" (import).
 - "Usuń wszystkie dane" removes the key; "Usuń instrukcje zapisane offline" deletes the Cache
@@ -110,7 +109,7 @@ Migrations run in memory on load; the upgraded shape is written on the next chan
   first paint needs: active and owned car ids, font size, profile name, the four profile
   counters, the "Czytaj dalej" card (title, link, preformatted date, thumbnail), the number of
   "Ostatnio czytane" rows, which recent highlights have a comment, cars with an offline copy,
-  pinned favourites and own reminders per car, and the due reminder count. No notes,
+  favourites-bar keys (bookmarks, at most six) and own reminders per car, and the due reminder count. No notes,
   highlight text or comments.
 - The root layout reads it with `cookies()` (`parseHint` validates every field, ids with
   `isValidId`, links must start with `/auto/` and thumbnails with `/media/`), sets

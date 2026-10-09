@@ -66,11 +66,7 @@ export function CarStatsStrip({
       {cells.map((c) => {
         const body = (
           <>
-            <span
-              className={`block text-2xl leading-none font-semibold tabular-nums sm:text-3xl ${
-                c.red ? "text-red" : ""
-              }`}
-            >
+            <span className={`type-value block ${c.red ? "text-red" : ""}`}>
               {c.value}
             </span>
             <span className="mt-1.5 block text-xs text-graphite">

@@ -66,7 +66,7 @@ function NeighbourLink({
         <span className="block text-xs text-steel">
           {dir === "prev" ? "‹ Poprzedni rozdział" : "Następny rozdział ›"}
         </span>
-        <span className="block leading-snug font-semibold group-hover:text-red">
+        <span className="type-item block group-hover:text-red">
           {section.title}
         </span>
       </span>
@@ -123,9 +123,7 @@ export default async function SectionPage({ params }: Props) {
         />
         <header className="border-b-2 border-red pb-2">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <h1 className="text-2xl leading-tight font-semibold">
-              {section.title}
-            </h1>
+            <h1 className="type-title">{section.title}</h1>
             <div className="flex items-center gap-2 print:hidden">
               {section.page != null && (
                 <span className="text-xs text-steel">str. {section.page}</span>
@@ -160,9 +158,7 @@ export default async function SectionPage({ params }: Props) {
 
         {children.length > 0 && (
           <section className="mt-8">
-            <h2 className="mb-2 text-xs font-semibold tracking-[0.08em] text-graphite uppercase">
-              W tej sekcji
-            </h2>
+            <h2 className="section-label mb-2">W tej sekcji</h2>
             <SectionList
               items={children.map((c) => ({
                 id: c.id,

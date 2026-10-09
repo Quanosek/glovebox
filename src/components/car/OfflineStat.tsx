@@ -15,7 +15,7 @@ export function OfflineStat({ carId }: { carId: string }) {
     : hint.offline.includes(carId);
   return (
     <a href="#bez-internetu" className="stat-cell group hover:bg-paper">
-      <span className="block text-2xl leading-none font-semibold sm:text-3xl">
+      <span className="type-value block">
         {progress ? (
           `${Math.round(progress.total ? (progress.done / progress.total) * 100 : 100)}%`
         ) : saved ? (

@@ -48,10 +48,10 @@ export function Sidebar({
   }, [pathname]);
 
   return (
-    <aside className="border-b border-line bg-paper lg:sticky lg:top-(--header-h) lg:h-[calc(100vh-var(--header-h))] lg:w-80 lg:shrink-0 lg:border-r lg:border-b-0 min-[90rem]:border-l print:hidden">
+    <aside className="border-b border-line bg-paper lg:sticky lg:top-(--header-h) lg:h-[calc(100vh-var(--header-h))] lg:w-80 lg:shrink-0 lg:border-x lg:border-b-0 print:hidden">
       <button
         type="button"
-        className="btn btn-ghost w-full justify-between lg:hidden"
+        className="btn btn-ghost w-full justify-between px-(--gutter) lg:hidden"
         aria-expanded={open}
         aria-controls="toc"
         onClick={() => setOpen((v) => !v)}

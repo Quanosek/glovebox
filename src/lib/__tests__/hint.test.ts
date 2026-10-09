@@ -41,9 +41,19 @@ describe("layout hint", () => {
         updatedAt: "x",
       },
     ];
+    data.bookmarks = Array.from({ length: 8 }, (_, i) => ({
+      id: `${car}:manual:s${i}`,
+      car,
+      book: "manual",
+      sectionId: `s${i}`,
+      title: `S${i}`,
+      href: `/auto/${car}/manual/s${i}`,
+      createdAt: "x",
+    }));
     const hint = buildHint(data, [car, "not-owned"], "2026-10-09");
     expect(hint.name).toBe("Jan");
-    expect(hint.counts).toEqual([0, 0, 0, 1]);
+    expect(hint.counts).toEqual([0, 0, 8, 1]);
+    expect(hint.bookmarks).toEqual({ [car]: 6 });
     expect(hint.offline).toEqual([car]);
     expect(hint.due).toBe(1);
     const value = serializeHint(hint);
@@ -68,7 +78,7 @@ describe("layout hint", () => {
           when: "",
         },
         marks: [true, "yes", false],
-        favorites: { [car]: 99, "../x": 1 },
+        bookmarks: { [car]: 99, "../x": 1 },
         due: 5,
       }),
     );
@@ -79,7 +89,7 @@ describe("layout hint", () => {
       counts: [0, 2, 0, 0],
       lastRead: null,
       marks: [true, false, false],
-      favorites: { [car]: 6 },
+      bookmarks: { [car]: 6 },
       due: 5,
     });
   });

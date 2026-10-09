@@ -90,7 +90,7 @@ export default async function CarPage({ params }: Props) {
                         className="mt-0.5 h-10 w-1 shrink-0 bg-silver transition-colors group-hover:bg-red"
                       />
                       <span className="min-w-0">
-                        <span className="block text-lg leading-snug font-semibold group-hover:text-red">
+                        <span className="type-item block group-hover:text-red">
                           {book.title}
                         </span>
                         <span className="mt-1 block text-sm text-graphite">
@@ -117,7 +117,7 @@ export default async function CarPage({ params }: Props) {
                     href={tool.href}
                     className="panel hover-tile group block h-full p-4"
                   >
-                    <span className="block font-semibold group-hover:text-red">
+                    <span className="type-item block group-hover:text-red">
                       {tool.title} ›
                     </span>
                     <span className="mt-1 block text-sm text-graphite">

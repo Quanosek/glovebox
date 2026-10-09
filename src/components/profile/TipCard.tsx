@@ -33,10 +33,7 @@ export function TipCard({
       aria-labelledby="tip-title"
     >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-2">
-        <h2
-          id="tip-title"
-          className="text-xs font-semibold tracking-[0.08em] text-graphite uppercase"
-        >
+        <h2 id="tip-title" className="section-label mb-0">
           Czy wiesz, że…
         </h2>
         {own.length > 1 && (

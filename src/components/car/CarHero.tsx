@@ -39,6 +39,7 @@ export function CarHero({
             carId={carId}
             brand={brand}
             size={72}
+            fill
             className="text-black"
           />
         </div>
@@ -47,7 +48,7 @@ export function CarHero({
           <p className="text-sm font-semibold tracking-[0.14em] text-steel uppercase">
             {brand}
           </p>
-          <Heading className="text-4xl leading-tight font-semibold tracking-tight sm:text-5xl">
+          <Heading className="type-display">
             {model} <span className="font-normal text-steel">{year}</span>
           </Heading>
           {engine.length > 0 ? (

@@ -31,7 +31,7 @@ komputerze: folder `database/` jest w `.gitignore` i nie trafia do repozytorium.
   zaznaczenia.
 - **Widok auta** — duża karta auta (logo, model, rocznik, silnik), liczby z instrukcji, kafle
   „Najczęściej potrzebne” (np. ciśnienie w oponach, bezpieczniki, żarówki – tylko te, które
-  są w instrukcji), pasek „Ulubione” z sześcioma przypiętymi zakładkami, podgląd danych
+  są w instrukcji), pasek „Ulubione” z sześcioma najnowszymi zakładkami tego auta, podgląd danych
   technicznych, najbliższe przypomnienia oraz wyszukiwanie, ostrzeżenia i wyposażenie.
 - **Przypomnienia** — dla każdego Twojego auta termin badania technicznego, ubezpieczenia OC
   i własne przypomnienia (data, przebieg). Na 30 dni przed terminem liczba przy

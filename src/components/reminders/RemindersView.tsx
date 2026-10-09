@@ -99,7 +99,7 @@ function CarReminders({
       <div className="silver-bar flex flex-wrap items-center gap-4 border-b border-line px-5 py-4">
         <CarLogo carId={car.id} brand={car.brand} size={40} />
         <div className="min-w-0 flex-1">
-          <h2 id={`${car.id}-title`} className="text-xl font-semibold">
+          <h2 id={`${car.id}-title`} className="type-card">
             {car.brand} {car.model}
           </h2>
           <p className="text-sm text-graphite">
@@ -192,13 +192,13 @@ function DeadlineCard({
       <p className="section-label mb-0">{title}</p>
       <p className="mt-2 flex min-h-9 items-center">
         {reminder === undefined ? (
-          <Skeleton className="h-8 w-56 max-w-full" />
+          <Skeleton className="type-value w-56 max-w-full" />
         ) : date ? (
-          <span className="text-2xl font-semibold tabular-nums">
-            {formatDate(date)}
-          </span>
+          <span className="type-value">{formatDate(date)}</span>
         ) : (
-          <span className="text-2xl text-steel">Nie ustawiono</span>
+          <span className="type-value font-normal text-steel">
+            Nie ustawiono
+          </span>
         )}
       </p>
       <p className="mt-1 flex h-6 items-center">

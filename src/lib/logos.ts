@@ -63,10 +63,13 @@ const RANK_ORDER: Record<LogoRank, number> = {
 const isPhoto = (l: BrandLogo) => (/\.jpe?g$/i.test(l.file) ? 1 : 0);
 
 /**
- * The logo used in the given model year: among logos whose period covers the
- * year, the one introduced most recently (a model year in which the logo
- * changed gets the new one); undated logos cover every year. Without a
- * covering logo the brand's current (preferred) logo is used.
+ * The logo used in the given model year:
+ * 1. among dated logos whose period covers the year, the one introduced most
+ *    recently (a model year in which the logo changed gets the new one);
+ * 2. for a year older than every dated logo, the oldest dated logo — the
+ *    closest known design, not today's logo;
+ * 3. otherwise an undated logo (usually the current one), and failing that the
+ *    dated logo whose period is nearest to the year (newer one on a tie).
  *
  * Dated claims count whatever their rank — some brands mark former logos as
  * "deprecated" — while undated deprecated ones are ignored. Between logos of
@@ -77,24 +80,29 @@ export function pickLogo(
   logos: BrandLogo[],
   year: number,
 ): BrandLogo | undefined {
-  const usable = logos.filter(
-    (l) =>
-      l.rank !== "deprecated" || l.start !== undefined || l.end !== undefined,
-  );
+  const isDated = (l: BrandLogo) =>
+    l.start !== undefined || l.end !== undefined;
+  const dated = logos.filter(isDated);
+  const undated = logos.filter((l) => !isDated(l) && l.rank !== "deprecated");
   const byQuality = (a: BrandLogo, b: BrandLogo) =>
     isPhoto(a) - isPhoto(b) || RANK_ORDER[b.rank] - RANK_ORDER[a.rank];
   const byRecency = (a: BrandLogo, b: BrandLogo) =>
     (b.start ?? -Infinity) - (a.start ?? -Infinity) || byQuality(a, b);
-  const covering = usable
-    .filter(
-      (l) => (l.start ?? -Infinity) <= year && year <= (l.end ?? Infinity),
-    )
-    .sort(byRecency);
+  const distance = (l: BrandLogo) =>
+    year < (l.start ?? -Infinity)
+      ? (l.start ?? 0) - year
+      : year > (l.end ?? Infinity)
+        ? year - (l.end ?? 0)
+        : 0;
+  const nearest = [...dated].sort(
+    (a, b) => distance(a) - distance(b) || byRecency(a, b),
+  );
+
+  const covering = nearest.filter((l) => distance(l) === 0);
   if (covering[0]) return covering[0];
-  const current = usable
-    .filter((l) => l.end === undefined && l.rank !== "deprecated")
-    .sort((a, b) => byQuality(a, b) || byRecency(a, b));
-  return current[0] ?? [...usable].sort(byRecency)[0];
+  const earliest = Math.min(...dated.map((l) => l.start ?? l.end ?? Infinity));
+  if (nearest[0] && year < earliest) return nearest[0];
+  return [...undated].sort(byQuality)[0] ?? nearest[0];
 }
 
 const CAR_COMPANY =

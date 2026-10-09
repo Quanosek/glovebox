@@ -4,7 +4,6 @@ import {
   SCHEMA_VERSION,
   createEmptyData,
   type AppData,
-  FAVORITES_LIMIT,
   HISTORY_LIMIT,
   REMINDER_KINDS,
   fixedReminderId,
@@ -143,7 +142,6 @@ function migrateV3toV4(data: Record<string, unknown>) {
 }
 
 function migrateV4toV5(data: Record<string, unknown>) {
-  const settings = isObject(data.settings) ? { ...data.settings } : {};
   const lr = data.lastRead;
   const history = isObject(lr)
     ? [
@@ -162,7 +160,6 @@ function migrateV4toV5(data: Record<string, unknown>) {
     ...data,
     history,
     reminders: [],
-    settings: { ...settings, favorites: {} },
   };
 }
 
@@ -310,7 +307,6 @@ export function sanitize(data: Record<string, unknown>): AppData {
   const settings: Settings = {
     ...DEFAULT_SETTINGS,
     vehicles: {},
-    favorites: {},
   };
   if (FONT_SIZES.includes(s.fontSize as FontSize))
     settings.fontSize = s.fontSize as FontSize;
@@ -326,23 +322,6 @@ export function sanitize(data: Record<string, unknown>): AppData {
       if (!isValidId(car) || !isObject(profile)) continue;
       const clean = sanitizeProfile(profile);
       if (Object.keys(clean).length > 0) settings.vehicles[car] = clean;
-    }
-  }
-  if (isObject(s.favorites)) {
-    const bookmarkIds = new Set(out.bookmarks.map((b) => b.id));
-    for (const [car, ids] of Object.entries(s.favorites)) {
-      if (!isValidId(car) || !Array.isArray(ids)) continue;
-      const clean = [
-        ...new Set(
-          ids.filter(
-            (id): id is string =>
-              typeof id === "string" &&
-              id.startsWith(`${car}:`) &&
-              bookmarkIds.has(id),
-          ),
-        ),
-      ].slice(0, FAVORITES_LIMIT);
-      if (clean.length > 0) settings.favorites[car] = clean;
     }
   }
   out.settings = settings;
@@ -529,12 +508,6 @@ export function mergeData(current: AppData, incoming: AppData): AppData {
       reminders.push(r);
     } else if (reminders[i].updatedAt < r.updatedAt) reminders[i] = r;
   }
-  const favorites = { ...current.settings.favorites };
-  for (const [car, ids] of Object.entries(incoming.settings.favorites))
-    favorites[car] = [...new Set([...(favorites[car] ?? []), ...ids])].slice(
-      0,
-      FAVORITES_LIMIT,
-    );
   return {
     ...current,
     highlights,
@@ -545,6 +518,6 @@ export function mergeData(current: AppData, incoming: AppData): AppData {
       .sort((a, b) => b.at.localeCompare(a.at))
       .slice(0, HISTORY_LIMIT),
     reminders,
-    settings: { ...current.settings, vehicles, ownedCars, favorites },
+    settings: { ...current.settings, vehicles, ownedCars },
   };
 }

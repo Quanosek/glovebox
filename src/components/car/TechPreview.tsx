@@ -24,9 +24,7 @@ export function TechPreview({
               <dt className="truncate text-xs text-graphite" title={f.label}>
                 {f.label}
               </dt>
-              <dd className="mt-1 text-xl leading-tight font-semibold tabular-nums">
-                {f.value}
-              </dd>
+              <dd className="type-value mt-1">{f.value}</dd>
             </div>
           ))}
         </dl>

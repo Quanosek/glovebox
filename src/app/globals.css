@@ -57,7 +57,18 @@
   /* Pressed button: the gradient flips, like a physical key pushed in. */
   --silver-gradient-active: linear-gradient(180deg, #dfe2e5 0%, #f1f2f4 100%);
   --ease-ui: cubic-bezier(0.2, 0, 0.2, 1);
+  /*
+   * Alignment levels (docs/ui.md → Layout): every screen edge uses the same
+   * side gutter. The frame (header, footer, reader) is --container-app wide,
+   * page content (.page-shell) is narrower and centred inside it.
+   */
+  --gutter: 1rem;
   color-scheme: light;
+}
+@media (min-width: 40rem) {
+  :root {
+    --gutter: 2rem;
+  }
 }
 
 html[data-font-size="small"] {
@@ -381,25 +392,117 @@ body {
     transform: rotate(90deg);
   }
 
+  /* Level 1: header rows, footer and the reader (sidebar + text). */
+  .app-frame {
+    width: 100%;
+    max-width: var(--container-app);
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+  /* Header navigation row: the first key starts where the logo starts. */
+  .nav-link,
+  .nav-back {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: 2px solid transparent;
+    padding-block: 0.5rem;
+    color: var(--color-graphite);
+    font-size: 0.875rem;
+  }
+  .nav-link:hover,
+  .nav-back:hover {
+    border-bottom-color: var(--color-silver);
+    color: var(--color-ink);
+  }
+  .nav-link[aria-current="page"] {
+    border-bottom-color: var(--color-red);
+    color: var(--color-ink);
+    font-weight: 600;
+  }
+  .nav-back {
+    margin-right: 0.5rem;
+    border-right: 1px solid var(--color-line);
+    padding-right: 1rem;
+    color: var(--color-ink);
+    font-weight: 600;
+  }
+  @media (min-width: 64rem) {
+    .nav-link {
+      padding-inline: 0.75rem;
+    }
+    li:first-child > .nav-link {
+      padding-left: 0;
+    }
+    .nav-back + ul li:first-child > .nav-link {
+      padding-left: 0.75rem;
+    }
+  }
+
+  /* Level 2: content of every other screen, centred inside the frame. */
   .page-shell {
     width: 100%;
     max-width: 72rem;
     flex: 1;
     margin-inline: auto;
-    padding: 1.5rem 1rem 2rem;
+    padding: 1.5rem var(--gutter) 2rem;
   }
-  .back-navigation {
+  /* Reader: full width on phones, framed next to the sidebar on desktop. */
+  .reader-frame {
+    display: flex;
     width: 100%;
     max-width: var(--container-app);
+    flex: 1;
+    flex-direction: column;
     margin-inline: auto;
-    padding: 0.75rem 1rem 0;
+  }
+  .reader-main {
+    min-width: 0;
+    flex: 1;
+    padding: 1.5rem var(--gutter) 2rem;
+  }
+  /* Level 3: the text column; the "Na tej stronie" column joins it on wide screens. */
+  .reader-column {
+    max-width: 48rem;
+    margin-inline: auto;
+  }
+
+  /*
+   * Type scale (docs/ui.md → Typography): one size and weight per role.
+   * display = car / profile name, title = page heading, card = name on a card
+   * or panel, item = link title in a list, value = big number or measurement.
+   */
+  .type-display {
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+  }
+  .type-title,
+  .page-title {
+    font-size: clamp(1.5rem, 2.4vw, 1.875rem);
+    font-weight: 600;
+    line-height: 1.2;
   }
   .page-title {
     border-bottom: 2px solid var(--color-red);
     padding-bottom: 0.5rem;
-    font-size: clamp(1.5rem, 2.4vw, 1.875rem);
+  }
+  .type-card {
+    font-size: 1.25rem;
     font-weight: 600;
-    line-height: 1.2;
+    line-height: 1.25;
+  }
+  .type-item {
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+  .type-value {
+    font-size: 1.75rem;
+    font-weight: 600;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
   }
 
   /* Interactive list rows / tiles: gentle background fade on hover. */
@@ -551,6 +654,7 @@ body {
       ),
       linear-gradient(180deg, #ffffff 0%, #f7f8f9 100%);
   }
+  /* Fixed frame with a safe inner margin reserved for downloaded logos. */
   .car-hero-logo {
     display: flex;
     width: 6.5rem;
@@ -558,6 +662,8 @@ body {
     flex: 0 0 6.5rem;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
+    padding: 0.875rem;
     border: 1px solid var(--color-line);
     background: var(--color-white);
     box-shadow: inset 0 -2px 0 var(--color-paper);
@@ -1048,11 +1154,27 @@ body {
 
 @layer components {
   @media (min-width: 40rem) {
-    .page-shell {
-      padding: 2rem 2rem 2.5rem;
+    .page-shell,
+    .reader-main {
+      padding-block: 2rem 2.5rem;
     }
-    .back-navigation {
-      padding-inline: 2rem;
+  }
+  @media (min-width: 64rem) {
+    .reader-frame {
+      flex-direction: row;
+      padding-inline: var(--gutter);
+    }
+    .reader-main {
+      padding-inline: 2.5rem 0;
+    }
+  }
+  @media (min-width: 90rem) {
+    /* Same left edge for book index and section pages. */
+    .reader-column {
+      max-width: 63.5rem;
+    }
+    .reader-column > :not(.reader-grid) {
+      max-width: 48rem;
     }
   }
 }

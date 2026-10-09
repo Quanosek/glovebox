@@ -22,17 +22,40 @@ Europe screens. Every screen should be self-explanatory, calm and consistent. Vi
 
 ## Layout and text wrapping (`src/app/globals.css`)
 
-- Maximum app width: `--container-app` (90rem, Tailwind `max-w-app`) for the header bar
-  contents, the main navigation, the reader shell (sidebar + text) and the footer; the silver
-  header background and red top line stay full width. Top-level screens share `.page-shell`
-  (72rem, matching `max-w-6xl`), with consistent horizontal padding; the manual reader retains
-  its wider shell and a `max-w-3xl` text column (~75 characters per line).
+- Alignment levels. Every edge uses one side gutter, `--gutter` (1rem on phones, 2rem from
+  40rem):
+  1. Frame — `.app-frame` (`--container-app`, 90rem): header top row, navigation row, footer;
+     `.reader-frame` gives the reader (sidebar + text) the same edges from 64rem. The silver
+     header background and red top line stay full width.
+  2. Page — `.page-shell` (72rem): every other screen, centred and narrower than the frame.
+  3. Reader text — `.reader-column` (48rem, ~75 characters per line); from 90rem it is 63.5rem
+     wide so the "Na tej stronie" column fits, and book index and section pages keep the same
+     left edge (direct children other than `.reader-grid` stay 48rem).
+- Header: the brand / car logo starts exactly where the first navigation key starts
+  (`.nav-link` has no left padding on the first item), and the clock ends exactly where the
+  search button ends.
 - `body` sets `overflow-wrap: anywhere`, so strings without spaces (file names, codes, long
   links) break inside boxes instead of overflowing them, and flex/grid items may shrink below
   their longest word. Tables use `break-word` and scroll sideways in their wrapper. `.btn` and
   `.badge` stay on one line; use `truncate` (with a `title`) for single-line names.
 - `text-wrap: balance` on headings and `.panel-title`, `text-wrap: pretty` on paragraphs and
   list items; `hyphens: auto` (with `lang="pl"`) in manual text and notebook previews.
+
+## Type scale (`src/app/globals.css`)
+
+One size and weight per role; do not combine ad-hoc `text-*` / `font-*` utilities for these:
+
+| Class                         | Role                                                    |
+| ----------------------------- | ------------------------------------------------------- |
+| `.type-display`               | car name on the car card, profile greeting, wizard done |
+| `.page-title` / `.type-title` | page heading (with / without the red rule)              |
+| `.type-card`                  | name on a card or panel (cars, reminders, warnings)     |
+| `.type-item`                  | link title in a list or tile (books, tools, continue)   |
+| `.type-value`                 | big numbers and measurements (stats, dates, tech data)  |
+| `.section-label`              | uppercase label above a group (red dash)                |
+| `.panel-title`                | silver header bar of a `.panel`                         |
+
+Body text is `text-base`, secondary text `text-sm text-graphite`, meta `text-xs text-steel`.
 
 ## Polish typography (`src/lib/typography.ts`)
 
@@ -130,9 +153,11 @@ last word of a paragraph (up to 10 characters) is bound to the previous one.
   border and a soft shadow on hover and a 1px press on `:active`.
 - The page backdrop is made from layered, irregular CSS radial gradients in the existing
   neutral palette; it uses no images or additional visual dependencies.
-- Views outside the primary header navigation expose a shared "Wstecz" control aligned to the
-  reader shell width; it returns to the prior same-origin view and uses the relevant car, book,
-  or profile as a direct-entry fallback.
+- "Wstecz" (`BackButton`) lives in the header: the first entry of the navigation row on
+  desktop (`.nav-back`), a square arrow key before the logo on phones and tablets. Main views
+  of the top navigation (`/`, car page, `/auta`, `/przypomnienia`, `/notatnik`, `/komentarze`,
+  `/zakladki`, `/ustawienia`) intentionally have none. It returns to the prior same-origin view
+  and uses the relevant car, book, or profile as a direct-entry fallback.
 - `prefers-reduced-motion: reduce` shortens all transitions/animations to 1 ms and removes
   the press movement.
 

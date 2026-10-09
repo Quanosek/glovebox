@@ -939,11 +939,9 @@ export function AddCarWizard({
           <aside className="panel lg:sticky lg:top-[calc(var(--header-h)+1rem)]">
             <h3 className="panel-title">Podsumowanie</h3>
             <div className="p-4 sm:p-5">
-              <p className="text-xs font-semibold tracking-[0.08em] text-steel uppercase">
-                {brand || "Marka"}
-              </p>
+              <p className="section-label mb-0">{brand || "Marka"}</p>
               <p
-                className={`mt-0.5 text-2xl leading-tight font-semibold ${
+                className={`type-card mt-0.5 ${
                   model ? "text-ink" : "text-silver"
                 }`}
               >
@@ -1105,7 +1103,7 @@ function PanelHeading({
       <span className="wizard-mark" aria-hidden="true">
         {mark}
       </span>
-      <h3 className="text-base font-semibold">{title}</h3>
+      <h3 className="type-item">{title}</h3>
       {hint && <span className="ml-auto text-xs text-steel">{hint}</span>}
     </div>
   );
@@ -1601,16 +1599,14 @@ function StepDone({
         ) : (
           <div className="car-hero p-5 sm:p-7">
             <span className="badge badge-red mb-2">Dodano</span>
-            <h2 className="text-3xl font-semibold tracking-tight">
-              {job.label}
-            </h2>
+            <h2 className="type-display">{job.label}</h2>
           </div>
         )}
         {numbers.length > 0 && (
           <ul className="stat-strip" aria-label="Odczytane instrukcje">
             {numbers.map((x) => (
               <li key={x.label} className="stat-cell">
-                <span className="block text-2xl leading-none font-semibold tabular-nums sm:text-3xl">
+                <span className="type-value block">
                   {x.n.toLocaleString("pl-PL")}
                 </span>
                 <span className="mt-1.5 block text-xs text-graphite">

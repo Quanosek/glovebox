@@ -9,7 +9,6 @@ import { useLayoutHint } from "./hintContext";
 import { historyKey } from "./migrations";
 import {
   EMPTY_DATA,
-  FAVORITES_LIMIT,
   HISTORY_LIMIT,
   fixedReminderId,
   type AppData,
@@ -149,36 +148,9 @@ export function recordReading(entry: Omit<HistoryEntry, "at">): void {
   });
 }
 
-/** Pins a bookmark to (or removes it from) the favourites bar of its car. */
-export function toggleFavorite(carId: string, bookmarkId: string): void {
-  updateData((d) => {
-    const current = d.settings.favorites[carId] ?? [];
-    const next = current.includes(bookmarkId)
-      ? current.filter((id) => id !== bookmarkId)
-      : current.length < FAVORITES_LIMIT &&
-          d.bookmarks.some((b) => b.id === bookmarkId)
-        ? [...current, bookmarkId]
-        : current;
-    if (next === current) return d;
-    const favorites = { ...d.settings.favorites };
-    if (next.length > 0) favorites[carId] = next;
-    else delete favorites[carId];
-    return { ...d, settings: { ...d.settings, favorites } };
-  });
-}
-
-/** Removes a bookmark together with its place on the favourites bar. */
+/** Removes a bookmark (it also leaves the favourites bar of its car). */
 export function withoutBookmark(d: AppData, bookmarkId: string): AppData {
-  const favorites: Record<string, string[]> = {};
-  for (const [car, ids] of Object.entries(d.settings.favorites)) {
-    const rest = ids.filter((id) => id !== bookmarkId);
-    if (rest.length > 0) favorites[car] = rest;
-  }
-  return {
-    ...d,
-    bookmarks: d.bookmarks.filter((b) => b.id !== bookmarkId),
-    settings: { ...d.settings, favorites },
-  };
+  return { ...d, bookmarks: d.bookmarks.filter((b) => b.id !== bookmarkId) };
 }
 
 export function saveReminder(

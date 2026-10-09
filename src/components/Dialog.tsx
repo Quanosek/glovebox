@@ -108,7 +108,7 @@ function ModalDialog({ request }: { request: Request }) {
       }}
     >
       <div className="app-dialog-body">
-        <h2 id={titleId} className="panel-title text-sm">
+        <h2 id={titleId} className="panel-title">
           {request.title}
         </h2>
         {request.message && (

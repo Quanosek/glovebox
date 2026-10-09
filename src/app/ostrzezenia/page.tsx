@@ -36,7 +36,7 @@ export default async function WarningsPage({
   return (
     <main id="main" className="page-shell">
       <h1 className="page-title">Ostrzeżenia z instrukcji</h1>
-      <h2 className="mt-4 text-xl font-semibold">{selectedCar.label}</h2>
+      <h2 className="type-card mt-4">{selectedCar.label}</h2>
       <p className="mt-2 text-sm text-graphite">
         Ostrzeżenia, przestrogi i uwagi z instrukcji tego auta.
       </p>

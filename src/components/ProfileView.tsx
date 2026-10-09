@@ -74,7 +74,7 @@ export function ProfileView({
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-3xl font-semibold tracking-tight">
+            <h1 className="type-display">
               {name ? `Cześć, ${name}` : "Twój profil"}
             </h1>
             <button
@@ -162,7 +162,7 @@ export function ProfileView({
           <a href="#auta" className="panel hover-tile group block">
             <div className="panel-title">Wybór auta</div>
             <div className="p-5">
-              <h2 className="text-xl font-semibold group-hover:text-red">
+              <h2 className="type-card group-hover:text-red">
                 {active ? active.label : "Wybierz auto"}
               </h2>
               <p className="mt-1 text-sm text-graphite">
@@ -176,9 +176,7 @@ export function ProfileView({
         <Link href="/notatnik" className="panel hover-tile group block">
           <div className="panel-title">Własny notatnik</div>
           <div className="p-5">
-            <h2 className="text-xl font-semibold group-hover:text-red">
-              Notatnik
-            </h2>
+            <h2 className="type-card group-hover:text-red">Notatnik</h2>
             <p className="mt-1 text-sm text-graphite">
               {`${noteCount} ${plural(noteCount, "kartka", "kartki", "kartek")} · `}
               Puste kartki na własne notatki. Możesz używać nagłówków,
@@ -204,17 +202,13 @@ export function ProfileView({
       )}
 
       <section id="auta" className="mt-8 scroll-mt-28">
-        <h2 className="mb-3 text-xs font-semibold tracking-[0.08em] text-graphite uppercase">
-          Twoje auta
-        </h2>
+        <h2 className="section-label">Twoje auta</h2>
         <CarPicker cars={cars} ownedCarIds={myCars.map((car) => car.id)} />
       </section>
 
       <section className="mt-8">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 className="text-xs font-semibold tracking-[0.08em] text-graphite uppercase">
-            Ostatnie notatki
-          </h2>
+          <h2 className="section-label mb-0">Ostatnie notatki</h2>
           <Link href="/notatnik" className="text-sm text-red hover:underline">
             Otwórz notatnik ›
           </Link>
@@ -286,10 +280,12 @@ export function ProfileView({
             href={s.href}
             className="group bg-white p-4 hover:bg-paper"
           >
-            <span className="block text-2xl font-semibold group-hover:text-red">
+            <span className="type-value block group-hover:text-red">
               {s.value}
             </span>
-            <span className="text-xs text-graphite">{s.label}</span>
+            <span className="mt-1.5 block text-xs text-graphite">
+              {s.label}
+            </span>
           </Link>
         ))}
       </section>

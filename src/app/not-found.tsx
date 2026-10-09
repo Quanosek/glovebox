@@ -4,7 +4,7 @@ export default function NotFound() {
   return (
     <main id="main" className="page-shell py-16 text-center">
       <p className="text-6xl font-light text-silver">404</p>
-      <h1 className="mt-2 text-xl font-semibold">Nie znaleziono strony</h1>
+      <h1 className="type-title mt-2">Nie znaleziono strony</h1>
       <p className="mt-2 text-graphite">
         Ta sekcja nie istnieje albo treść instrukcji się zmieniła.
       </p>

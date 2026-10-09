@@ -38,10 +38,12 @@ re-extraction.
 - Car page `/auto/<car>`: `CarHero` (logo, brand, model + year, engine chips from
   `specParts`: capacity, kW and KM, fuel), `CarStatsStrip` (warnings link to
   `/ostrzezenia?car=`; the last cell is the offline copy state and jumps to `#bez-internetu`),
-  "Czytaj dalej", `FavoritesBar` (always six keys; the pin list is disabled when there is
-  nothing to pin), `QuickTiles`, books, tools; side column: `TechPreview`,
-  `ServiceReminders` (fixed three-row summary: inspection, OC insurance, nearest own reminder;
-  "Ustaw przypomnienia" links to `/przypomnienia#<car>`), `CarActions`.
+  "Czytaj dalej", `FavoritesBar` ("Ulubione": the six newest bookmarks of the car as numbered
+  keys; bookmarks are only created with "Dodaj zakładkę" in the manual, there is no separate
+  pinning; the bar is hidden while the car has no bookmarks), `QuickTiles`, books, tools; side
+  column: `TechPreview`, `ServiceReminders` (inspection and OC insurance always; a third row
+  with the nearest own reminder only once one exists; "Ustaw przypomnienia" links to
+  `/przypomnienia#<car>`), `CarActions`.
 - `/przypomnienia` (`RemindersView`, in the main navigation): one panel per car of the profile
   (`id` = car id) with two fixed yearly deadlines – "Badanie techniczne" and "Ubezpieczenie
   OC" (date field, "za N dni" badge, "Załatwione – za rok" moves the date by one year) – and
@@ -64,7 +66,7 @@ re-extraction.
 
 ## Browser data (schema v5, `docs/storage.md`)
 
-`history`, `reminders` and `settings.favorites` back "Ostatnio czytane", "Przypomnienia"
+`history`, `reminders` and `bookmarks` back "Ostatnio czytane", "Przypomnienia"
 and "Ulubione". Reminders are not system notifications: they are shown on `/przypomnienia`,
 on the car page and as a count in the navigation, with "termin minął" / "za N dni" computed
 on the device (`src/lib/reminders.ts`, local calendar days, "soon" = 30 days).

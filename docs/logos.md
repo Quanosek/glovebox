@@ -19,12 +19,16 @@ end time). Many brands list their former logos with years, e.g. Opel: 2009–201
   car company/marque (not a model, series, team, …) and whose label starts with the brand
   name (`catalogKey`, so "Skoda" = "Škoda Auto") or whose alias equals it; current companies
   before "former"/"defunct" ones. The first candidate (max. 5) with P154 claims wins.
-- `pickLogo(logos, year)` — among logos whose period covers the year, the most recently
-  introduced (the year of a change gets the new logo); undated logos cover every year.
-  Dated claims count whatever their rank (some brands mark former logos "deprecated");
-  undated deprecated ones are ignored. Same period: SVG/PNG before JPEG (JPEGs are often
-  photos of a badge or a car), then rank. No covering logo → the current (undated end,
-  non-deprecated) logo, i.e. the newest one.
+- `pickLogo(logos, year)`:
+  1. dated logos whose period covers the year → the most recently introduced (the year of a
+     change gets the new logo);
+  2. a year older than every dated logo → the oldest dated logo (the closest known design;
+     e.g. a 2005 Opel gets the 2009–2017 logo, not today's);
+  3. otherwise an undated non-deprecated logo (usually the current one), else the dated logo
+     whose period is nearest (newer on a tie).
+     Dated claims count whatever their rank (some brands mark former logos "deprecated");
+     undated deprecated ones are ignored. Same period: SVG/PNG before JPEG (JPEGs are often
+     photos of a badge or a car), then rank.
 
 ## Server (`src/lib/server/logos.ts`, `src/app/logo/[car]/route.ts`)
 
@@ -40,8 +44,10 @@ end time). Many brands list their former logos with years, e.g. Opel: 2009–201
 
 ## UI (`src/components/CarLogo.tsx`)
 
-`<img src="/logo/<car>">` at a fixed height (34 px in the header, 64 px on the car page,
-width up to 3.5× the height for wordmarks); on error — including an error before hydration —
+`<img src="/logo/<car>">` at a fixed height in the header (34 px, width up to 3.5× the
+height for wordmarks); on the car page it fills (`fill`, `object-contain`) the square
+`.car-hero-logo` frame (6.5rem) inside a fixed 0.875rem safe margin, so wide wordmarks and
+square badges never touch the frame; on error — including an error before hydration —
 it falls back to the app icon. Logos keep their original colours: like manual
 illustrations they are content, the palette rule applies to the UI chrome.
 

@@ -3,17 +3,15 @@
 import Link from "next/link";
 import { bookName, carName, type CarSummary } from "@/lib/cars";
 import {
-  toggleFavorite,
   updateData,
   useAppData,
   useHydrated,
   withoutBookmark,
 } from "@/lib/storage/hooks";
-import { FAVORITES_LIMIT } from "@/lib/storage/schema";
 import { Skeleton } from "@/components/Skeleton";
 
 export function BookmarksView({ cars }: { cars: CarSummary[] }) {
-  const { bookmarks, settings } = useAppData();
+  const { bookmarks } = useAppData();
   const hydrated = useHydrated();
   if (!hydrated)
     return (
@@ -58,11 +56,6 @@ export function BookmarksView({ cars }: { cars: CarSummary[] }) {
               {new Date(b.createdAt).toLocaleDateString("pl-PL")}
             </span>
           </Link>
-          <FavoriteToggle
-            car={b.car}
-            id={b.id}
-            pinned={settings.favorites[b.car] ?? []}
-          />
           <button
             type="button"
             className="btn h-7 py-0"
@@ -73,34 +66,5 @@ export function BookmarksView({ cars }: { cars: CarSummary[] }) {
         </li>
       ))}
     </ul>
-  );
-}
-
-function FavoriteToggle({
-  car,
-  id,
-  pinned,
-}: {
-  car: string;
-  id: string;
-  pinned: string[];
-}) {
-  const on = pinned.includes(id);
-  const full = !on && pinned.length >= FAVORITES_LIMIT;
-  return (
-    <button
-      type="button"
-      className={`btn h-7 py-0 ${on ? "btn-pressed" : ""}`}
-      aria-pressed={on}
-      disabled={full}
-      title={
-        full
-          ? `Na pasku ulubionych jest już ${FAVORITES_LIMIT} pozycji`
-          : "Pokaż na pasku ulubionych na stronie auta"
-      }
-      onClick={() => toggleFavorite(car, id)}
-    >
-      {on ? "W ulubionych" : "Do ulubionych"}
-    </button>
   );
 }

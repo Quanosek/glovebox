@@ -3,7 +3,6 @@ import { cookies } from "next/headers";
 import { ClientEffects } from "@/components/ClientEffects";
 import { DialogHost } from "@/components/Dialog";
 import { Header } from "@/components/Header";
-import { BackButton } from "@/components/BackButton";
 import { LayoutHintProvider } from "@/lib/storage/hintContext";
 import { listCarSummaries } from "@/lib/content";
 import { HINT_COOKIE, parseHint } from "@/lib/storage/hint";
@@ -49,12 +48,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             Przejdź do treści
           </a>
           <Header cars={listCarSummaries()} />
-          <BackButton />
           <ClientEffects />
           {children}
           <DialogHost />
-          <footer className="mt-auto border-t border-line bg-paper px-5 py-3 text-xs text-steel print:hidden">
-            <p className="mx-auto max-w-app">
+          <footer className="mt-auto border-t border-line bg-paper py-3 text-xs text-steel print:hidden">
+            <p className="app-frame">
               Treść instrukcji należy do producentów aut i służy wyłącznie do
               użytku prywatnego. Notatki zapisują się tylko w tej przeglądarce.
             </p>
