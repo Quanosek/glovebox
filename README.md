@@ -5,18 +5,18 @@ zakreślaczem, komentarzami i notatnikiem. Każda osoba dodaje **własne auta i 
 markę, model, rocznik i silnik można wybrać z oficjalnych katalogów, a dane spoza katalogu
 wprowadzić ręcznie. Aplikacja nie zawiera domyślnego auta ani przykładowej instrukcji.
 
-Po dodaniu auta zaznaczasz jego **wyposażenie** (np. tempomat, kamera cofania, hak): aplikacja
-sama wyszukuje w instrukcjach opisy wyposażenia opcjonalnego. Sekcje o wyposażeniu, którego
-auto nie ma, są zwijane i oznaczone „Brak w Twoim aucie”, a podpowiedzi wynikające z wybranego
-silnika — „prawdopodobnie”.
+Po dodaniu auta do profilu zaznaczasz jego **wyposażenie** (np. tempomat, kamera cofania, hak):
+aplikacja sama wyszukuje w jego instrukcjach opisy wyposażenia opcjonalnego. Sekcje o wyposażeniu,
+którego auto nie ma, są zwijane i oznaczone „Brak w Twoim aucie”, a podpowiedzi wynikające z
+wybranego silnika — „prawdopodobnie”.
 
 ## Profil i auta
 
 Po wejściu do aplikacji widzisz **swój profil** — bez logowania i bez bazy danych. Z profilu
 wybierasz:
 
-- **auto** — listę aut z lokalnego folderu `database/` (auta dodane przez Ciebie) albo
-  „Dodaj pierwsze auto”, gdy nie ma jeszcze żadnej czytelnej instrukcji,
+- **Twoje auta** — listę aut dodanych do profilu. Z folderu `database/` możesz wybrać dostępne
+  instrukcje albo dodać własne auto z plików PDF; usunięcie auta z listy nie kasuje instrukcji,
 - **własny notatnik** — puste kartki z podstawowym formatowaniem Markdown.
 
 Wybrane auto, zaznaczenia, komentarze, zakładki i notatki zapisują się w tej przeglądarce
@@ -44,7 +44,7 @@ komputerze: folder `database/` jest w `.gitignore` i nie trafia do repozytorium.
   na komputerze (`database/.logos/`), więc działa też offline.
 - **Wyposażenie auta** — dla każdego auta osobno („Mam” / „Nie mam” / „Nie wiem”), tylko
   funkcje opisane w jego instrukcjach, z linkami do odpowiednich sekcji; podpowiedzi na
-  podstawie silnika. Strona „Wyposażenie” auta (też w menu i w Ustawieniach).
+  podstawie silnika. Ustawienia otworzysz przyciskiem na stronie wybranego auta.
 - **Offline** — po otwarciu auta wszystkie jego strony i ilustracje zapisują się same w tle;
   potem całe auto działa bez internetu (znaczek „Offline” w nagłówku). Połączenie jest
   potrzebne tylko do dodawania aut i odświeżenia listy aut.
@@ -92,13 +92,13 @@ tylko w wersji produkcyjnej otwartej pod `http://localhost` (albo przez HTTPS).
 
 Nowa kopia aplikacji nie ma żadnego domyślnego auta ani instrukcji. Kreator sprawdza, czy
 środowisko spełnia wymagania opisane niżej (Node.js, Python, biblioteki, skrypt odczytu i zapis
-do bazy). Jeśli `database/` nie zawiera jeszcze czytelnej instrukcji, profil pokazuje wyłącznie
-opcję „Dodaj pierwsze auto” zamiast siatki wyboru. Pusta baza nie blokuje dodawania pierwszego auta.
+do bazy). Jeśli `database/` nie zawiera jeszcze czytelnej instrukcji, nie ma aut do wybrania, ale można
+dodać pierwsze auto z plików PDF. Pusta baza nie blokuje dodawania pierwszego auta.
 
 ### Dla użytkownika — kreator „Dodaj auto”
 
-Menu „Dodaj auto” (lub kafelek „Dodaj własne auto” na profilu) otwiera kreator w czterech
-krokach, bez żadnych technicznych pytań:
+Przycisk „Dodaj auto” na profilu pozwala wybrać istniejące instrukcje z lokalnej biblioteki albo
+otworzyć kreator i dodać własne auto. Kreator przeprowadza przez cztery kroki, bez technicznych pytań:
 
 1. **Auto i instrukcje** — marka → model → rocznik → silnik, wybierane z list. Listy pochodzą
    z oficjalnych danych rejestracyjnych (Europejska Agencja Środowiska — wszystkie nowe auta
@@ -111,7 +111,7 @@ krokach, bez żadnych technicznych pytań:
 2. **Odczytywanie** — aplikacja odczytuje tekst, rozdziały, ostrzeżenia, tabele i ilustracje.
 3. **Wyposażenie** — lista wyposażenia opcjonalnego znalezionego w instrukcjach; zaznacz, co
    ma Twoje auto (można pominąć i uzupełnić później na stronie „Wyposażenie” auta).
-4. **Gotowe** — auto pojawia się na liście. **Pliki PDF są zawsze usuwane** (także po błędzie).
+4. **Gotowe** — auto zostaje dodane do profilu. **Pliki PDF są zawsze usuwane** (także po błędzie).
 
 Katalog aut jest pobierany przy pierwszym otwarciu kreatora (wymaga internetu) i
 zapamiętywany w `database/.catalog/` na kilka dni. Gdy katalog jest niedostępny, kreator

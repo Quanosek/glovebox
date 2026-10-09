@@ -24,7 +24,11 @@ import { useOnline } from "@/lib/offline";
 import { renderPdfPreview } from "@/lib/pdfPreview";
 import { slugify } from "@/lib/slug";
 import { getStore } from "@/lib/storage/store";
-import { setActiveCar, setVehicleProfile } from "@/lib/storage/hooks";
+import {
+  addOwnedCar,
+  setActiveCar,
+  setVehicleProfile,
+} from "@/lib/storage/hooks";
 import { plural } from "@/lib/typography";
 
 /* ------------------------------------------------------------------ types */
@@ -523,6 +527,7 @@ export function AddCarWizard({
     if (jobState !== "done" || !jobCar) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- job finished
     setStep(3);
+    addOwnedCar(jobCar);
     void loadEquipment(jobCar);
     // Reload server components so the new car appears in the header and lists.
     router.refresh();
@@ -1419,10 +1424,10 @@ function StepDone({
         <h2 className="panel-title">Co dalej?</h2>
         <ul className="flex list-[square] flex-col gap-2 py-3 pr-4 pl-8 text-graphite marker:text-red">
           <li>
-            Auto jest już na liście aut – widać je na każdym urządzeniu, które
-            korzysta z aplikacji uruchomionej na tym komputerze.
+            Auto zostało dodane do Twoich aut. Instrukcje są dostępne w tej
+            aplikacji na tym komputerze.
           </li>
-          <li>Wyposażenie auta zmienisz w każdej chwili na stronie głównej.</li>
+          <li>Wyposażenie auta zmienisz w każdej chwili na jego stronie.</li>
           <li>
             Po otwarciu auta jego instrukcje zapiszą się same, aby działały też
             bez internetu.

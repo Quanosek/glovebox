@@ -14,14 +14,15 @@ Private, local-only Next.js app for reading vehicle manuals from any manufacture
 highlighting, comments, bookmarks and a Markdown notebook. The visual hierarchy takes
 inspiration from Opel's Navi 950 interface; the vehicle database itself is generic and user
 populated. There is no bundled example, default vehicle, manual template or generated content.
-Each user adds cars from PDF manuals with a step-by-step wizard and can mark optional equipment.
+Users assign readable cars from `database/` to their browser profile or add cars from PDF manuals
+with a step-by-step wizard, then can mark optional equipment.
 
 - **No accounts, no database server.** On entry the user sees a local profile (`/`): car
-  picker or notebook. User data lives in the browser only (localStorage + Cache API).
+  assignments or notebook. User data lives in the browser only (localStorage + Cache API).
 - **Manual content is a local file database** (`database/`, **git-ignored**), served by the
-  local Next.js server (`next dev` / `next start`). Nothing inside it is committed. A fresh
-  checkout starts without manuals; each user imports at least one manual before a car can be
-  selected. With no readable manual, the profile offers only the add-first-car action.
+  local Next.js server (`next dev` / `next start`). Nothing inside it is committed. Cars in the
+  library are not automatically assigned to the browser profile; users can add a library car or
+  import their own. A fresh checkout starts without manuals.
 - **Offline after a car is chosen.** Opening a car saves all its pages, images and scripts
   to the Cache API in the background; from then on it works with no connection. A
   connection is only needed to add cars and to refresh the car list (`docs/offline.md`).
@@ -86,13 +87,13 @@ scripts/                        generic PDF extraction (Python), tests, icon gen
 public/sw.js                    service worker (shell precache + runtime caching, docs/offline.md)
 src/
   app/
-    page.tsx                    profile (ProfileView): car choice / notebook / continue reading
+    page.tsx                    profile (ProfileView): assigned cars / notebook / continue reading
     auta/                       car list (CarPicker)
     auto/[car]/                 car overview (books, equipment, offline status, delete);
                                 layout runs ActiveCarTracker (active car + offline copy)
     auto/[car]/wyposazenie/     equipment of the car (EquipmentEditor)
     auto/[car]/[book]/          book index + sidebar layout; [...slug]/ section pages
-    dodaj-auto/                 import wizard (AddCarWizard: car + PDFs, reading, equipment, done)
+    dodaj-auto/                 add library car or import wizard (car + PDFs, reading, equipment)
     api/system                  GET environment + manual count check (Node, Python, database)
     api/cars                    GET list · POST multipart import (202 {job})
     api/cars/[car]              GET · DELETE (not while importing)
@@ -227,13 +228,13 @@ Single localStorage key `opel-cascada-manual`, versioned (`SCHEMA_VERSION` in
 
 ```ts
 AppData {
-  version: 3;
+  version: 4;
   highlights: Record<id, { id, car, book, sectionId, sectionTitle, href,
     anchor: { exact, prefix, suffix, start, end }, color, comment, createdAt, updatedAt }>;
   notebook: { pages: { id, title, body /* Markdown */, createdAt, updatedAt }[] }; // user order
   bookmarks: { id: `${car}:${book}:${sectionId}`, car, book, sectionId, title, href, createdAt }[];
   lastRead: { car, book, sectionId, title, href, scrollY, at } | null;
-  settings: { fontSize, showUnavailable,
+  settings: { fontSize, showUnavailable, ownedCars,
     vehicles: Record<carId, Record<featureId, FeatureState>>,
     activeCar: string | null, profileName: string };
 }
@@ -242,6 +243,8 @@ AppData {
 - Historical v1 → v2 and v2 → v3 migrations preserve data from the retired single-car
   application. The legacy vehicle id and routes only occur in migration code; they do not seed
   a vehicle or affect new installs.
+- `settings.ownedCars` holds ids assigned to the local profile; removing one does not delete its
+  manuals from `database/`.
 - Changing the shape: bump `SCHEMA_VERSION`, add `MIGRATIONS[oldVersion]` in
   `migrations.ts`, extend `sanitize`, add a test in `src/lib/__tests__/storage.test.ts`.
 - Export file: `{ app: "opel-cascada-manual", exportedAt, data }`. Import accepts it (or bare

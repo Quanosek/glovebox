@@ -2,22 +2,52 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { equipmentHref, type CarSummary } from "@/lib/cars";
+import { confirmDialog } from "@/components/Dialog";
+import type { CarSummary } from "@/lib/cars";
 import { useOfflineState, useOnline } from "@/lib/offline";
-import { setActiveCar, useAppData, useHydrated } from "@/lib/storage/hooks";
+import {
+  addOwnedCar,
+  removeOwnedCar,
+  setActiveCar,
+  useAppData,
+  useHydrated,
+} from "@/lib/storage/hooks";
 import { plural } from "@/lib/typography";
 
 /** Grid of cars from `database/` plus the "add your own car" tile. */
-export function CarPicker({ cars }: { cars: CarSummary[] }) {
+export function CarPicker({
+  cars,
+  ownedCarIds,
+}: {
+  cars: CarSummary[];
+  ownedCarIds?: string[];
+}) {
   const router = useRouter();
   const { settings } = useAppData();
   const hydrated = useHydrated();
   const active = hydrated ? settings.activeCar : null;
   const online = useOnline();
   const { saved } = useOfflineState();
-  const readableCars = cars.filter((car) =>
-    car.books.some((book) => !book.placeholder),
+  const readableCars = cars.filter(
+    (car) =>
+      car.books.some((book) => !book.placeholder) &&
+      (ownedCarIds === undefined || ownedCarIds.includes(car.id)),
   );
+
+  const remove = async (car: CarSummary) => {
+    const ok = await confirmDialog({
+      title: "Usunąć auto z Twoich aut?",
+      message: (
+        <p>
+          <strong>{car.label}</strong> zniknie z Twojej listy. Instrukcje i
+          zapisane informacje nie zostaną usunięte. Auto możesz dodać ponownie.
+        </p>
+      ),
+      confirmLabel: "Usuń z listy",
+      danger: true,
+    });
+    if (ok) removeOwnedCar(car.id);
+  };
 
   return (
     <>
@@ -95,18 +125,22 @@ export function CarPicker({ cars }: { cars: CarSummary[] }) {
                     type="button"
                     className={`btn min-w-32 flex-1 justify-center ${isActive ? "" : "btn-primary"}`}
                     onClick={() => {
+                      addOwnedCar(car.id);
                       setActiveCar(car.id);
                       router.push(car.href);
                     }}
                   >
                     {isActive ? "Otwórz" : "Wybierz to auto"}
                   </button>
-                  <Link
-                    href={equipmentHref(car.id)}
-                    className="btn justify-center"
-                  >
-                    Wyposażenie
-                  </Link>
+                  {ownedCarIds !== undefined && (
+                    <button
+                      type="button"
+                      className="btn btn-ghost justify-center"
+                      onClick={() => void remove(car)}
+                    >
+                      Usuń z moich aut
+                    </button>
+                  )}
                 </div>
               </div>
             </li>
@@ -124,12 +158,10 @@ export function CarPicker({ cars }: { cars: CarSummary[] }) {
               +
             </span>
             <span className="font-semibold group-hover:text-red">
-              {readableCars.length > 0
-                ? "Dodaj własne auto"
-                : "Dodaj pierwsze auto"}
+              Dodaj auto
             </span>
             <span className="max-w-60 text-sm text-graphite">
-              Wpisz markę, model i rocznik, a potem dołącz instrukcje w PDF.
+              Wybierz dostępne auto albo dodaj własne z instrukcji.
             </span>
           </Link>
         </li>

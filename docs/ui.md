@@ -86,9 +86,11 @@ last word of a paragraph (up to 10 characters) is bound to the previous one.
 - Selects keep their native accessible behavior and option menus, but use a shared silver
   field and graphite arrow. Checkboxes use a square red selected state and retain the global
   red keyboard focus outline. Native `details` disclosures use the same small red chevron.
+- The profile lists only cars assigned to that browser profile. Other readable cars can be
+  added from `/dodaj-auto` without importing their manuals again; removing a car from the list
+  does not delete its manuals or saved annotations. The car overview offers the equipment editor.
 - Car overview tools are grouped separately from the manual list and include only actions
-  scoped to that car. Equipment profiles are opened from each car card on the home profile;
-  comments, bookmarks and notes remain in the app-wide navigation.
+  scoped to that car; comments, bookmarks and notes remain in the app-wide navigation.
 - `.hover-tile`: clickable cards/panels (car cards, profile and book tiles) get a darker
   border and a soft shadow on hover and a 1px press on `:active`.
 - `prefers-reduced-motion: reduce` shortens all transitions/animations to 1 ms and removes

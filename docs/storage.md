@@ -17,7 +17,7 @@ Nothing is sent anywhere.
 
 `updateData` takes a pure function `(data) => newData`; never mutate the snapshot.
 
-## Schema (version 3)
+## Schema (version 4)
 
 See `AGENTS.md` → Storage schema. Notes:
 
@@ -26,6 +26,9 @@ See `AGENTS.md` → Storage schema. Notes:
   `listCarSummaries()`; entries of a car that was deleted stay in storage and keep their ids.
 - `settings.activeCar` is the car picked on the profile; the URL (`/auto/<id>`) wins while
   reading (`useActiveCar`). `settings.profileName` is the local profile's display name.
+- `settings.ownedCars` lists the cars assigned to this browser profile. Other readable cars in
+  `database/` remain available on `/dodaj-auto` and can be added without re-importing manuals.
+  Removing a car from the profile does not delete its manuals or associated notes.
 
 - `settings.vehicles[carId]` is the equipment profile of one car (`docs/vehicle-profile.md`):
   only features the owner set (or accepted suggestions); there are no defaults. `sanitize`
@@ -43,6 +46,9 @@ See `AGENTS.md` → Storage schema. Notes:
   `settings.vehicles["opel-cascada-2016"]`, with renamed feature ids mapped; the old
   feature defaults themselves are not copied. This only preserves data created by the retired
   single-car version; current installations have no preset vehicle or equipment.
+- `3 → 4`: `settings.ownedCars` is initialized from cars already used in this profile (active car,
+  equipment, highlights, bookmarks or last-read location), rather than claiming every car in the
+  manuals library.
 
 Migrations run in memory on load; the upgraded shape is written on the next change.
 

@@ -262,6 +262,7 @@ describe("parseImport / mergeData", () => {
     a.settings.vehicles = {
       car1: { "drive.towbar": { status: "has", certainty: "confirmed" } },
     };
+    a.settings.ownedCars = ["car1"];
     b.settings.vehicles = {
       car1: {
         "drive.towbar": { status: "no", certainty: "confirmed" },
@@ -269,11 +270,12 @@ describe("parseImport / mergeData", () => {
       },
       car2: { "drive.towbar": { status: "no", certainty: "confirmed" } },
     };
+    b.settings.ownedCars = ["car2"];
     const merged = mergeData(a, b);
     expect(merged.settings.vehicles.car1["drive.towbar"].status).toBe("has");
     expect(merged.settings.vehicles.car1["access.alarm"].status).toBe("has");
     expect(merged.settings.vehicles.car2["drive.towbar"].status).toBe("no");
-    expect(merged.settings.ownedCars).toEqual([]);
+    expect(merged.settings.ownedCars).toEqual(["car1", "car2"]);
     expect(merged.highlights.x.comment).toBe("nowszy");
     expect(Object.keys(merged.highlights).sort()).toEqual(["x", "y"]);
     expect(merged.notebook.pages.map((p) => p.body)).toEqual(["new", ""]);

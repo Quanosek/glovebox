@@ -7,6 +7,7 @@ import { CarLogo } from "@/components/CarLogo";
 import { carLabel } from "@/lib/cars";
 import { getCar, getCarSummary } from "@/lib/content";
 import { plural } from "@/lib/typography";
+import { equipmentHref } from "@/lib/cars";
 
 type Props = PageProps<"/auto/[car]">;
 
@@ -35,16 +36,6 @@ export default async function CarPage({ params }: Props) {
 
   return (
     <main id="main" className="page-shell">
-      <nav aria-label="Ścieżka" className="mb-4 text-xs text-steel">
-        <Link href="/" className="hover:text-red">
-          Profil
-        </Link>{" "}
-        ›{" "}
-        <Link href="/auta" className="hover:text-red">
-          Auta
-        </Link>{" "}
-        › <span className="text-ink">{car.label}</span>
-      </nav>
       <section className="flex flex-col items-start gap-5 border-b-2 border-red pb-6 sm:flex-row sm:items-center">
         <CarLogo
           carId={car.id}
@@ -60,6 +51,12 @@ export default async function CarPage({ params }: Props) {
             {car.model} <span className="text-steel">{car.year}</span>
           </h1>
           {car.variant && <p className="mt-1 text-graphite">{car.variant}</p>}
+          <Link
+            href={equipmentHref(car.id)}
+            className="btn btn-primary mt-4 justify-center"
+          >
+            Dostosuj wyposażenie
+          </Link>
         </div>
       </section>
 
