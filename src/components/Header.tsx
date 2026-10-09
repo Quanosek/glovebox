@@ -24,7 +24,6 @@ export function Header({ cars }: { cars: CarSummary[] }) {
     { href: "/notatnik", label: "Notatnik" },
     { href: "/komentarze", label: "Komentarze" },
     { href: "/zakladki", label: "Zakładki" },
-    { href: "/ostrzezenia", label: "Ostrzeżenia" },
     ...(hasManuals ? [{ href: "/dodaj-auto", label: "Dodaj auto" }] : []),
     { href: "/ustawienia", label: "Ustawienia" },
   ];

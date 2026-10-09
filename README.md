@@ -25,8 +25,8 @@ komputerze: folder `database/` jest w `.gitignore` i nie trafia do repozytorium.
 
 ## Funkcje
 
-- **Czytnik** — spis treści ksiąg wybranego auta, ścieżka nawigacji, poprzednia/następna
-  sekcja, odnośniki do stron („str. 45”), indeks ostrzeżeń, linki do sekcji i akapitów.
+- **Czytnik** — spis treści ksiąg wybranego auta, poprzednia/następna sekcja, odnośniki do
+  stron („str. 45”), ostrzeżenia dla wybranego auta, linki do sekcji i akapitów.
 - **Wyszukiwarka** — pełnotekstowa, w obrębie wybranego auta; ignoruje wielkość liter i polskie
   znaki („swiatla” znajdzie „światła”).
 - **Zakreślacz** — zaznacz dowolny fragment tekstu i wybierz kolor (odcienie srebra, grafit,

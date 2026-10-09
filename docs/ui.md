@@ -90,12 +90,15 @@ last word of a paragraph (up to 10 characters) is bound to the previous one.
 - The profile lists only cars assigned to that browser profile. Other readable cars can be
   added from `/dodaj-auto` without importing their manuals again; removing a car from the list
   does not delete its manuals or saved annotations. The car overview offers the equipment editor.
-- Car overview tools are grouped separately from the manual list and include only actions
-  scoped to that car; comments, bookmarks and notes remain in the app-wide navigation.
+- Car overview tools are grouped in a two-column layout and include search and warnings scoped
+  to that car. Warnings are opened from this view rather than the global navigation. Comments,
+  bookmarks and notes remain in the app-wide navigation.
 - `.hover-tile`: clickable cards/panels (car cards, profile and book tiles) get a darker
   border and a soft shadow on hover and a 1px press on `:active`.
 - The page backdrop is made from layered, irregular CSS radial gradients in the existing
   neutral palette; it uses no images or additional visual dependencies.
+- Views outside the primary header navigation expose a shared "Wstecz" control; it returns to
+  the prior same-origin view and uses the relevant car, book, or profile as a direct-entry fallback.
 - `prefers-reduced-motion: reduce` shortens all transitions/animations to 1 ms and removes
   the press movement.
 

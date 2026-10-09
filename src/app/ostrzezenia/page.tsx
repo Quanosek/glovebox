@@ -1,5 +1,11 @@
 import type { Metadata } from "next";
-import { blockToText, getAllWarnings, listCarSummaries } from "@/lib/content";
+import { redirect } from "next/navigation";
+import {
+  blockToText,
+  getAllWarnings,
+  getCar,
+  getCarSummary,
+} from "@/lib/content";
 import { WarningsList, type WarningItem } from "./WarningsList";
 
 export const metadata: Metadata = { title: "Ostrzeżenia" };
@@ -8,36 +14,33 @@ export default async function WarningsPage({
   searchParams,
 }: PageProps<"/ostrzezenia">) {
   const { car } = await searchParams;
-  const cars = listCarSummaries();
-  const items: WarningItem[] = getAllWarnings().map((w) => ({
-    id: `${w.car}:${w.book.id}:${w.section.id}:${w.block.id}`,
-    car: w.car,
-    book: w.book.short,
-    kind: w.block.kind,
-    title: w.block.title,
-    section: w.section.title,
-    href: w.href,
-    page: w.block.page ?? w.section.page,
-    text: w.block.blocks.map(blockToText).join(" "),
-    features: w.features,
-  }));
+  if (typeof car !== "string") redirect("/");
+  const file = getCar(car);
+  if (!file) redirect("/");
+  const selectedCar = getCarSummary(file);
+  const items: WarningItem[] = getAllWarnings()
+    .filter((warning) => warning.car === selectedCar.id)
+    .map((w) => ({
+      id: `${w.car}:${w.book.id}:${w.section.id}:${w.block.id}`,
+      car: w.car,
+      book: w.book.short,
+      kind: w.block.kind,
+      title: w.block.title,
+      section: w.section.title,
+      href: w.href,
+      page: w.block.page ?? w.section.page,
+      text: w.block.blocks.map(blockToText).join(" "),
+      features: w.features,
+    }));
 
   return (
     <main id="main" className="page-shell">
       <h1 className="page-title">Ostrzeżenia z instrukcji</h1>
-      <p className="mt-3 text-sm text-graphite">
-        Wszystkie ostrzeżenia, przestrogi i uwagi z instrukcji, z linkami do
-        miejsca w tekście.
+      <h2 className="mt-4 text-xl font-semibold">{selectedCar.label}</h2>
+      <p className="mt-2 text-sm text-graphite">
+        Ostrzeżenia, przestrogi i uwagi z instrukcji tego auta.
       </p>
-      <WarningsList
-        items={items}
-        cars={cars.map((c) => ({ id: c.id, label: c.label }))}
-        initialCar={
-          typeof car === "string" && cars.some((c) => c.id === car)
-            ? car
-            : undefined
-        }
-      />
+      <WarningsList items={items} />
     </main>
   );
 }

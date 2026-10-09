@@ -43,7 +43,8 @@ export default async function CarPage({ params }: Props) {
           size={64}
           className="shrink-0 text-black"
         />
-        <div>
+        <div className="min-w-0 flex-1">
+          <span className="badge badge-red mb-2">Wybrane auto</span>
           <p className="text-xs tracking-[0.12em] text-steel uppercase">
             {car.brand}
           </p>
@@ -51,13 +52,13 @@ export default async function CarPage({ params }: Props) {
             {car.model} <span className="text-steel">{car.year}</span>
           </h1>
           {car.variant && <p className="mt-1 text-graphite">{car.variant}</p>}
-          <Link
-            href={equipmentHref(car.id)}
-            className="btn btn-primary mt-4 justify-center"
-          >
-            Dostosuj wyposażenie
-          </Link>
         </div>
+        <Link
+          href={equipmentHref(car.id)}
+          className="btn btn-primary shrink-0 justify-center"
+        >
+          Dostosuj wyposażenie
+        </Link>
       </section>
 
       <div className="mt-6">
@@ -100,12 +101,12 @@ export default async function CarPage({ params }: Props) {
         >
           Narzędzia auta
         </h2>
-        <div className="grid gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           {tiles.map((t) => (
             <Link
               key={t.href}
               href={t.href}
-              className="group bg-white p-4 hover:bg-paper"
+              className="panel hover-tile group block p-4"
             >
               <h3 className="font-semibold group-hover:text-red">{t.title}</h3>
               <p className="mt-1 text-sm text-graphite">{t.text}</p>

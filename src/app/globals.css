@@ -248,21 +248,25 @@ body {
     color: var(--color-white);
   }
   .btn-primary:hover {
-    background: var(--red-gradient-hover);
+    background: var(--red-gradient);
     border-color: var(--color-red-bright);
   }
   .btn-primary::before {
-    background:
+    background-image:
       radial-gradient(
-        ellipse at 24% 48%,
-        rgba(255, 255, 255, 0.48),
-        transparent 60%
+        ellipse 54% 120% at 20% 50%,
+        rgba(228, 0, 43, 0.78),
+        transparent 75%
       ),
       radial-gradient(
-        ellipse at 78% 50%,
-        rgba(255, 255, 255, 0.24),
-        transparent 64%
+        ellipse 48% 110% at 80% 50%,
+        rgba(200, 16, 46, 0.56),
+        transparent 76%
       );
+  }
+  .btn-primary:hover::before {
+    opacity: 0.8;
+    background-position: 220% 50%;
   }
   .btn-primary:active:not(:disabled) {
     background: var(--red-gradient);
@@ -382,6 +386,12 @@ body {
     flex: 1;
     margin-inline: auto;
     padding: 1.5rem 1rem 2rem;
+  }
+  .back-navigation {
+    width: 100%;
+    max-width: var(--container-app);
+    margin-inline: auto;
+    padding: 0.75rem 1rem 0;
   }
   .page-title {
     border-bottom: 2px solid var(--color-red);
@@ -696,6 +706,9 @@ body {
   @media (min-width: 40rem) {
     .page-shell {
       padding: 2rem 2rem 2.5rem;
+    }
+    .back-navigation {
+      padding-inline: 2rem;
     }
   }
   .btn:active,

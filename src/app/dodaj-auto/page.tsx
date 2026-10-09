@@ -15,9 +15,6 @@ export default function AddCarPage() {
         Wybierz auto z dostępnych instrukcji albo dodaj własne. Wyposażenie
         dostosujesz później na stronie wybranego auta.
       </p>
-      <a href="#nowe-auto" className="btn mt-4">
-        Dodaj własne auto
-      </a>
       <AvailableCars cars={cars} />
       <section id="nowe-auto" className="mt-8 scroll-mt-28">
         <h2 className="page-title">Dodaj własne auto</h2>

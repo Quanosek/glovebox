@@ -136,9 +136,25 @@ export function CarPicker({
                     <button
                       type="button"
                       className="btn btn-ghost justify-center"
+                      aria-label={`Usuń ${car.label} z moich aut`}
+                      title="Usuń z moich aut"
                       onClick={() => void remove(car)}
                     >
-                      Usuń z moich aut
+                      <svg
+                        viewBox="0 0 20 20"
+                        width="18"
+                        height="18"
+                        fill="none"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M4 6h12m-10 0 .7 10h6.6L14 6M8 6V4h4v2m-3 3v4m2-4v4"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="square"
+                          strokeLinejoin="miter"
+                        />
+                      </svg>
                     </button>
                   )}
                 </div>

@@ -57,9 +57,6 @@ export function ProfileView({ cars }: { cars: CarSummary[] }) {
           {hydrated && name ? name[0].toUpperCase() : "★"}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs tracking-[0.12em] text-steel uppercase">
-            Profil na tym urządzeniu · bez logowania
-          </p>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-3xl font-semibold tracking-tight">
               {hydrated && name ? `Cześć, ${name}` : "Twój profil"}

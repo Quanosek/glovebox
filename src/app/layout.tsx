@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { ClientEffects } from "@/components/ClientEffects";
 import { DialogHost } from "@/components/Dialog";
 import { Header } from "@/components/Header";
+import { BackButton } from "@/components/BackButton";
 import { listCarSummaries } from "@/lib/content";
 import "./globals.css";
 
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Przejdź do treści
         </a>
         <Header cars={listCarSummaries()} />
+        <BackButton />
         <ClientEffects />
         {children}
         <DialogHost />
