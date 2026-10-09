@@ -20,10 +20,14 @@ export function ReminderNotifications() {
       setPermission("unsupported");
       return;
     }
-    const next = await Notification.requestPermission();
-    setPermission(next);
-    if (next === "granted")
-      window.dispatchEvent(new Event("reminders-notification-permission"));
+    try {
+      const next = await Notification.requestPermission();
+      setPermission(next);
+      if (next === "granted")
+        window.dispatchEvent(new Event("reminders-notification-permission"));
+    } catch {
+      setPermission("unsupported");
+    }
   };
 
   return (

@@ -54,9 +54,11 @@ re-extraction.
   with "dostęp bez internetu" and links to that tile. Removing a car from the profile is done on the profile (`CarPicker`), not here.
 - `/przypomnienia` (`RemindersView`, in the main navigation): one panel per car of the profile
   (`id` = car id) with two fixed yearly deadlines – "Badanie techniczne" and "Ubezpieczenie
-  OC" (date field, "za N dni" badge, "Załatwione – za rok" moves the date by one year) – and
-  "Inne przypomnienia" (own entries with date and/or mileage, `CustomReminders`) plus a link
-  to the servicing section of the manual (`CarOverview.serviceHref`).
+  OC". The owner enters the last inspection / policy start date and the next deadline is
+  calculated one year later; existing deadlines remain visible until a source date is entered.
+  Own reminders have dates and/or mileage and can be deleted. Optional native browser
+  notifications are checked while the app is open, plus a link to the servicing section
+  (`CarOverview.serviceHref`).
 - `/auto/<car>/lampki-kontrolne`: symbol cards with a local text filter; each card links to
   the image block (`#<blockId>`) in the manual.
 - `/auto/<car>/dane-techniczne`: fact cards (values in `.type-fact`) and compact tables, each with
@@ -77,9 +79,10 @@ re-extraction.
 - `/przypomnienia` without cars: a short explanation and "Dodaj auto" (`/dodaj-auto`).
 - Add-car wizard: step 2 film strip, step 4 `CarHero` from `GET /api/cars/<id>`.
 
-## Browser data (schema v5, `docs/storage.md`)
+## Browser data (schema v6, `docs/storage.md`)
 
 `history`, `reminders` and `bookmarks` back "Ostatnio czytane", "Przypomnienia"
-and "Ulubione". Reminders are not system notifications: they are shown on `/przypomnienia`,
-on the car page and as a count in the navigation, with "termin minął" / "za N dni" computed
-on the device (`src/lib/reminders.ts`, local calendar days, "soon" = 30 days).
+and "Ulubione". Reminders are shown on `/przypomnienia`, on the car page and as a count in
+the navigation, with "termin minął" / "za N dni" computed on the device
+(`src/lib/reminders.ts`, local calendar days, "soon" = 30 days). Optional native browser
+notifications are checked while the app is open; no server sends them in the background.

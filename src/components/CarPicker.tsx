@@ -52,7 +52,7 @@ export function CarPicker({
     });
     if (ok) {
       removeOwnedCar(car.id);
-      void forgetCarOffline(car.id);
+      void forgetCarOffline(car.id).catch(() => {});
     }
   };
 

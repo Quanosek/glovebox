@@ -79,6 +79,21 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const path = `/przypomnienia#${event.notification.data?.car ?? ""}`;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      const client = clients[0];
+      if (client) {
+        client.navigate(path);
+        return client.focus();
+      }
+      return self.clients.openWindow(path);
+    }),
+  );
+});
+
 async function put(request, res) {
   if (res.ok && !res.redirected && res.type === "basic") {
     const cache = await caches.open(CACHE);

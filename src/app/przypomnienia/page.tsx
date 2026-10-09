@@ -5,7 +5,7 @@ import { listCarSummaries, listCars } from "@/lib/content";
 import { polishTypography } from "@/lib/typography";
 
 const INTRO =
-  "Terminy badania technicznego, ubezpieczenia OC i własne przypomnienia dla każdego auta. Na 30 dni przed terminem liczba przy „Przypomnienia” w menu i kafelek na stronie auta przypomną Ci o nim. Terminy zapisują się tylko na tym urządzeniu.";
+  "Terminy badania technicznego, ubezpieczenia OC i własne przypomnienia dla każdego auta. Na 30 dni przed terminem liczba przy „Przypomnienia” w menu i kafelek na stronie auta przypomną Ci o nim. Możesz też włączyć powiadomienia, gdy aplikacja jest otwarta. Terminy zapisują się tylko na tym urządzeniu.";
 
 export const metadata: Metadata = { title: "Przypomnienia" };
 

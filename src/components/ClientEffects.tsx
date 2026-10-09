@@ -51,6 +51,12 @@ export function ClientEffects() {
       } catch {
         // A broken notification log must not prevent reminders from appearing.
       }
+      const currentIds = new Set(
+        data.reminders.filter((reminder) => reminder.dueDate).map((r) => r.id),
+      );
+      sent = Object.fromEntries(
+        Object.entries(sent).filter(([id]) => currentIds.has(id)),
+      );
       const due = dueSoon(data.reminders, todayIso(), settings.ownedCars);
       for (const reminder of due) {
         if (sent[reminder.id] === reminder.dueDate) continue;
@@ -60,21 +66,25 @@ export function ClientEffects() {
           tag: reminder.id,
           data: { car: reminder.car },
         };
-        void navigator.serviceWorker?.ready
+        const showFallback = () => {
+          try {
+            const notification = new Notification(reminder.title, options);
+            notification.onclick = () => {
+              window.focus();
+              window.location.href = `/przypomnienia#${reminder.car}`;
+            };
+          } catch {
+            // Notifications may be unavailable even when the API is present.
+          }
+        };
+        void navigator.serviceWorker
+          ?.getRegistration()
           .then((registration) =>
-            registration.showNotification(reminder.title, options),
+            registration
+              ? registration.showNotification(reminder.title, options)
+              : showFallback(),
           )
-          .catch(() => {
-            try {
-              const notification = new Notification(reminder.title, options);
-              notification.onclick = () => {
-                window.focus();
-                window.location.href = `/przypomnienia#${reminder.car}`;
-              };
-            } catch {
-              // Notifications may be unavailable even when the API is present.
-            }
-          });
+          .catch(showFallback);
       }
       try {
         localStorage.setItem(

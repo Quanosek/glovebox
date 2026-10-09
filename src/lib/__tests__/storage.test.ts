@@ -191,6 +191,25 @@ describe("migrate", () => {
       bookmarks: [{ car: "volvo-v60-2021", book: "manual", sectionId: "x" }],
       highlights: { invalid: { car: "../unsafe" } },
     });
+
+    it("adds the event date field when upgrading v5 reminders", () => {
+      const data = migrate({
+        version: 5,
+        reminders: [
+          {
+            id: "inspection:car",
+            car: "car",
+            kind: "inspection",
+            title: "Badanie techniczne",
+            dueDate: "2026-10-01",
+          },
+        ],
+      });
+      expect(data.reminders[0]).toMatchObject({
+        dueDate: "2026-10-01",
+        eventDate: null,
+      });
+    });
     expect(data.settings.ownedCars).toEqual([
       "skoda-octavia-2019",
       "mazda-3-2020",
