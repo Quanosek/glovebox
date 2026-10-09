@@ -8,18 +8,20 @@ import {
   carHref,
   carLabel,
   equipmentHref,
+  glossaryHref,
+  techDataHref,
   type CarBook,
   type CarFile,
   type CarSummary,
   type FeatureSectionLink,
 } from "@/lib/cars";
+import { blockToText, runsToText } from "@/lib/overview";
 import { isValidId } from "@/lib/slug";
 import type {
   Block,
   BookIndex,
   ChapterFile,
   HeadingBlock,
-  Run,
   SectionMeta,
   WarningBlock,
 } from "@/content/types";
@@ -366,29 +368,7 @@ function getPageMap(ctx: BookCtx): Map<number, string> {
   return map;
 }
 
-export function runsToText(runs: Run[]): string {
-  return runs
-    .map((r) =>
-      typeof r === "string" ? r : "page" in r ? `str. ${r.page}` : r.t,
-    )
-    .join("");
-}
-
-export function blockToText(block: Block): string {
-  switch (block.type) {
-    case "heading":
-    case "paragraph":
-      return runsToText(block.runs);
-    case "list":
-      return block.items.map(runsToText).join("\n");
-    case "warning":
-      return [block.title, ...block.blocks.map(blockToText)].join("\n");
-    case "table":
-      return block.rows.map((r) => r.join(" | ")).join("\n");
-    case "image":
-      return "";
-  }
-}
+export { blockToText, runsToText };
 
 export interface WarningEntry {
   car: string;
@@ -459,7 +439,12 @@ export function getSearchDocs(car: CarFile): SearchDoc[] {
 
 /** Every page and image URL of a car (used for "save for offline"). */
 export function getCarUrls(car: CarFile): string[] {
-  const urls = new Set<string>([carHref(car.id), equipmentHref(car.id)]);
+  const urls = new Set<string>([
+    carHref(car.id),
+    equipmentHref(car.id),
+    glossaryHref(car.id),
+    techDataHref(car.id),
+  ]);
   for (const ctx of bookCtxs(car)) {
     urls.add(bookHref(car.id, ctx.book.route));
     for (const s of getBook(ctx).sections) {

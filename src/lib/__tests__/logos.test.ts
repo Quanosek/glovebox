@@ -65,8 +65,20 @@ describe("pickLogo", () => {
     expect(pick(OPEL, 2017)).toBe("Opel-Logo 2017.svg");
   });
 
-  it("falls back to the current logo, never to an undated deprecated one", () => {
-    expect(pick(OPEL, 1980)).toBe("Opel logo 2023.svg");
+  it("uses the oldest known logo for older cars, never an undated deprecated one", () => {
+    expect(pick(OPEL, 1980)).toBe("Opel logo.svg");
+    expect(pick(OPEL, 2005)).toBe("Opel logo.svg");
+  });
+
+  it("uses the nearest period for a year between logos", () => {
+    const logos: BrandLogo[] = [
+      { file: "A.svg", rank: "normal", start: 1990, end: 1999 },
+      { file: "B.svg", rank: "normal", start: 2005, end: 2015 },
+    ];
+    expect(pick(logos, 2001)).toBe("A.svg");
+    expect(pick(logos, 2003)).toBe("B.svg");
+    expect(pick(logos, 2002)).toBe("B.svg");
+    expect(pick(logos, 2020)).toBe("B.svg");
   });
 
   it("prefers a covering dated logo over an undated one", () => {
@@ -76,6 +88,8 @@ describe("pickLogo", () => {
     ];
     expect(pick(logos, 2016)).toBe("Kia 2012.svg");
     expect(pick(logos, 2023)).toBe("Kia now.svg");
+    // Older than every dated logo: the dated one is closer than today's.
+    expect(pick(logos, 2005)).toBe("Kia 2012.svg");
   });
 
   it("prefers drawings over photos of the same period", () => {

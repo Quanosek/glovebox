@@ -5,8 +5,17 @@ import { usePathname } from "next/navigation";
 import type { FeatureState, VehicleProfile } from "@/config/vehicle";
 import type { CarSummary } from "@/lib/cars";
 import { isValidId } from "@/lib/slug";
-import { EMPTY_DATA, type AppData } from "./schema";
-import { getStore } from "./store";
+import { useLayoutHint } from "./hintContext";
+import { historyKey } from "./migrations";
+import {
+  EMPTY_DATA,
+  HISTORY_LIMIT,
+  fixedReminderId,
+  type AppData,
+  type HistoryEntry,
+  type Reminder,
+} from "./schema";
+import { getStore, newId } from "./store";
 
 const getServerSnapshot = () => EMPTY_DATA;
 
@@ -105,14 +114,15 @@ export function updateData(fn: (data: AppData) => AppData): void {
 
 /**
  * Car currently in use: the car of the open `/auto/<car>` page, otherwise
- * the one chosen on the profile page. Null before hydration.
+ * the one chosen on the profile page (from the layout hint before hydration).
  */
 export function useActiveCar(cars: CarSummary[]): CarSummary | null {
   const pathname = usePathname();
   const { settings } = useAppData();
   const hydrated = useHydrated();
+  const hint = useLayoutHint();
   const fromPath = /^\/auto\/([^/]+)/.exec(pathname)?.[1];
-  const id = fromPath ?? (hydrated ? settings.activeCar : null);
+  const id = fromPath ?? (hydrated ? settings.activeCar : hint.activeCar);
   return cars.find((c) => c.id === id) ?? null;
 }
 
@@ -122,4 +132,60 @@ export function setActiveCar(id: string | null): void {
       ? d
       : { ...d, settings: { ...d.settings, activeCar: id } },
   );
+}
+
+/** Puts a section at the top of the reading history (one entry per section). */
+export function recordReading(entry: Omit<HistoryEntry, "at">): void {
+  updateData((d) => {
+    const key = historyKey(entry);
+    return {
+      ...d,
+      history: [
+        { ...entry, at: new Date().toISOString() },
+        ...d.history.filter((h) => historyKey(h) !== key),
+      ].slice(0, HISTORY_LIMIT),
+    };
+  });
+}
+
+/** Removes a bookmark (it also leaves the favourites bar of its car). */
+export function withoutBookmark(d: AppData, bookmarkId: string): AppData {
+  return { ...d, bookmarks: d.bookmarks.filter((b) => b.id !== bookmarkId) };
+}
+
+export function saveReminder(
+  reminder: Omit<Reminder, "id" | "createdAt" | "updatedAt"> & {
+    id?: string;
+  },
+): void {
+  const now = new Date().toISOString();
+  updateData((d) => {
+    const existing = reminder.id
+      ? d.reminders.find((r) => r.id === reminder.id)
+      : undefined;
+    const id =
+      reminder.kind === "custom"
+        ? (existing?.id ?? newId())
+        : fixedReminderId(reminder.kind, reminder.car);
+    const fixed = d.reminders.find((r) => r.id === id);
+    const next: Reminder = {
+      ...reminder,
+      id,
+      createdAt: (existing ?? fixed)?.createdAt ?? now,
+      updatedAt: now,
+    };
+    return {
+      ...d,
+      reminders: d.reminders.some((r) => r.id === id)
+        ? d.reminders.map((r) => (r.id === id ? next : r))
+        : [...d.reminders, next],
+    };
+  });
+}
+
+export function deleteReminder(id: string): void {
+  updateData((d) => ({
+    ...d,
+    reminders: d.reminders.filter((r) => r.id !== id),
+  }));
 }

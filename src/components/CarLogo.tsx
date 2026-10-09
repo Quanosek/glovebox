@@ -12,11 +12,14 @@ export function CarLogo({
   carId,
   brand,
   size,
+  fill = false,
   className,
 }: {
   carId: string;
   brand: string;
   size: number;
+  /** Fill the parent box (object-contain), e.g. the padded car page frame. */
+  fill?: boolean;
   className?: string;
 }) {
   const [failed, setFailed] = useState<string | null>(null);
@@ -35,8 +38,12 @@ export function CarLogo({
       src={logoHref(carId)}
       alt={`Logo ${brand}`}
       height={size}
-      style={{ height: size, maxWidth: size * 3.5 }}
-      className={`w-auto object-contain ${className ?? ""}`}
+      style={
+        fill
+          ? { width: "100%", height: "100%" }
+          : { height: size, maxWidth: size * 3.5 }
+      }
+      className={`object-contain ${fill ? "" : "w-auto"} ${className ?? ""}`}
       onError={() => setFailed(carId)}
     />
   );

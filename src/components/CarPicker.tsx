@@ -12,6 +12,7 @@ import {
   useAppData,
   useHydrated,
 } from "@/lib/storage/hooks";
+import { useLayoutHint } from "@/lib/storage/hintContext";
 import { plural } from "@/lib/typography";
 
 /** Grid of cars from `database/` plus the "add your own car" tile. */
@@ -25,9 +26,12 @@ export function CarPicker({
   const router = useRouter();
   const { settings } = useAppData();
   const hydrated = useHydrated();
-  const active = hydrated ? settings.activeCar : null;
+  const hint = useLayoutHint();
+  const active = hydrated ? settings.activeCar : hint.activeCar;
   const online = useOnline();
   const { saved } = useOfflineState();
+  const hasCopy = (id: string) =>
+    hydrated ? Boolean(saved[id]) : hint.offline.includes(id);
   const readableCars = cars.filter(
     (car) =>
       car.books.some((book) => !book.placeholder) &&
@@ -73,13 +77,7 @@ export function CarPicker({
               <div className="panel-title flex items-center justify-between gap-2">
                 <span>{car.brand}</span>
                 <span className="flex gap-1">
-                  {!hydrated && (
-                    <>
-                      <span className="skeleton h-5 w-16" />
-                      <span className="skeleton h-5 w-14" />
-                    </>
-                  )}
-                  {hydrated && saved[car.id] && (
+                  {hasCopy(car.id) && (
                     <span
                       className="badge"
                       title="Instrukcje tego auta działają bez internetu"
@@ -91,7 +89,7 @@ export function CarPicker({
                 </span>
               </div>
               <div className="flex flex-1 flex-col p-4">
-                <h3 className="text-lg leading-tight font-semibold">
+                <h3 className="type-card">
                   {car.model}{" "}
                   <span className="font-normal text-steel">{car.year}</span>
                 </h3>

@@ -7,10 +7,12 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type DragEvent,
   type ReactNode,
 } from "react";
 import { EquipmentEditor } from "@/components/EquipmentEditor";
+import { CarHero } from "@/components/car/CarHero";
 import { Skeleton } from "@/components/Skeleton";
 import { suggestFromSpec } from "@/config/vehicle";
 import type {
@@ -577,39 +579,7 @@ export function AddCarWizard({
 
   return (
     <div className="mt-6">
-      <ol className="grid border border-line bg-white text-sm sm:grid-cols-2 lg:grid-cols-4">
-        {STEPS.map((s) => (
-          <li
-            key={s.n}
-            aria-current={step === s.n ? "step" : undefined}
-            className={`flex items-center gap-2 border-b-2 px-3 py-2 ${
-              step === s.n
-                ? "silver-bar border-b-red font-semibold"
-                : step > s.n
-                  ? "border-b-graphite text-graphite"
-                  : "border-b-transparent text-steel"
-            }`}
-          >
-            <span
-              className={`flex h-6 w-6 shrink-0 items-center justify-center border text-xs ${
-                step === s.n
-                  ? "border-red bg-red text-white"
-                  : step > s.n
-                    ? "border-graphite bg-graphite text-white"
-                    : "border-silver"
-              }`}
-            >
-              {step > s.n ? "✓" : s.n}
-            </span>
-            <span className="min-w-0">
-              <span className="block">{s.label}</span>
-              <span className="block text-xs font-normal text-steel">
-                {s.hint}
-              </span>
-            </span>
-          </li>
-        ))}
-      </ol>
+      <WizardSteps step={step} />
 
       {step === 1 && (
         <Availability
@@ -623,341 +593,416 @@ export function AddCarWizard({
       )}
 
       {step === 1 && (
-        <section className="mt-6">
+        <section className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_19rem]">
           <h2 className="sr-only">Auto i instrukcje</h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Field label="1. Marka" htmlFor="car-brand">
-              <select
-                id="car-brand"
-                className="field"
-                value={brandChoice}
-                onChange={(e) => void chooseBrand(e.target.value)}
-              >
-                <option value="">
-                  {brands.state === "loading"
-                    ? "Wczytywanie listy marek…"
-                    : "Wybierz markę"}
-                </option>
-                {BRAND_GROUPS.map((g) => {
-                  const list = brandList.filter(g.filter);
-                  return list.length === 0 ? null : (
-                    <optgroup key={g.label} label={g.label}>
-                      {list.map((b) => (
-                        <option key={b.id} value={b.id}>
-                          {b.name}
+          <div className="flex min-w-0 flex-col gap-6">
+            <div className="panel">
+              <PanelHeading
+                mark="A"
+                title="Twoje auto"
+                hint="Marka, model i rocznik"
+              />
+              <div className="p-4 sm:p-5">
+                <div className="grid gap-x-5 gap-y-4 sm:grid-cols-2">
+                  <Field label="Marka" htmlFor="car-brand">
+                    <select
+                      id="car-brand"
+                      className="field"
+                      value={brandChoice}
+                      onChange={(e) => void chooseBrand(e.target.value)}
+                    >
+                      <option value="">
+                        {brands.state === "loading"
+                          ? "Wczytywanie listy marek…"
+                          : "Wybierz markę"}
+                      </option>
+                      {BRAND_GROUPS.map((g) => {
+                        const list = brandList.filter(g.filter);
+                        return list.length === 0 ? null : (
+                          <optgroup key={g.label} label={g.label}>
+                            {list.map((b) => (
+                              <option key={b.id} value={b.id}>
+                                {b.name}
+                              </option>
+                            ))}
+                          </optgroup>
+                        );
+                      })}
+                      <option value={OTHER}>Inna (wpiszę ręcznie)</option>
+                    </select>
+                    {brandIsOther && (
+                      <input
+                        className="field mt-1"
+                        placeholder="Wpisz markę"
+                        maxLength={60}
+                        value={brandOther}
+                        onChange={(e) => setBrandOther(e.target.value)}
+                        aria-label="Marka wpisana ręcznie"
+                        autoFocus
+                      />
+                    )}
+                  </Field>
+                  <Field label="Model" htmlFor="car-model">
+                    {brandIsOther ? (
+                      <input
+                        id="car-model"
+                        className="field"
+                        placeholder={
+                          brand ? "Wpisz model" : "najpierw wpisz markę"
+                        }
+                        maxLength={60}
+                        value={modelOther}
+                        disabled={!brand}
+                        onChange={(e) => setModelOther(e.target.value)}
+                      />
+                    ) : (
+                      <select
+                        id="car-model"
+                        className="field"
+                        value={modelChoice}
+                        disabled={models?.state !== "done"}
+                        onChange={(e) => chooseModel(e.target.value)}
+                      >
+                        <option value="">
+                          {!brandChoice
+                            ? "najpierw wybierz markę"
+                            : models?.state === "loading"
+                              ? "Wczytywanie modeli…"
+                              : models?.state === "error"
+                                ? "Nie udało się wczytać"
+                                : "Wybierz model"}
+                        </option>
+                        {modelList.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </Field>
+                  <Field label="Rocznik" htmlFor="car-year">
+                    <select
+                      id="car-year"
+                      className="field"
+                      value={year}
+                      disabled={!model}
+                      onChange={(e) => void chooseYear(e.target.value)}
+                    >
+                      <option value="">
+                        {model ? "Wybierz rocznik" : "najpierw wybierz model"}
+                      </option>
+                      {years.map((y) => (
+                        <option key={y} value={y}>
+                          {y}
                         </option>
                       ))}
-                    </optgroup>
-                  );
-                })}
-                <option value={OTHER}>Inna (wpiszę ręcznie)</option>
-              </select>
-              {brandIsOther && (
-                <input
-                  className="field mt-1"
-                  placeholder="Wpisz markę"
-                  maxLength={60}
-                  value={brandOther}
-                  onChange={(e) => setBrandOther(e.target.value)}
-                  aria-label="Marka wpisana ręcznie"
-                  autoFocus
-                />
-              )}
-            </Field>
-            <Field label="2. Model" htmlFor="car-model">
-              {brandIsOther ? (
-                <input
-                  id="car-model"
-                  className="field"
-                  placeholder={brand ? "Wpisz model" : "najpierw wpisz markę"}
-                  maxLength={60}
-                  value={modelOther}
-                  disabled={!brand}
-                  onChange={(e) => setModelOther(e.target.value)}
-                />
-              ) : (
-                <select
-                  id="car-model"
-                  className="field"
-                  value={modelChoice}
-                  disabled={models?.state !== "done"}
-                  onChange={(e) => chooseModel(e.target.value)}
-                >
-                  <option value="">
-                    {!brandChoice
-                      ? "najpierw wybierz markę"
-                      : models?.state === "loading"
-                        ? "Wczytywanie modeli…"
-                        : models?.state === "error"
-                          ? "Nie udało się wczytać"
-                          : "Wybierz model"}
-                  </option>
-                  {modelList.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </Field>
-            <Field label="3. Rocznik" htmlFor="car-year">
-              <select
-                id="car-year"
-                className="field"
-                value={year}
-                disabled={!model}
-                onChange={(e) => void chooseYear(e.target.value)}
-              >
-                <option value="">
-                  {model ? "Wybierz rocznik" : "najpierw wybierz model"}
-                </option>
-                {years.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            {brandIsOther ? (
-              <Field label="4. Wersja (opcjonalnie)" htmlFor="car-variant">
-                <input
-                  id="car-variant"
-                  className="field"
-                  maxLength={120}
-                  placeholder="np. 1.6 Turbo 170 KM, automat"
-                  value={variant}
-                  onChange={(e) => setVariant(e.target.value)}
-                />
-              </Field>
-            ) : (
-              <Field label="4. Silnik (opcjonalnie)" htmlFor="car-engine">
-                <select
-                  id="car-engine"
-                  className="field"
-                  value={engineChoice}
-                  disabled={engines?.state !== "done"}
-                  onChange={(e) => setEngineChoice(e.target.value)}
-                >
-                  <option value="">
-                    {!year
-                      ? "najpierw wybierz rocznik"
-                      : engines?.state === "loading"
-                        ? "Wczytywanie silników…"
-                        : engines?.state === "error"
-                          ? "Nie udało się wczytać"
-                          : engineList.length === 0
-                            ? "Brak danych – pomiń"
-                            : "Nie wiem / pomiń"}
-                  </option>
-                  {engineList.map((e) => (
-                    <option key={e.id} value={e.id}>
-                      {e.label}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            )}
-          </div>
-          {brands.state === "error" && !brandIsOther && (
-            <div
-              role="status"
-              className="mt-2 flex flex-col gap-2 border-l-4 border-red bg-paper px-3 py-2 text-sm sm:flex-row sm:items-center"
-            >
-              <p className="flex-1">{brands.error}</p>
-              <button
-                type="button"
-                className="btn shrink-0"
-                onClick={() => void loadBrands()}
-              >
-                Spróbuj ponownie
-              </button>
+                    </select>
+                  </Field>
+                  {brandIsOther ? (
+                    <Field label="Wersja (opcjonalnie)" htmlFor="car-variant">
+                      <input
+                        id="car-variant"
+                        className="field"
+                        maxLength={120}
+                        placeholder="np. 1.6 Turbo 170 KM, automat"
+                        value={variant}
+                        onChange={(e) => setVariant(e.target.value)}
+                      />
+                    </Field>
+                  ) : (
+                    <Field label="Silnik (opcjonalnie)" htmlFor="car-engine">
+                      <select
+                        id="car-engine"
+                        className="field"
+                        value={engineChoice}
+                        disabled={engines?.state !== "done"}
+                        onChange={(e) => setEngineChoice(e.target.value)}
+                      >
+                        <option value="">
+                          {!year
+                            ? "najpierw wybierz rocznik"
+                            : engines?.state === "loading"
+                              ? "Wczytywanie silników…"
+                              : engines?.state === "error"
+                                ? "Nie udało się wczytać"
+                                : engineList.length === 0
+                                  ? "Brak danych – pomiń"
+                                  : "Nie wiem / pomiń"}
+                        </option>
+                        {engineList.map((e) => (
+                          <option key={e.id} value={e.id}>
+                            {e.label}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  )}
+                </div>
+                {brands.state === "error" && !brandIsOther && (
+                  <div
+                    role="status"
+                    className="mt-2 flex flex-col gap-2 border-l-4 border-red bg-paper px-3 py-2 text-sm sm:flex-row sm:items-center"
+                  >
+                    <p className="flex-1">{brands.error}</p>
+                    <button
+                      type="button"
+                      className="btn shrink-0"
+                      onClick={() => void loadBrands()}
+                    >
+                      Spróbuj ponownie
+                    </button>
+                  </div>
+                )}
+                {models?.state === "error" && (
+                  <p className="mt-2 border-l-4 border-red bg-paper px-3 py-2 text-sm">
+                    {models.error}
+                  </p>
+                )}
+                <p className="mt-4 text-xs text-steel">
+                  {brandIsOther
+                    ? "Wpisz markę i model oraz wybierz rocznik – wszystkie trzy są wymagane."
+                    : "Marki, modele i roczniki pochodzą z oficjalnych rejestrów aut sprzedanych w Unii Europejskiej i w USA. Jeśli Twojego auta nie ma na liście, wybierz markę „Inna”."}
+                </p>
+                {duplicate && (
+                  <p className="mt-2 border-l-4 border-red bg-paper px-3 py-2 text-sm">
+                    Auto „{duplicate.label}” jest już na liście. Nowe instrukcje
+                    zostaną dodane jako osobne auto.
+                  </p>
+                )}
+              </div>
             </div>
-          )}
-          {models?.state === "error" && (
-            <p className="mt-2 border-l-4 border-red bg-paper px-3 py-2 text-sm">
-              {models.error}
-            </p>
-          )}
-          <p className="mt-2 text-xs text-steel">
-            {brandIsOther
-              ? "Wpisz markę i model oraz wybierz rocznik – wszystkie trzy są wymagane."
-              : "Marki, modele i roczniki pochodzą z oficjalnych rejestrów aut sprzedanych w Unii Europejskiej i w USA. Jeśli Twojego auta nie ma na liście, wybierz markę „Inna”."}
-          </p>
-          {duplicate && (
-            <p className="mt-2 border-l-4 border-red bg-paper px-3 py-2 text-sm">
-              Auto „{duplicate.label}” jest już na liście. Nowe instrukcje
-              zostaną dodane jako osobne auto.
-            </p>
-          )}
 
-          <div
-            className={`mt-5 border-2 border-dashed p-3 sm:p-4 ${
-              dragging ? "border-red bg-paper" : "border-silver bg-white"
-            }`}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragging(true);
-            }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={onDrop}
-          >
-            <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-              <p>
-                <strong>Instrukcje w PDF</strong>{" "}
-                <span className="text-steel">
-                  ({docs.length} z {maxDocs}) – przeciągnij pliki tutaj albo
-                </span>
-              </p>
-              <label
-                className={`btn cursor-pointer ${
-                  docs.length >= maxDocs ? "pointer-events-none opacity-50" : ""
+            <div className="panel">
+              <PanelHeading
+                mark="B"
+                title="Instrukcje"
+                hint={`${docs.length} z ${maxDocs} plików`}
+              />
+              <div className="p-4 sm:p-5">
+                <div
+                  className={`wizard-drop p-3 sm:p-4 ${dragging ? "wizard-drop-active" : ""} ${
+                    docs.length === 0 ? "py-10 sm:py-12" : ""
+                  }`}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragging(true);
+                  }}
+                  onDragLeave={() => setDragging(false)}
+                  onDrop={onDrop}
+                >
+                  <div
+                    className={`flex flex-wrap items-center gap-3 text-sm ${
+                      docs.length === 0
+                        ? "flex-col justify-center text-center"
+                        : "justify-between"
+                    }`}
+                  >
+                    {docs.length === 0 && <DropIcon />}
+                    <p className="text-graphite">
+                      {docs.length === 0 ? (
+                        <>
+                          <strong className="block text-base text-ink">
+                            Przeciągnij tutaj instrukcje w PDF
+                          </strong>
+                          np. instrukcja obsługi, instrukcja radia i nawigacji,
+                          książka serwisowa – do {maxDocs} plików
+                        </>
+                      ) : (
+                        "Przeciągnij kolejne pliki tutaj albo"
+                      )}
+                    </p>
+                    <label
+                      className={`btn cursor-pointer ${
+                        docs.length >= maxDocs
+                          ? "pointer-events-none opacity-50"
+                          : ""
+                      }`}
+                    >
+                      Wybierz pliki
+                      <input
+                        type="file"
+                        accept="application/pdf,.pdf"
+                        multiple
+                        className="sr-only"
+                        disabled={docs.length >= maxDocs}
+                        onChange={(e) => {
+                          if (e.target.files) addFiles(e.target.files);
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                  </div>
+                  {notice.length > 0 && (
+                    <ul className="mt-2 text-xs text-red">
+                      {notice.map((n, i) => (
+                        <li key={i}>{n}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {docs.length > 0 && (
+                    <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+                      {docs.map((d, i) => (
+                        <li
+                          key={d.key}
+                          className="flex flex-col border border-line bg-white"
+                        >
+                          <div className="relative flex aspect-3/4 items-center justify-center overflow-hidden border-b border-line bg-paper">
+                            {d.preview ? (
+                              // eslint-disable-next-line @next/next/no-img-element -- local object URL
+                              <img
+                                src={d.preview}
+                                alt={`Pierwsza strona: ${d.title}`}
+                                className="h-full w-full object-contain"
+                              />
+                            ) : d.previewState === "loading" ? (
+                              <Skeleton className="h-3/4 w-3/4" />
+                            ) : (
+                              <span className="px-2 text-center text-xs text-steel">
+                                Brak podglądu
+                              </span>
+                            )}
+                            <span className="absolute top-0 left-0 bg-ink px-1.5 py-0.5 text-xs text-white">
+                              {i + 1}
+                            </span>
+                          </div>
+                          <div className="flex flex-1 flex-col gap-1 p-2">
+                            <input
+                              className="field h-8 px-2 text-sm"
+                              value={d.title}
+                              maxLength={120}
+                              aria-label={`Nazwa instrukcji ${i + 1}`}
+                              onChange={(e) =>
+                                setDocs((prev) =>
+                                  prev.map((x) =>
+                                    x.key === d.key
+                                      ? { ...x, title: e.target.value }
+                                      : x,
+                                  ),
+                                )
+                              }
+                            />
+                            <p
+                              className="truncate text-xs text-steel"
+                              title={d.file.name}
+                            >
+                              {d.file.name}
+                            </p>
+                            <p className="text-xs text-graphite">
+                              {d.pages != null ? `${d.pages} str. · ` : ""}
+                              {formatSize(d.file.size)}
+                            </p>
+                            <div className="mt-auto flex gap-1 pt-1">
+                              <button
+                                type="button"
+                                className="btn btn-ghost h-7 px-2 py-0"
+                                disabled={i === 0}
+                                onClick={() => moveDoc(d.key, -1)}
+                                aria-label="Przesuń wcześniej"
+                              >
+                                ←
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-ghost h-7 px-2 py-0"
+                                disabled={i === docs.length - 1}
+                                onClick={() => moveDoc(d.key, 1)}
+                                aria-label="Przesuń dalej"
+                              >
+                                →
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-ghost ml-auto h-7 px-2 py-0 text-red"
+                                onClick={() => removeDoc(d.key)}
+                              >
+                                Usuń
+                              </button>
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <p className="mt-4 text-xs leading-relaxed text-steel">
+                  Każdy plik stanie się osobną instrukcją o nazwie wpisanej na
+                  karcie. Pliki PDF są potrzebne tylko na czas odczytywania –
+                  potem aplikacja je{" "}
+                  <strong className="text-graphite">usuwa</strong>, a instrukcje
+                  zostają już na stałe.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <aside className="panel lg:sticky lg:top-[calc(var(--header-h)+1rem)]">
+            <h3 className="panel-title">Podsumowanie</h3>
+            <div className="p-4 sm:p-5">
+              <p className="section-label mb-0">{brand || "Marka"}</p>
+              <p
+                className={`type-card mt-0.5 ${
+                  model ? "text-ink" : "text-silver"
                 }`}
               >
-                Wybierz pliki
-                <input
-                  type="file"
-                  accept="application/pdf,.pdf"
-                  multiple
-                  className="sr-only"
-                  disabled={docs.length >= maxDocs}
-                  onChange={(e) => {
-                    if (e.target.files) addFiles(e.target.files);
-                    e.target.value = "";
-                  }}
-                />
-              </label>
-            </div>
-            {notice.length > 0 && (
-              <ul className="mt-2 text-xs text-red">
-                {notice.map((n, i) => (
-                  <li key={i}>{n}</li>
-                ))}
-              </ul>
-            )}
-            {docs.length === 0 ? (
-              <p className="py-12 text-center text-sm text-steel">
-                Upuść tutaj do {maxDocs} plików PDF (np. instrukcja obsługi,
-                instrukcja radia i nawigacji, książka serwisowa).
+                {model || "Model"}
               </p>
-            ) : (
-              <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                {docs.map((d, i) => (
-                  <li
-                    key={d.key}
-                    className="flex flex-col border border-line bg-white"
-                  >
-                    <div className="relative flex aspect-3/4 items-center justify-center overflow-hidden border-b border-line bg-paper">
-                      {d.preview ? (
-                        // eslint-disable-next-line @next/next/no-img-element -- local object URL
-                        <img
-                          src={d.preview}
-                          alt={`Pierwsza strona: ${d.title}`}
-                          className="h-full w-full object-contain"
-                        />
-                      ) : d.previewState === "loading" ? (
-                        <Skeleton className="h-3/4 w-3/4" />
-                      ) : (
-                        <span className="px-2 text-center text-xs text-steel">
-                          Brak podglądu
-                        </span>
-                      )}
-                      <span className="absolute top-0 left-0 bg-ink px-1.5 py-0.5 text-xs text-white">
-                        {i + 1}
-                      </span>
-                    </div>
-                    <div className="flex flex-1 flex-col gap-1 p-2">
-                      <input
-                        className="field h-8 px-2 text-sm"
-                        value={d.title}
-                        maxLength={120}
-                        aria-label={`Nazwa instrukcji ${i + 1}`}
-                        onChange={(e) =>
-                          setDocs((prev) =>
-                            prev.map((x) =>
-                              x.key === d.key
-                                ? { ...x, title: e.target.value }
-                                : x,
-                            ),
-                          )
-                        }
+              <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 border-t border-line pt-3 text-sm">
+                <dt className="text-steel">Rocznik</dt>
+                <dd className="text-right font-semibold">{year || "–"}</dd>
+                <dt className="text-steel">
+                  {brandIsOther ? "Wersja" : "Silnik"}
+                </dt>
+                <dd className="text-right">
+                  {(brandIsOther ? variant.trim() : engine?.label) || "–"}
+                </dd>
+                <dt className="text-steel">Instrukcje</dt>
+                <dd className="text-right font-semibold">
+                  {docs.length}
+                  {docs.some((d) => d.pages != null) && (
+                    <span className="font-normal text-graphite">
+                      {" "}
+                      · {docs.reduce((n, d) => n + (d.pages ?? 0), 0)} str.
+                    </span>
+                  )}
+                </dd>
+              </dl>
+              {formErrors.length > 0 ? (
+                <ul className="mt-4 flex flex-col gap-1.5 border-t border-line pt-3 text-xs text-graphite">
+                  {formErrors.map((e) => (
+                    <li key={e} className="flex gap-2">
+                      <span
+                        aria-hidden="true"
+                        className="mt-1 h-1.5 w-1.5 shrink-0 bg-red"
                       />
-                      <p
-                        className="truncate text-xs text-steel"
-                        title={d.file.name}
-                      >
-                        {d.file.name}
-                      </p>
-                      <p className="text-xs text-graphite">
-                        {d.pages != null ? `${d.pages} str. · ` : ""}
-                        {formatSize(d.file.size)}
-                      </p>
-                      <div className="mt-auto flex gap-1 pt-1">
-                        <button
-                          type="button"
-                          className="btn btn-ghost h-7 px-2 py-0"
-                          disabled={i === 0}
-                          onClick={() => moveDoc(d.key, -1)}
-                          aria-label="Przesuń wcześniej"
-                        >
-                          ←
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-ghost h-7 px-2 py-0"
-                          disabled={i === docs.length - 1}
-                          onClick={() => moveDoc(d.key, 1)}
-                          aria-label="Przesuń dalej"
-                        >
-                          →
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-ghost ml-auto h-7 px-2 py-0 text-red"
-                          onClick={() => removeDoc(d.key)}
-                        >
-                          Usuń
-                        </button>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          <p className="mt-4 border border-line bg-paper px-4 py-3 text-sm text-graphite">
-            Każdy plik stanie się osobną instrukcją o nazwie wpisanej na karcie.
-            Pliki PDF są potrzebne tylko na czas odczytywania – potem aplikacja
-            je <strong className="text-ink">usuwa</strong>, a instrukcje zostają
-            już na stałe.
-          </p>
-
-          {formErrors.length > 0 && (
-            <ul className="mt-3 text-xs text-steel">
-              {formErrors.map((e) => (
-                <li key={e}>• {e}</li>
-              ))}
-            </ul>
-          )}
-          <div className="mt-4 flex flex-wrap justify-end gap-2">
-            <button
-              type="button"
-              className="btn btn-primary"
-              disabled={formErrors.length > 0 || !ready}
-              onClick={submit}
-            >
-              Dodaj auto
-              {docs.length > 0
-                ? ` i ${docs.length} ${plural(docs.length, "instrukcję", "instrukcje", "instrukcji")}`
-                : ""}{" "}
-              →
-            </button>
-          </div>
-          {!ready && formErrors.length === 0 && (
-            <p className="mt-2 text-right text-xs text-red">
-              Dodawanie jest teraz niedostępne – zobacz komunikat na górze.
-            </p>
-          )}
+                      {e}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-4 border-t border-line pt-3 text-xs text-graphite">
+                  Wszystko gotowe – możesz dodać auto.
+                </p>
+              )}
+              <button
+                type="button"
+                className="btn btn-primary mt-5 w-full justify-center py-2.5 text-base"
+                disabled={formErrors.length > 0 || !ready}
+                onClick={submit}
+              >
+                Dodaj auto
+                {docs.length > 0
+                  ? ` i ${docs.length} ${plural(docs.length, "instrukcję", "instrukcje", "instrukcji")}`
+                  : ""}{" "}
+                →
+              </button>
+              {!ready && formErrors.length === 0 && (
+                <p className="mt-2 text-xs text-red">
+                  Dodawanie jest teraz niedostępne – zobacz komunikat na górze.
+                </p>
+              )}
+            </div>
+          </aside>
         </section>
       )}
 
@@ -965,6 +1010,7 @@ export function AddCarWizard({
         <StepProcessing
           upload={upload}
           job={job}
+          picked={docs.map((d) => ({ title: d.title, preview: d.preview }))}
           error={submitError}
           onBack={() => {
             setSubmitError(null);
@@ -1000,6 +1046,85 @@ export function AddCarWizard({
 }
 
 /* ------------------------------------------------------------ sub-views */
+
+/**
+ * Step strip in the spirit of the Navi 950 soft keys: square keys on one
+ * line, a red track growing with the progress and labels under each key.
+ * Phones show the keys only, plus one line naming the current step.
+ */
+function WizardSteps({ step }: { step: Step }) {
+  const current = STEPS[step - 1];
+  return (
+    <nav aria-label="Etapy dodawania auta" className="wizard-steps">
+      <p className="mb-3 text-sm text-graphite sm:hidden">
+        Etap {step} z {STEPS.length}:{" "}
+        <strong className="text-ink">{current.label}</strong>
+      </p>
+      <ol
+        className="wizard-track"
+        style={
+          {
+            "--wizard-progress": (step - 1) / (STEPS.length - 1),
+          } as CSSProperties
+        }
+      >
+        {STEPS.map((s) => (
+          <li
+            key={s.n}
+            aria-current={step === s.n ? "step" : undefined}
+            data-state={step === s.n ? "current" : step > s.n ? "done" : "todo"}
+            className="wizard-stop"
+          >
+            <span className="wizard-key" aria-hidden="true">
+              {step > s.n ? "✓" : s.n}
+            </span>
+            <span className="sr-only sm:not-sr-only sm:mt-2 sm:block sm:text-sm">
+              <span className="wizard-label block">{s.label}</span>
+              <span className="block text-xs text-steel">{s.hint}</span>
+            </span>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  );
+}
+
+function PanelHeading({
+  mark,
+  title,
+  hint,
+}: {
+  mark: string;
+  title: string;
+  hint?: string;
+}) {
+  return (
+    <div className="silver-bar flex items-center gap-3 px-4 py-2.5 sm:px-5">
+      <span className="wizard-mark" aria-hidden="true">
+        {mark}
+      </span>
+      <h3 className="type-item">{title}</h3>
+      {hint && <span className="ml-auto text-xs text-steel">{hint}</span>}
+    </div>
+  );
+}
+
+function DropIcon() {
+  return (
+    <svg
+      viewBox="0 0 48 48"
+      aria-hidden="true"
+      className="h-12 w-12 text-silver"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    >
+      <path d="M12 6h17l9 9v27H12z" />
+      <path d="M29 6v9h9" />
+      <path d="M25 22v13m-5-5 5 5 5-5" className="text-red" />
+    </svg>
+  );
+}
 
 function Field({
   label,
@@ -1132,11 +1257,14 @@ const DOC_STATE: Record<JobDoc["state"], string> = {
 function StepProcessing({
   upload,
   job,
+  picked,
   error,
   onBack,
 }: {
   upload: number | null;
   job: Job | null;
+  /** Files chosen in step 1, in upload order (empty after reopening). */
+  picked: { title: string; preview: string | null }[];
   error: string | null;
   onBack: () => void;
 }) {
@@ -1186,65 +1314,120 @@ function StepProcessing({
           )}
         </div>
       </div>
-      {job && job.docs.length > 0 && (
-        <ul className="grid gap-3 sm:grid-cols-2">
-          {job.docs.map((d) => (
-            <li key={d.bookId} className="border border-line bg-white">
-              <div
-                className={`flex items-center justify-between gap-2 border-b px-3 py-2 ${
-                  d.state === "error"
-                    ? "border-b-red"
-                    : d.state === "running"
-                      ? "silver-bar border-b-line"
-                      : "border-b-line"
-                }`}
+      {(job?.docs.length || picked.length) > 0 && (
+        <ol className="film-strip" aria-label="Instrukcje">
+          {(job?.docs.length
+            ? job.docs.map((d, i) => ({ doc: d, preview: picked[i]?.preview }))
+            : picked.map((p) => ({
+                doc: null,
+                preview: p.preview,
+                title: p.title,
+              }))
+          ).map((item, i) => {
+            const d = item.doc;
+            const state = d?.state ?? "queued";
+            const title = d?.title ?? ("title" in item ? item.title : "");
+            return (
+              <li
+                key={d?.bookId ?? i}
+                className="film-frame"
+                data-state={state}
               >
-                <span className="truncate font-semibold" title={d.title}>
-                  {d.title}
-                </span>
-                <span
-                  className={`badge ${
-                    d.state === "error"
-                      ? "badge-red"
-                      : d.state === "done"
-                        ? "badge-dark"
-                        : ""
-                  }`}
-                >
-                  {DOC_STATE[d.state]}
-                </span>
-              </div>
-              <div className="px-3 py-2 text-xs text-graphite">
-                <p>
-                  {d.name} · {formatSize(d.size)}
-                  {d.pages != null ? ` · ${d.pages} str.` : ""}
-                </p>
-                {d.state === "done" && (
-                  <p className="mt-1">
-                    Rozdziały i podrozdziały:{" "}
-                    <strong>{d.sections ?? "?"}</strong> · ilustracje:{" "}
-                    <strong>{d.images ?? "?"}</strong>
-                  </p>
-                )}
-                {d.error && (
-                  <p className="mt-1 text-red">
-                    Nie udało się odczytać tego pliku.
-                  </p>
-                )}
-                {d.state === "error" && (d.error || d.log.length > 0) && (
-                  <details className="mt-1">
-                    <summary className="text-steel">
-                      Szczegóły (dla osoby technicznej)
-                    </summary>
-                    <pre className="mt-1 max-h-24 overflow-auto bg-paper px-2 py-1 text-[11px] whitespace-pre-wrap">
-                      {[d.error, ...d.log.slice(-4)].filter(Boolean).join("\n")}
-                    </pre>
-                  </details>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
+                <div className="relative flex aspect-3/4 items-center justify-center overflow-hidden border-b border-line bg-paper">
+                  {item.preview ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- local object URL
+                    <img
+                      src={item.preview}
+                      alt=""
+                      className="h-full w-full object-contain"
+                    />
+                  ) : (
+                    <span className="px-2 text-center text-xs text-steel">
+                      {title}
+                    </span>
+                  )}
+                  <span className="absolute top-0 left-0 bg-ink px-1.5 py-0.5 text-xs text-white">
+                    {i + 1}
+                  </span>
+                  <span
+                    className="film-progress"
+                    role="progressbar"
+                    aria-label={`${title}: ${DOC_STATE[state]}`}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={
+                      state === "done" || state === "error"
+                        ? 100
+                        : state === "queued"
+                          ? 0
+                          : undefined
+                    }
+                  >
+                    <span />
+                  </span>
+                </div>
+                <div className="flex flex-1 flex-col gap-1 p-2 text-xs text-graphite">
+                  <span
+                    className="truncate text-sm font-semibold text-ink"
+                    title={title}
+                  >
+                    {title}
+                  </span>
+                  <span
+                    className={
+                      state === "error"
+                        ? "font-semibold text-red"
+                        : state === "running"
+                          ? "font-semibold text-ink"
+                          : ""
+                    }
+                  >
+                    {DOC_STATE[state]}
+                  </span>
+                  {d?.pages != null && (
+                    <span>
+                      {d.pages} {plural(d.pages, "strona", "strony", "stron")}
+                    </span>
+                  )}
+                  {d?.state === "done" && d.sections != null && (
+                    <span>
+                      {d.sections}{" "}
+                      {plural(
+                        d.sections,
+                        "rozdział",
+                        "rozdziały",
+                        "rozdziałów",
+                      )}
+                    </span>
+                  )}
+                  {d?.state === "done" && d.images != null && (
+                    <span>
+                      {d.images}{" "}
+                      {plural(
+                        d.images,
+                        "ilustracja",
+                        "ilustracje",
+                        "ilustracji",
+                      )}
+                    </span>
+                  )}
+                  {d?.state === "error" && (d.error || d.log.length > 0) && (
+                    <details className="mt-1">
+                      <summary className="text-steel">
+                        Szczegóły (dla osoby technicznej)
+                      </summary>
+                      <pre className="mt-1 max-h-24 overflow-auto bg-paper px-2 py-1 text-[11px] whitespace-pre-wrap">
+                        {[d.error, ...d.log.slice(-4)]
+                          .filter(Boolean)
+                          .join("\n")}
+                      </pre>
+                    </details>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ol>
       )}
     </section>
   );
@@ -1362,42 +1545,82 @@ function StepDone({
   onOpen: () => void;
   onAgain: () => void;
 }) {
+  const [car, setCar] = useState<CarSummary | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/cars/${encodeURIComponent(job.carId)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body: { car?: CarSummary } | null) => {
+        if (alive && body?.car) setCar(body.car);
+      })
+      .catch(() => {
+        // The card falls back to the job label.
+      });
+    return () => {
+      alive = false;
+    };
+  }, [job.carId]);
+
+  const sum = (key: "pages" | "sections" | "images") =>
+    job.docs.reduce((n, d) => n + (d[key] ?? 0), 0);
+  const numbers = [
+    {
+      n: job.docs.length,
+      label: plural(job.docs.length, "instrukcja", "instrukcje", "instrukcji"),
+    },
+    {
+      n: sum("pages"),
+      label: plural(sum("pages"), "strona", "strony", "stron"),
+    },
+    {
+      n: sum("sections"),
+      label: plural(sum("sections"), "rozdział", "rozdziały", "rozdziałów"),
+    },
+    {
+      n: sum("images"),
+      label: plural(sum("images"), "ilustracja", "ilustracje", "ilustracji"),
+    },
+  ].filter((x) => x.n > 0);
+
   return (
     <section className="mt-6 grid gap-6 lg:grid-cols-[3fr_2fr]">
-      <div className="panel">
-        <h2 className="panel-title">Dodano: {job.label}</h2>
-        <div className="p-4 text-sm">
-          <ul className="border-t border-line">
-            {job.docs.map((d) => (
-              <li
-                key={d.bookId}
-                className="flex flex-wrap justify-between gap-2 border-b border-line py-2"
-              >
-                <span className="font-semibold">{d.title}</span>
-                <span className="text-graphite">
-                  {d.pages ?? "?"}{" "}
-                  {d.pages == null
-                    ? "str."
-                    : plural(d.pages, "strona", "strony", "stron")}{" "}
-                  · {d.sections ?? "?"}{" "}
-                  {d.sections == null
-                    ? "rozdziałów"
-                    : plural(
-                        d.sections,
-                        "rozdział",
-                        "rozdziały",
-                        "rozdziałów",
-                      )}{" "}
-                  · {d.images ?? "?"}{" "}
-                  {d.images == null
-                    ? "ilustracji"
-                    : plural(
-                        d.images,
-                        "ilustracja",
-                        "ilustracje",
-                        "ilustracji",
-                      )}
+      <div className="min-w-0 space-y-px">
+        {car ? (
+          <CarHero
+            carId={car.id}
+            brand={car.brand}
+            model={car.model}
+            year={car.year}
+            variant={car.variant}
+            spec={car.spec}
+            badge="Dodano"
+            heading="h2"
+          />
+        ) : (
+          <div className="car-hero p-5 sm:p-7">
+            <span className="badge badge-red mb-2">Dodano</span>
+            <h2 className="type-display">{job.label}</h2>
+          </div>
+        )}
+        {numbers.length > 0 && (
+          <ul className="stat-strip" aria-label="Odczytane instrukcje">
+            {numbers.map((x) => (
+              <li key={x.label} className="stat-cell">
+                <span className="type-value block">
+                  {x.n.toLocaleString("pl-PL")}
                 </span>
+                <span className="mt-1.5 block text-xs text-graphite">
+                  {x.label}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="border border-line bg-white p-4 text-sm">
+          <ul className="flex flex-wrap gap-2">
+            {job.docs.map((d) => (
+              <li key={d.bookId} className="car-hero-spec font-normal">
+                {d.title}
               </li>
             ))}
           </ul>

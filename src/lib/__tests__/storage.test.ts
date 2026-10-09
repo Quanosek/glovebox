@@ -210,6 +210,137 @@ describe("migrate", () => {
   });
 });
 
+describe("schema v5", () => {
+  const car = "skoda-octavia-2019";
+  const entry = (sectionId: string, at: string) => ({
+    car,
+    book: "manual",
+    sectionId,
+    title: sectionId,
+    href: `/auto/${car}/manual/${sectionId}`,
+    thumb: null,
+    at,
+  });
+
+  it("seeds the reading history from the last read section", () => {
+    const lastRead = { ...entry("a", "2026-01-02T00:00:00.000Z"), scrollY: 5 };
+    const data = migrate({ version: 4, lastRead, settings: {} });
+    expect(data.version).toBe(SCHEMA_VERSION);
+    expect(data.history).toEqual([
+      { ...entry("a", "2026-01-02T00:00:00.000Z") },
+    ]);
+    expect(data.reminders).toEqual([]);
+  });
+
+  it("sanitizes history and reminders, dropping retired favourites", () => {
+    const bookmark = {
+      id: `${car}:manual:a`,
+      car,
+      book: "manual",
+      sectionId: "a",
+      title: "A",
+      href: `/auto/${car}/manual/a`,
+      createdAt: "2026-01-01T00:00:00.000Z",
+    };
+    const data = migrate({
+      version: SCHEMA_VERSION,
+      bookmarks: [bookmark],
+      history: [
+        entry("a", "2026-01-01T00:00:00.000Z"),
+        entry("a", "2026-01-03T00:00:00.000Z"),
+        { ...entry("b", "2026-01-02T00:00:00.000Z"), href: "https://x.pl" },
+        { ...entry("c", "2026-01-02T00:00:00.000Z"), thumb: "javascript:x" },
+      ],
+      reminders: [
+        {
+          id: "r1",
+          car,
+          title: "Przegląd",
+          dueDate: "2026-05-01",
+          dueKm: 120000,
+          done: false,
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-01-01T00:00:00.000Z",
+        },
+        { id: "r2", car, title: "" },
+        { id: "r3", car, title: "Zła data", dueDate: "01.05.2026" },
+      ],
+      settings: {
+        favorites: {
+          [car]: [bookmark.id, `${car}:manual:missing`],
+          "../x": [bookmark.id],
+        },
+      },
+    });
+    expect(data.history.map((h) => [h.sectionId, h.at, h.thumb])).toEqual([
+      ["a", "2026-01-03T00:00:00.000Z", null],
+      ["c", "2026-01-02T00:00:00.000Z", null],
+    ]);
+    expect(data.reminders.map((r) => r.id)).toEqual(["r1", "r3"]);
+    expect(data.reminders.map((r) => r.kind)).toEqual(["custom", "custom"]);
+    expect(data.reminders[1].dueDate).toBeNull();
+    expect(data.bookmarks.map((b) => b.id)).toEqual([bookmark.id]);
+    expect("favorites" in data.settings).toBe(false);
+  });
+
+  it("keeps one inspection and one OC reminder per car", () => {
+    const data = migrate({
+      version: SCHEMA_VERSION,
+      reminders: [
+        { id: "a", car, kind: "inspection", title: "Badanie techniczne" },
+        { id: "b", car, kind: "inspection", title: "Badanie techniczne" },
+        { id: "c", car, kind: "insurance", title: "Ubezpieczenie OC" },
+        { id: "d", car, kind: "weird", title: "Własne" },
+      ],
+    });
+    expect(data.reminders.map((r) => [r.id, r.kind])).toEqual([
+      [`inspection:${car}`, "inspection"],
+      [`insurance:${car}`, "insurance"],
+      ["d", "custom"],
+    ]);
+  });
+
+  it("drops impossible calendar dates from reminders", () => {
+    const data = migrate({
+      version: SCHEMA_VERSION,
+      reminders: [
+        { id: "valid", car, title: "Valid", dueDate: "2024-02-29" },
+        { id: "invalid", car, title: "Invalid", dueDate: "2026-02-31" },
+      ],
+    });
+    expect(data.reminders.map((r) => r.dueDate)).toEqual(["2024-02-29", null]);
+  });
+
+  it("merges history and reminders, newest wins", () => {
+    const current = createEmptyData();
+    current.history = [entry("a", "2026-01-01T00:00:00.000Z")];
+    const incoming = createEmptyData();
+    incoming.history = [
+      entry("a", "2026-01-05T00:00:00.000Z"),
+      entry("b", "2026-01-02T00:00:00.000Z"),
+    ];
+    incoming.reminders = [
+      {
+        id: "r1",
+        car,
+        kind: "custom",
+        title: "Olej",
+        dueDate: null,
+        dueKm: 30000,
+        done: true,
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-02T00:00:00.000Z",
+      },
+    ];
+    const merged = mergeData(current, incoming);
+    expect(merged.history.map((h) => [h.sectionId, h.at])).toEqual([
+      ["a", "2026-01-05T00:00:00.000Z"],
+      ["b", "2026-01-02T00:00:00.000Z"],
+    ]);
+    expect(merged.reminders).toHaveLength(1);
+  });
+});
+
 describe("parseImport / mergeData", () => {
   it("accepts export files and rejects foreign files", () => {
     const data = createEmptyData();

@@ -87,11 +87,14 @@ scripts/                        generic PDF extraction (Python), tests, icon gen
 public/sw.js                    service worker (shell precache + runtime caching, docs/offline.md)
 src/
   app/
-    page.tsx                    profile (ProfileView): assigned cars / notebook / continue reading
+    page.tsx                    profile (ProfileView): assigned cars / notebook / continue reading,
+                                reading history, recent highlights, "Czy wiesz, że…" tips
     auta/                       car list (CarPicker)
-    auto/[car]/                 selected-car information (books, scoped search/warnings,
-                                equipment link, offline status and profile removal);
-                                layout tracks active car
+    auto/[car]/                 car "home screen" (docs/car-overview.md): car card, numbers,
+                                favourites, quick tiles, books, tools, technical-data preview,
+                                service reminders, offline status; layout tracks active car
+    auto/[car]/lampki-kontrolne/  symbols glossary (icons + explanation from the manuals)
+    auto/[car]/dane-techniczne/   technical data cards (tables of technical chapters)
     auto/[car]/wyposazenie/     per-car equipment editor (EquipmentEditor)
     auto/[car]/[book]/          book index + sidebar layout; [...slug]/ section pages
     dodaj-auto/                 add library car or import wizard (car + PDFs, reading, equipment)
@@ -105,20 +108,30 @@ src/
     api/search-index?car=       GET search corpus of one car
     media/[...path]             GET images from database/<car>/assets (webp/png/jpg only)
     logo/[car]                  GET brand logo of the car's model year (404 = app icon)
+    przypomnienia/              reminders per car of the profile (inspection, OC, own)
     szukaj, ostrzezenia, komentarze, zakladki, notatnik, ustawienia
   components/                   UI (server: BlockRenderer; the rest are client components)
-  components/Dialog.tsx         confirmDialog()/alertDialog() + DialogHost (root layout)
+  components/Dialog.tsx         confirmDialog()/alertDialog()/promptDialog() + DialogHost
   components/EquipmentEditor.tsx  per-car equipment checklist (wizard + equipment page)
   components/CarLogo.tsx        brand logo of the active car (header, car page), falls back to Logo
+  components/Header.tsx         header, main navigation (due reminders badge) and Navi-like clock
+  components/reminders/         /przypomnienia: inspection, OC insurance, own reminders per car
+  components/car/               car overview parts (CarHero, CarStatsStrip, QuickTiles, ...)
+  components/profile/, reader/  profile activity/tips, reader side column highlights
+  config/quickTopics.ts         title rules for "Najczęściej potrzebne", glossary, technical data
   config/vehicle.ts             generic optional features (no defaults) + suggestFromSpec
   config/featureRules.ts        title rules tagging sections/headings of every car
   content/types.ts              content format contract
   lib/content.ts                server-only database reader (Node fs, mtime-checked cache)
+  lib/carOverview.ts            server-only car overview/glossary/tech/tips collection
+  lib/overview.ts               client-safe overview helpers and types (tested)
   lib/server/                   importer (jobs), official catalogue, python, cross-site guard
   lib/catalog.ts                client-safe catalogue types + name normalisation
   lib/logos.ts                  brand logo matching + year selection (pure, tested)
   lib/cars.ts, lib/slug.ts      client-safe car types/helpers and id rules
-  lib/storage/                  localStorage store, schema, migrations, React hooks
+  lib/storage/                  localStorage store, schema, migrations, React hooks,
+                                layout hint cookie (hint.ts, hintContext.tsx)
+  lib/reminders.ts              reminder dates, due/soon rules (pure, tested)
   lib/anchoring/                text-quote/position anchoring + DOM helpers
   lib/markdown.ts               safe Markdown subset parser (notebook)
   lib/typography.ts             Polish line-breaking rules (+ typographyDom.ts client pass)
@@ -136,7 +149,8 @@ route)`, `getBook`, `getSection`, `sectionHref`, `getTocTree`, `getPrevNext`,
   `getCarUrls(car)`, `getCarVersion(car)`. Override the folder with `MANUALS_DATABASE_DIR`.
 - Ids: car and book ids match `ID_PATTERN` (`/^[a-z0-9][a-z0-9-]{0,79}$/`, `src/lib/slug.ts`);
   this is also what keeps `/media` and imports path-safe. Imported book ids and routes are
-  slugs of their titles (`assets` and `wyposazenie` reserved, `RESERVED_BOOK_ROUTES`).
+  slugs of their titles (`assets`, `wyposazenie`, `lampki-kontrolne` and `dane-techniczne`
+  reserved, `RESERVED_BOOK_ROUTES`).
 - Mutating API routes call `rejectCrossSite()` (loopback `Host` + same-origin `Origin` /
   `Sec-Fetch-Site`; `MANUALS_ALLOW_REMOTE_IMPORT=1` allows LAN hosts) because the server is
   unauthenticated; only GET routes may skip it.
@@ -144,6 +158,10 @@ route)`, `getBook`, `getSection`, `sectionHref`, `getTocTree`, `getPrevNext`,
   depends on stored data must wait for `useHydrated()` to avoid hydration mismatches.
   `useActiveCar(cars)` resolves the current car (URL `/auto/<id>` first, then
   `settings.activeCar`).
+- First paint = final layout: the `ocm-layout` cookie (`src/lib/storage/hint.ts`) mirrors a
+  small summary of the browser data; the root layout reads it and `useLayoutHint()` gives
+  client components the car ids, counts and "Czytaj dalej" card before hydration. Placeholders
+  must match the real element boxes exactly (`docs/ui.md`, `docs/storage.md`).
 
 ## Import pipeline (wizard `/dodaj-auto`)
 
@@ -168,8 +186,12 @@ which then shows the equipment step.
   `graphite #5C6166`, `ink #2B2E31`, `black`, `red #C8102E`, `red-bright #E4002B`.
   No blue, green or other hues (including focus rings, links, success messages).
 - Highlight palette (`src/lib/highlightColors.ts`): `light`, `silver`, `graphite`, `red`.
-- System sans-serif font stack; responsive for phone, tablet and desktop. App width is capped
-  at `max-w-app` (90rem); long unbroken strings must wrap inside their box
+- System sans-serif font stack; responsive for phone, tablet and desktop. Three alignment
+  levels share one side gutter (`--gutter`): the frame (`.app-frame`, `max-w-app` 90rem:
+  header rows, footer, reader), page content (`.page-shell`, 72rem) and the reader text
+  column (`.reader-column`, 48rem). Headings and numbers use the type scale classes
+  (`.type-display`, `.page-title` / `.type-title`, `.type-card`, `.type-item`, `.type-value`,
+  `.section-label`, `.panel-title`; `docs/ui.md`). Long unbroken strings must wrap inside their box
   (`overflow-wrap: anywhere` on `body`) — never let text overflow a panel or notice.
 - Polish typography: no one-letter words at line ends and no lone last word in paragraphs —
   `polishTypography()` (`src/lib/typography.ts`) on the server for manual content,
@@ -180,7 +202,7 @@ which then shows the equipment step.
   page show the official brand logo of the car's model year instead (`CarLogo`,
   `docs/logos.md`); brand logos keep their own colours (content, not UI chrome).
 - **Never use native `window.confirm` / `alert` / `prompt`.** Use `confirmDialog()` /
-  `alertDialog()` from `src/components/Dialog.tsx` (centred `<dialog>` over a blurred
+  `alertDialog()` / `promptDialog()` from `src/components/Dialog.tsx` (centred `<dialog>` over a blurred
   backdrop, Esc / backdrop click = cancel, `danger` focuses "Anuluj").
 - Interaction: `.btn` fades on hover and "presses in" on `:active` (1px down + inset shadow);
   `.field` has exactly one focus cue (graphite border, no ring/underline); `.hover-tile` for
@@ -229,12 +251,16 @@ Single localStorage key `opel-cascada-manual`, versioned (`SCHEMA_VERSION` in
 
 ```ts
 AppData {
-  version: 4;
+  version: 5;
   highlights: Record<id, { id, car, book, sectionId, sectionTitle, href,
     anchor: { exact, prefix, suffix, start, end }, color, comment, createdAt, updatedAt }>;
   notebook: { pages: { id, title, body /* Markdown */, createdAt, updatedAt }[] }; // user order
   bookmarks: { id: `${car}:${book}:${sectionId}`, car, book, sectionId, title, href, createdAt }[];
   lastRead: { car, book, sectionId, title, href, scrollY, at } | null;
+  history: { car, book, sectionId, title, href, thumb: string | null, at }[]; // newest first, ≤ 12
+  reminders: { id, car, kind: "inspection" | "insurance" | "custom", title,
+    dueDate: string | null, dueKm: number | null, done,
+    createdAt, updatedAt }[];
   settings: { fontSize, showUnavailable, ownedCars,
     vehicles: Record<carId, Record<featureId, FeatureState>>,
     activeCar: string | null, profileName: string };
@@ -254,7 +280,7 @@ AppData {
 
 More detail: `docs/ui.md`, `docs/import.md`, `docs/offline.md`, `docs/storage.md`,
 `docs/highlighting.md`, `docs/comments.md`, `docs/notebook.md`, `docs/extraction.md`,
-`docs/vehicle-profile.md`, `docs/catalog.md`, `docs/logos.md`. Keep these files in sync with the code in the same change.
+`docs/vehicle-profile.md`, `docs/catalog.md`, `docs/logos.md`, `docs/car-overview.md`. Keep these files in sync with the code in the same change.
 
 ## Conventions
 

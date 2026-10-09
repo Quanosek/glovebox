@@ -5,22 +5,86 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { hasReadableManual, type CarSummary } from "@/lib/cars";
 import { useOnline } from "@/lib/offline";
-import { useActiveCar } from "@/lib/storage/hooks";
+import { dueSoon, todayIso } from "@/lib/reminders";
+import { useLayoutHint } from "@/lib/storage/hintContext";
+import { useActiveCar, useAppData, useHydrated } from "@/lib/storage/hooks";
 import { CarLogo } from "./CarLogo";
 import { Logo } from "./Logo";
+
+/** Current time, refreshed every 15 s; null until hydrated. */
+function useClock(): Date | null {
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    const tick = () => setNow(new Date());
+    tick();
+    const id = window.setInterval(tick, 15_000);
+    return () => window.clearInterval(id);
+  }, []);
+  return now;
+}
+
+/** Date and time at the right end of the navigation row, like on Navi 950. */
+function Clock() {
+  const now = useClock();
+  const online = useOnline();
+  return (
+    <span className="ml-auto hidden items-center gap-3 pl-3 text-sm text-graphite tabular-nums lg:flex">
+      {!online && (
+        <span
+          className="badge badge-red"
+          title="Działają instrukcje zapisane na tym urządzeniu"
+        >
+          Bez internetu
+        </span>
+      )}
+      <span className={now ? "" : "invisible"} aria-hidden={!now}>
+        {now
+          ? now.toLocaleDateString("pl-PL", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+            })
+          : "poniedziałek, 30 października"}
+      </span>
+      <time
+        dateTime={now?.toISOString()}
+        aria-hidden={!now}
+        className="min-w-[5ch] text-right text-base font-semibold text-ink"
+      >
+        {now
+          ? now.toLocaleTimeString("pl-PL", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "00:00"}
+      </time>
+    </span>
+  );
+}
 
 export function Header({ cars }: { cars: CarSummary[] }) {
   const pathname = usePathname();
   const car = useActiveCar(cars);
-  const online = useOnline();
   const hasManuals = hasReadableManual(cars);
-  const nav = [
+  const hydrated = useHydrated();
+  const hint = useLayoutHint();
+  const data = useAppData();
+  const due = hydrated
+    ? dueSoon(data.reminders, todayIso(), data.settings.ownedCars).length
+    : hint.due;
+  const nav: {
+    href: string;
+    label: string;
+    exact?: boolean;
+    badge?: number;
+  }[] = [
     { href: "/", label: "Profil", exact: true },
     ...(car
       ? [{ href: car.href, label: `${car.brand} ${car.model}` }]
       : hasManuals
         ? [{ href: "/auta", label: "Wybierz auto" }]
         : []),
+    { href: "/przypomnienia", label: "Przypomnienia", badge: due },
     { href: "/notatnik", label: "Notatnik" },
     { href: "/komentarze", label: "Komentarze" },
     { href: "/zakladki", label: "Zakładki" },
@@ -58,7 +122,7 @@ export function Header({ cars }: { cars: CarSummary[] }) {
       ref={ref}
       className="silver-bar sticky top-0 z-40 border-t-4 border-t-red print:hidden"
     >
-      <div className="mx-auto flex h-14 max-w-app items-center gap-3 px-3 lg:px-5">
+      <div className="app-frame flex h-14 items-center gap-3">
         <Link
           href="/"
           className="flex shrink-0 items-center gap-2.5 text-black"
@@ -70,23 +134,22 @@ export function Header({ cars }: { cars: CarSummary[] }) {
             <Logo size={34} />
           )}
           <span className="hidden leading-tight sm:block">
-            <span className="block text-sm font-semibold tracking-wide uppercase">
-              {car ? `${car.brand} ${car.model}` : "Moje instrukcje"}
-            </span>
-            <span className="block text-[0.6875rem] tracking-[0.12em] text-steel uppercase">
-              {car ? `Instrukcja · ${car.year}` : "Profil na tym urządzeniu"}
-            </span>
+            {car ? (
+              <>
+                <span className="block text-sm font-semibold tracking-wide uppercase">
+                  {car.brand} {car.model}
+                </span>
+                <span className="block text-[0.6875rem] tracking-[0.12em] text-steel uppercase">
+                  Instrukcja · {car.year}
+                </span>
+              </>
+            ) : (
+              <span className="block text-base font-semibold tracking-wide uppercase">
+                Moje instrukcje
+              </span>
+            )}
           </span>
         </Link>
-
-        {!online && (
-          <span
-            className="badge badge-dark hidden shrink-0 sm:inline-flex"
-            title="Brak internetu – działają instrukcje zapisane na tym urządzeniu"
-          >
-            Bez internetu
-          </span>
-        )}
 
         <form
           onSubmit={onSearch}
@@ -140,29 +203,36 @@ export function Header({ cars }: { cars: CarSummary[] }) {
         aria-label="Główna nawigacja"
         className={`${open ? "block" : "hidden"} border-t border-line bg-white lg:block lg:bg-transparent`}
       >
-        <ul className="mx-auto flex max-w-app flex-col lg:flex-row lg:flex-wrap lg:px-3">
-          {nav.map((item) => {
-            const active =
-              pathname === item.href ||
-              (!("exact" in item) && pathname.startsWith(`${item.href}/`));
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  onClick={() => setOpen(false)}
-                  aria-current={active ? "page" : undefined}
-                  className={`block border-b-2 px-4 py-2 text-sm lg:px-3 ${
-                    active
-                      ? "border-red font-semibold text-ink"
-                      : "border-transparent text-graphite hover:border-silver hover:text-ink"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="app-frame flex items-center">
+          <ul className="flex min-w-0 flex-1 flex-col lg:flex-row lg:flex-wrap">
+            {nav.map((item) => {
+              const active =
+                pathname === item.href ||
+                (!item.exact && pathname.startsWith(`${item.href}/`));
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    aria-current={active ? "page" : undefined}
+                    className="nav-link"
+                  >
+                    {item.label}
+                    {item.badge ? (
+                      <span
+                        className="nav-count"
+                        title="Terminy, które minęły albo mijają w ciągu 30 dni"
+                      >
+                        {item.badge}
+                      </span>
+                    ) : null}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          <Clock />
+        </div>
       </nav>
     </header>
   );

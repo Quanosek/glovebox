@@ -7,7 +7,7 @@ import type { FeatureState } from "@/config/vehicle";
  */
 
 export const STORAGE_KEY = "opel-cascada-manual";
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 export const EXPORT_APP_ID = "opel-cascada-manual";
 
 export type HighlightColor = "light" | "silver" | "graphite" | "red";
@@ -66,6 +66,55 @@ export interface LastRead {
   at: string;
 }
 
+/** One recently read section (newest first, see `HISTORY_LIMIT`). */
+export interface HistoryEntry {
+  car: string;
+  book: string;
+  sectionId: string;
+  title: string;
+  href: string;
+  /** First illustration of the section (`/media/…`), if it has one. */
+  thumb: string | null;
+  at: string;
+}
+
+/**
+ * Kind of a reminder: the yearly technical inspection and the OC insurance
+ * have one fixed entry per car (id `${kind}:${car}`); `custom` entries are
+ * the owner's own (service, oil change, tyres …).
+ */
+export type ReminderKind = "inspection" | "insurance" | "custom";
+
+export const REMINDER_KINDS: ReminderKind[] = [
+  "inspection",
+  "insurance",
+  "custom",
+];
+
+/** Owner's reminder for one car (date and/or mileage). */
+export interface Reminder {
+  id: string;
+  car: string;
+  kind: ReminderKind;
+  title: string;
+  /** `YYYY-MM-DD` or null. */
+  dueDate: string | null;
+  /** Mileage in km or null. */
+  dueKm: number | null;
+  done: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Id of the fixed reminder of a kind for one car. */
+export const fixedReminderId = (
+  kind: Exclude<ReminderKind, "custom">,
+  car: string,
+) => `${kind}:${car}`;
+
+export const HISTORY_LIMIT = 12;
+export const FAVORITES_LIMIT = 6;
+
 export type FontSize = "small" | "normal" | "large" | "xlarge";
 
 export interface Settings {
@@ -91,6 +140,8 @@ export interface AppData {
   notebook: { pages: NotePage[] };
   bookmarks: Bookmark[];
   lastRead: LastRead | null;
+  history: HistoryEntry[];
+  reminders: Reminder[];
   settings: Settings;
 }
 
@@ -116,6 +167,8 @@ export function createEmptyData(): AppData {
     notebook: { pages: [] },
     bookmarks: [],
     lastRead: null,
+    history: [],
+    reminders: [],
     settings: { ...DEFAULT_SETTINGS, vehicles: {} },
   };
 }

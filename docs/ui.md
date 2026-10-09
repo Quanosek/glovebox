@@ -22,17 +22,41 @@ Europe screens. Every screen should be self-explanatory, calm and consistent. Vi
 
 ## Layout and text wrapping (`src/app/globals.css`)
 
-- Maximum app width: `--container-app` (90rem, Tailwind `max-w-app`) for the header bar
-  contents, the main navigation, the reader shell (sidebar + text) and the footer; the silver
-  header background and red top line stay full width. Top-level screens share `.page-shell`
-  (72rem, matching `max-w-6xl`), with consistent horizontal padding; the manual reader retains
-  its wider shell and a `max-w-3xl` text column (~75 characters per line).
+- Alignment levels. Every edge uses one side gutter, `--gutter` (1rem on phones, 2rem from
+  40rem):
+  1. Frame — `.app-frame` (`--container-app`, 90rem): header top row, navigation row, footer;
+     `.reader-frame` gives the reader (sidebar + text) the same edges from 64rem. The silver
+     header background and red top line stay full width.
+  2. Page — `.page-shell` (72rem): every other screen, centred and narrower than the frame.
+  3. Reader text — `.reader-column` (48rem, ~75 characters per line); from 90rem it is 63.5rem
+     wide so the "Na tej stronie" column fits, and book index and section pages keep the same
+     left edge (direct children other than `.reader-grid` stay 48rem).
+- Header: the brand / car logo starts exactly where the first navigation key starts
+  (`.nav-link` has no left padding on the first item), and the clock ends exactly where the
+  search button ends.
 - `body` sets `overflow-wrap: anywhere`, so strings without spaces (file names, codes, long
   links) break inside boxes instead of overflowing them, and flex/grid items may shrink below
   their longest word. Tables use `break-word` and scroll sideways in their wrapper. `.btn` and
   `.badge` stay on one line; use `truncate` (with a `title`) for single-line names.
 - `text-wrap: balance` on headings and `.panel-title`, `text-wrap: pretty` on paragraphs and
   list items; `hyphens: auto` (with `lang="pl"`) in manual text and notebook previews.
+
+## Type scale (`src/app/globals.css`)
+
+One size and weight per role; do not combine ad-hoc `text-*` / `font-*` utilities for these:
+
+| Class                         | Role                                                    |
+| ----------------------------- | ------------------------------------------------------- |
+| `.type-display`               | car name on the car card, profile greeting, wizard done |
+| `.page-title` / `.type-title` | page heading (with / without the red rule)              |
+| `.type-card`                  | name on a card or panel (cars, reminders, warnings)     |
+| `.type-item`                  | link title in a list or tile (books, tools, continue)   |
+| `.type-value`                 | big numbers and measurements (stats, dates)             |
+| `.type-fact`                  | values in technical data (smaller, text-heavy lists)    |
+| `.section-label`              | uppercase label above a group (red dash)                |
+| `.panel-title`                | silver header bar of a `.panel`                         |
+
+Body text is `text-base`, secondary text `text-sm text-graphite`, meta `text-xs text-steel`.
 
 ## Polish typography (`src/lib/typography.ts`)
 
@@ -64,7 +88,11 @@ last word of a paragraph (up to 10 characters) is bound to the previous one.
 
 - Native `window.confirm`, `alert` and `prompt` are not used anywhere.
 - `confirmDialog({ title, message?, confirmLabel?, cancelLabel?, danger? })` resolves to
-  `true`/`false`; `alertDialog()` shows a single "OK". Requests are queued and rendered one at
+  `true`/`false`; `alertDialog()` shows a single "OK"; `promptDialog({ title, label,
+placeholder?, defaultValue?, maxLength?, ... })` asks for one line of text (e.g. the profile
+  name) and `formDialog({ title, fields, validate?, ... })` collects multiple fields in one
+  modal and keeps it open to show validation errors. Prompts and forms resolve to their values
+  or `null` on cancel – forms are never squeezed into the page. Requests are queued and rendered one at
   a time by `DialogHost` (mounted once in `src/app/layout.tsx`).
 - Rendering: native `<dialog>` opened with `showModal()` (focus trap, top layer, centred by
   `margin: auto`), class `.app-dialog`; `::backdrop` is semi-transparent ink with
@@ -79,8 +107,39 @@ last word of a paragraph (up to 10 characters) is bound to the previous one.
 - Links, buttons and `summary` get a 160 ms colour/background/border fade (base layer).
 - `.btn`: hover lightens the silver gradient and darkens the border; `:active` moves the
   button 1px down, flips the gradient and adds a faint inset shadow — a subtle "pressed key".
-  A soft radial sheen sweeps across the button and fades to transparent at its edges;
+  A soft radial sheen sweeps across the silver button and fades to transparent at its edges;
   `.btn-primary` and `.btn-ghost` have matching pressed states.
+- `.btn-primary` (red) uses one smooth vertical gradient (`--red-gradient`, light top edge,
+  deeper bottom) painted under a transparent border (`border-box`), so no darker rim shows.
+  Its hover never swaps the red background: it reuses the silver sweep (`.btn::before`, same
+  ellipse, position and timing) with a softer white light that fades out before the edges.
+  Do not change the red background on hover or layer extra gradients on it – that bands.
+- Header: the navigation row ends with the local weekday, date and time (`Clock` in
+  `Header.tsx`, desktop only, filled after hydration and refreshed every 15 s; no requests)
+  and a red "Bez internetu" badge when offline. "Przypomnienia" carries a `.nav-count` badge
+  with reminders that passed or are due within 30 days. There is no separate status bar.
+- No layout jumps on load: client parts that depend on browser data render their final
+  layout before hydration from the layout hint (`useLayoutHint()`, `docs/storage.md`). A
+  placeholder must have the exact box of what replaces it: same element structure, fixed
+  heights (`h-40` note bodies, single-line `truncate` rows) and `Skeleton` without a height
+  class, which is exactly one text line of the surrounding font size. Never render a
+  generic skeleton block of a different size, and never gate a whole section on
+  `useHydrated()` when the hint can say whether it exists. Static UI text that is rendered
+  before hydration may be passed through `polishTypography()` so the client typography pass
+  does not reflow it.
+- Car overview screens (car page, "Lampki kontrolne", "Dane techniczne") and the reader side
+  column are described in `docs/car-overview.md`; their classes are `.car-hero`,
+  `.car-hero-logo`, `.car-hero-spec`, `.stat-strip`/`.stat-cell`, `.nav-key`, `.section-label`
+  (red dash + uppercase label), `.fav-bar`/`.fav-key`/`.fav-num` and `.thumb` (framed
+  manual illustration).
+- Add-car wizard (`/dodaj-auto`): the step strip (`.wizard-track`) shows square keys on one
+  line with a red track growing with progress (`--wizard-progress`); phones show the keys plus
+  one "Etap n z 4" line. Step 1 is split into lettered panels ("A Twoje auto", "B Instrukcje",
+  `.wizard-mark`) and a sticky "Podsumowanie" card with the chosen car, missing items and the
+  main button; the PDF drop area is `.wizard-drop`. Step 2 shows the first page of each
+  manual on a horizontal "film strip" (`.film-strip`/`.film-frame[data-state]`) with a thin
+  progress bar on the thumbnail (`.film-progress`, indeterminate while reading, static with
+  reduced motion). Step 4 shows the car card (`CarHero`) with totals instead of a list.
 - `.field` (inputs, selects, textareas): hover darkens the border; focus shows exactly one
   cue — a graphite border. No outline ring, underline or shadow on top of it. Other
   focusable elements keep the global red `:focus-visible` outline for keyboard users.
@@ -95,18 +154,25 @@ last word of a paragraph (up to 10 characters) is bound to the previous one.
 - Selected-car tools are grouped in a two-column layout and include search and warnings scoped
   to that car. Warnings are opened from this view rather than the global navigation. Comments,
   bookmarks and notes remain in the app-wide navigation.
-- `.hover-tile`: clickable cards/panels (car cards, profile and book tiles) get a darker
-  border and a soft shadow on hover and a 1px press on `:active`.
+- Hover only on what can be clicked: a link/button itself, or a card holding its own buttons
+  (car cards). Static panels, stat cells, tables and free slots have no hover and no movement.
+- `.hover-tile`: clickable cards/panels get a darker border and a soft shadow on hover; only
+  `a`/`button` tiles get the 1px press on `:active` (cards with inner buttons never move).
 - The page backdrop is made from layered, irregular CSS radial gradients in the existing
   neutral palette; it uses no images or additional visual dependencies.
-- Views outside the primary header navigation expose a shared "Wstecz" control aligned to the
-  reader shell width; it returns to the prior same-origin view and uses the relevant car, book,
-  or profile as a direct-entry fallback.
+- The global header never changes per view. "Wstecz" (`BackButton`) belongs to the view: in the
+  manual it is the first row of the table of contents (`.sidebar-back`: white key, red arrow,
+  above the book groups); on other secondary screens it sits above the content in
+  `.back-navigation`, aligned with `.page-shell`. Main views
+  of the top navigation (`/`, car page, `/auta`, `/przypomnienia`, `/notatnik`, `/komentarze`,
+  `/zakladki`, `/ustawienia`) intentionally have none. It returns to the prior same-origin view
+  and uses the relevant car, book, or profile as a direct-entry fallback.
 - `prefers-reduced-motion: reduce` shortens all transitions/animations to 1 ms and removes
   the press movement.
 
 ## Connection state
 
-`useOnline()` (`src/lib/offline.ts`) drives the header "Offline" badge, the notice above the
+`useOnline()` (`src/lib/offline.ts`) drives the red "Bez internetu" badge next to the clock
+in the header, the notice above the
 car list and the "Brak połączenia" message in the add-car wizard. Reading saved cars never
 depends on it.

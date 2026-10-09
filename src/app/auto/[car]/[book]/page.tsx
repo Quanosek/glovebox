@@ -55,9 +55,7 @@ export default async function BookPage({ params }: Props) {
           ? ` · przygotowano ${new Date(index.source.extractedAt).toLocaleDateString("pl-PL")}`
           : ""}
       </p>
-      <h2 className="mt-8 mb-2 text-xs font-semibold tracking-[0.08em] text-graphite uppercase">
-        Rozdziały
-      </h2>
+      <h2 className="section-label mt-8 mb-2">Rozdziały</h2>
       <SectionList
         items={chapters.map((s) => ({
           id: s.id,

@@ -41,30 +41,34 @@
     #d9dcdf 100%
   );
   --silver-gradient-hover: linear-gradient(180deg, #ffffff 0%, #e3e5e8 100%);
-  --red-gradient:
-    radial-gradient(ellipse at 18% 0%, rgba(228, 0, 43, 0.92), transparent 58%),
-    radial-gradient(
-      ellipse at 92% 100%,
-      rgba(160, 10, 32, 0.72),
-      transparent 62%
-    ),
-    linear-gradient(115deg, #c8102e 5%, #dc1235 52%, #b70e2a 100%);
-  --red-gradient-hover:
-    radial-gradient(
-      ellipse at 22% 4%,
-      rgba(255, 47, 78, 0.92),
-      transparent 58%
-    ),
-    radial-gradient(
-      ellipse at 88% 100%,
-      rgba(183, 14, 42, 0.78),
-      transparent 62%
-    ),
-    linear-gradient(115deg, #d51336 5%, #e4002b 52%, #c8102e 100%);
+  /*
+   * Red keys: one smooth vertical gradient (light top edge, deeper bottom),
+   * like the glossy soft keys of the Navi 950. Stacked radial layers band
+   * visibly on small buttons, so the red surface uses a single linear ramp.
+   */
+  --red-gradient: linear-gradient(
+    180deg,
+    #e4002b 0%,
+    #d40a30 48%,
+    #c8102e 52%,
+    #b30d29 100%
+  );
+  --red-gradient-active: linear-gradient(180deg, #a90c27 0%, #c8102e 100%);
   /* Pressed button: the gradient flips, like a physical key pushed in. */
   --silver-gradient-active: linear-gradient(180deg, #dfe2e5 0%, #f1f2f4 100%);
   --ease-ui: cubic-bezier(0.2, 0, 0.2, 1);
+  /*
+   * Alignment levels (docs/ui.md → Layout): every screen edge uses the same
+   * side gutter. The frame (header, footer, reader) is --container-app wide,
+   * page content (.page-shell) is narrower and centred inside it.
+   */
+  --gutter: 1rem;
   color-scheme: light;
+}
+@media (min-width: 40rem) {
+  :root {
+    --gutter: 2rem;
+  }
 }
 
 html[data-font-size="small"] {
@@ -242,37 +246,43 @@ body {
     opacity: 0.5;
     cursor: not-allowed;
   }
+  /*
+   * Red keys: one linear ramp painted under the border too (transparent
+   * border, border-box background), so no darker rim shows. Hover uses the
+   * same sweeping light as silver keys (`.btn::before`), only softer; the red
+   * surface itself never changes, so there is no banding or gradient jump.
+   */
   .btn-primary {
-    background: var(--red-gradient);
-    border-color: var(--color-red);
+    border-color: transparent;
+    background: var(--red-gradient) border-box;
     color: var(--color-white);
-  }
-  .btn-primary:hover {
-    background: var(--red-gradient-hover);
-    border-color: var(--color-red-bright);
+    box-shadow: 0 1px 2px rgba(120, 8, 28, 0.22);
   }
   .btn-primary::before {
-    background-image:
-      radial-gradient(
-        ellipse 58% 130% at 20% 50%,
-        rgba(228, 0, 43, 0.98) 0%,
-        rgba(228, 0, 43, 0.62) 48%,
-        transparent 78%
-      ),
-      radial-gradient(
-        ellipse 54% 125% at 80% 50%,
-        rgba(200, 16, 46, 0.88) 0%,
-        rgba(200, 16, 46, 0.48) 48%,
-        transparent 78%
-      );
+    inset: -1px;
+    background-image: radial-gradient(
+      ellipse 48% 105% at 50% 50%,
+      rgba(255, 255, 255, 0.3) 0%,
+      rgba(255, 255, 255, 0.2) 30%,
+      rgba(255, 255, 255, 0.09) 58%,
+      rgba(255, 255, 255, 0.025) 80%,
+      transparent 100%
+    );
+  }
+  .btn-primary:hover {
+    border-color: transparent;
+    background: var(--red-gradient) border-box;
+    box-shadow: 0 2px 6px rgba(120, 8, 28, 0.26);
   }
   .btn-primary:hover::before {
-    opacity: 0.95;
-    background-position: 220% 50%;
+    opacity: 1;
   }
   .btn-primary:active:not(:disabled) {
-    background: var(--red-gradient);
+    background: var(--red-gradient-active) border-box;
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+  .btn-primary:active:not(:disabled)::before {
+    opacity: 0;
   }
   .btn-dark {
     background: var(--color-ink);
@@ -382,25 +392,151 @@ body {
     transform: rotate(90deg);
   }
 
+  /* Level 1: header rows, footer and the reader (sidebar + text). */
+  .app-frame {
+    width: 100%;
+    max-width: var(--container-app);
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+  }
+  /* Header navigation row: the first key starts where the logo starts. */
+  .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: 2px solid transparent;
+    padding-block: 0.5rem;
+    color: var(--color-graphite);
+    font-size: 0.875rem;
+  }
+  .nav-link:hover {
+    border-bottom-color: var(--color-silver);
+    color: var(--color-ink);
+  }
+  .nav-link[aria-current="page"] {
+    border-bottom-color: var(--color-red);
+    color: var(--color-ink);
+    font-weight: 600;
+  }
+  @media (min-width: 64rem) {
+    .nav-link {
+      padding-inline: 0.75rem;
+    }
+    li:first-child > .nav-link {
+      padding-left: 0;
+    }
+  }
+
+  /* "Wstecz" above secondary screens, on the .page-shell edges. */
+  .back-navigation {
+    width: 100%;
+    max-width: 72rem;
+    margin-inline: auto;
+    padding: 1rem var(--gutter) 0;
+  }
+  .back-navigation + .page-shell {
+    padding-top: 1rem;
+  }
+  /*
+   * "Wstecz" as the first row of the manual's table of contents: a white key
+   * with a red arrow, set apart from the silver book headers below it.
+   */
+  .sidebar-back {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 0.6rem;
+    border-bottom: 1px solid var(--color-line);
+    background: var(--color-white);
+    padding: 0.7rem var(--gutter);
+    color: var(--color-ink);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-align: left;
+  }
+  .sidebar-back svg {
+    color: var(--color-red);
+  }
+  .sidebar-back:hover {
+    background: var(--color-paper);
+  }
+  @media (min-width: 64rem) {
+    .sidebar-back {
+      padding-inline: 1rem;
+    }
+  }
+
+  /* Level 2: content of every other screen, centred inside the frame. */
   .page-shell {
     width: 100%;
     max-width: 72rem;
     flex: 1;
     margin-inline: auto;
-    padding: 1.5rem 1rem 2rem;
+    padding: 1.5rem var(--gutter) 2rem;
   }
-  .back-navigation {
+  /* Reader: full width on phones, framed next to the sidebar on desktop. */
+  .reader-frame {
+    display: flex;
     width: 100%;
     max-width: var(--container-app);
+    flex: 1;
+    flex-direction: column;
     margin-inline: auto;
-    padding: 0.75rem 1rem 0;
+  }
+  .reader-main {
+    min-width: 0;
+    flex: 1;
+    padding: 1.5rem var(--gutter) 2rem;
+  }
+  /* Level 3: the text column; the "Na tej stronie" column joins it on wide screens. */
+  .reader-column {
+    max-width: 48rem;
+    margin-inline: auto;
+  }
+
+  /*
+   * Type scale (docs/ui.md → Typography): one size and weight per role.
+   * display = car / profile name, title = page heading, card = name on a card
+   * or panel, item = link title in a list, value = big number or measurement.
+   */
+  .type-display {
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+  }
+  .type-title,
+  .page-title {
+    font-size: clamp(1.5rem, 2.4vw, 1.875rem);
+    font-weight: 600;
+    line-height: 1.2;
   }
   .page-title {
     border-bottom: 2px solid var(--color-red);
     padding-bottom: 0.5rem;
-    font-size: clamp(1.5rem, 2.4vw, 1.875rem);
+  }
+  .type-card {
+    font-size: 1.25rem;
     font-weight: 600;
-    line-height: 1.2;
+    line-height: 1.25;
+  }
+  .type-item {
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+  .type-value {
+    font-size: 1.75rem;
+    font-weight: 600;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Values in technical data (long, text-heavy lists): smaller than .type-value. */
+  .type-fact {
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1.3;
+    font-variant-numeric: tabular-nums;
   }
 
   /* Interactive list rows / tiles: gentle background fade on hover. */
@@ -420,9 +556,355 @@ body {
     border-color: var(--color-steel);
     box-shadow: 0 2px 6px rgba(43, 46, 49, 0.1);
   }
-  .hover-tile:active {
+  :is(a, button).hover-tile:active {
     transform: translateY(1px);
     box-shadow: 0 1px 2px rgba(43, 46, 49, 0.08);
+  }
+
+  /*
+   * Add-car wizard (src/app/dodaj-auto/AddCarWizard.tsx): Navi 950-like step
+   * keys on one track. `--wizard-progress` (0–1) sets the red part of it.
+   */
+  .wizard-track {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    text-align: center;
+  }
+  .wizard-track::before,
+  .wizard-track::after {
+    position: absolute;
+    top: calc(1.125rem - 1px);
+    left: 12.5%;
+    height: 2px;
+    content: "";
+  }
+  .wizard-track::before {
+    right: 12.5%;
+    background: var(--color-line);
+  }
+  .wizard-track::after {
+    width: calc(75% * var(--wizard-progress, 0));
+    background: linear-gradient(90deg, var(--color-graphite), var(--color-red));
+    transition: width 420ms var(--ease-ui);
+  }
+  .wizard-stop {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-inline: 0.25rem;
+    color: var(--color-steel);
+  }
+  .wizard-key {
+    display: flex;
+    width: 2.25rem;
+    height: 2.25rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-silver);
+    background: var(--silver-gradient);
+    color: var(--color-graphite);
+    font-weight: 600;
+    box-shadow: 0 0 0 4px var(--color-white);
+    transition:
+      background-color 200ms var(--ease-ui),
+      border-color 200ms var(--ease-ui),
+      box-shadow 200ms var(--ease-ui);
+  }
+  .wizard-stop[data-state="done"] {
+    color: var(--color-graphite);
+  }
+  .wizard-stop[data-state="done"] .wizard-key {
+    border-color: var(--color-graphite);
+    background: var(--color-graphite);
+    color: var(--color-white);
+  }
+  .wizard-stop[data-state="current"] {
+    color: var(--color-ink);
+  }
+  .wizard-stop[data-state="current"] .wizard-key {
+    border-color: #a90c27;
+    background: var(--red-gradient);
+    color: var(--color-white);
+    box-shadow:
+      0 0 0 4px var(--color-white),
+      0 0 0 5px rgba(200, 16, 46, 0.35),
+      0 3px 10px rgba(200, 16, 46, 0.25);
+  }
+  .wizard-stop[data-state="current"] .wizard-label {
+    font-weight: 600;
+  }
+  /* Small square letter key in front of a wizard panel heading. */
+  .wizard-mark {
+    display: inline-flex;
+    width: 1.5rem;
+    height: 1.5rem;
+    flex: 0 0 1.5rem;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-ink);
+    color: var(--color-white);
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .wizard-drop {
+    border: 1px dashed var(--color-silver);
+    background:
+      radial-gradient(
+        ellipse 70% 90% at 50% 0%,
+        rgba(244, 245, 246, 0.9),
+        transparent 75%
+      ),
+      var(--color-white);
+    transition:
+      border-color 160ms var(--ease-ui),
+      background-color 160ms var(--ease-ui);
+  }
+  .wizard-drop:hover {
+    border-color: var(--color-steel);
+  }
+  .wizard-drop-active,
+  .wizard-drop-active:hover {
+    border-style: solid;
+    border-color: var(--color-red);
+    background: var(--color-paper);
+  }
+
+  /*
+   * Car overview (docs/car-overview.md): Navi 950 home-screen elements.
+   * Large car card, number strip, square "nav keys" and favourites bar.
+   */
+  .car-hero {
+    position: relative;
+    border: 1px solid var(--color-line);
+    border-bottom: 2px solid var(--color-red);
+    background:
+      radial-gradient(
+        ellipse 60% 120% at 0% 0%,
+        rgba(244, 245, 246, 0.95),
+        transparent 70%
+      ),
+      linear-gradient(180deg, #ffffff 0%, #f7f8f9 100%);
+  }
+  /* Fixed frame with a safe inner margin reserved for downloaded logos. */
+  .car-hero-logo {
+    display: flex;
+    width: 6.5rem;
+    height: 6.5rem;
+    flex: 0 0 6.5rem;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 0.875rem;
+    border: 1px solid var(--color-line);
+    background: var(--color-white);
+    box-shadow: inset 0 -2px 0 var(--color-paper);
+  }
+  .car-hero-spec {
+    border: 1px solid var(--color-silver);
+    background: var(--silver-gradient);
+    padding: 0.2rem 0.6rem;
+    font-weight: 600;
+    color: var(--color-ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.75rem;
+    color: var(--color-graphite);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .section-label::before {
+    width: 1rem;
+    height: 2px;
+    flex: 0 0 1rem;
+    background: var(--color-red);
+    content: "";
+  }
+  .stat-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+    gap: 1px;
+    border: 1px solid var(--color-line);
+    background: var(--color-line);
+  }
+  .stat-cell {
+    display: block;
+    height: 100%;
+    background: var(--color-white);
+    padding: 0.85rem 1rem;
+  }
+  .nav-key {
+    display: block;
+    height: 100%;
+    border: 1px solid var(--color-line);
+    background: linear-gradient(180deg, #ffffff 0%, #f6f7f8 100%);
+    padding: 1rem;
+  }
+  .fav-bar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1px;
+    border: 1px solid var(--color-silver);
+    background: var(--color-silver);
+  }
+  .fav-key {
+    display: flex;
+    min-height: 3.25rem;
+    align-items: center;
+    gap: 0.6rem;
+    background: var(--color-paper);
+    padding: 0.5rem 0.6rem;
+    font-size: 0.875rem;
+  }
+  .fav-key-on {
+    background: var(--silver-gradient);
+  }
+  a.fav-key-on:hover {
+    background: var(--silver-gradient-hover);
+  }
+  .fav-num {
+    display: inline-flex;
+    width: 1.5rem;
+    height: 1.5rem;
+    flex: 0 0 1.5rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-silver);
+    background: var(--color-white);
+    color: var(--color-graphite);
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .fav-key-on .fav-num {
+    border-color: var(--color-ink);
+    background: var(--color-ink);
+    color: var(--color-white);
+  }
+  @media (min-width: 48rem) {
+    .fav-bar {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 72rem) {
+    .fav-bar {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+  }
+  /* Fixed yearly deadline on /przypomnienia (inspection, OC insurance). */
+  .deadline-card {
+    display: flex;
+    flex-direction: column;
+    padding: 1.25rem;
+    border-left: 4px solid transparent;
+    background: var(--color-white);
+  }
+  .deadline-card-due {
+    border-left-color: var(--color-red);
+  }
+  /* One own reminder row (placeholder rows use the same box). */
+  .reminder-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 0.75rem;
+    row-gap: 0.25rem;
+    padding: 0.625rem 0;
+  }
+
+  /* Number of due reminders next to a navigation entry. */
+  .nav-count {
+    display: inline-flex;
+    min-width: 1.375rem;
+    height: 1.375rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.3125rem;
+    background: var(--red-gradient);
+    color: var(--color-white);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  /* Thumbnail frame for illustrations taken from the manuals. */
+  .thumb {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 1px solid var(--color-line);
+    background: var(--color-white);
+  }
+  .thumb img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  /* Wizard step 2: first pages of the manuals on a "film strip". */
+  .film-strip {
+    display: grid;
+    grid-auto-columns: minmax(9rem, 11rem);
+    grid-auto-flow: column;
+    gap: 0.75rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    scroll-snap-type: x proximity;
+  }
+  .film-frame {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--color-line);
+    background: var(--color-white);
+    scroll-snap-align: start;
+  }
+  .film-frame[data-state="running"] {
+    border-color: var(--color-graphite);
+    box-shadow: 0 2px 8px rgba(43, 46, 49, 0.12);
+  }
+  .film-frame[data-state="queued"] img {
+    opacity: 0.55;
+  }
+  .film-progress {
+    position: absolute;
+    inset: auto 0 0;
+    height: 0.375rem;
+    overflow: hidden;
+    background: rgba(217, 220, 223, 0.85);
+  }
+  .film-progress > span {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: var(--color-red);
+    transition: width 420ms var(--ease-ui);
+  }
+  .film-frame[data-state="done"] .film-progress > span {
+    width: 100%;
+    background: var(--color-graphite);
+  }
+  .film-frame[data-state="error"] .film-progress > span {
+    width: 100%;
+  }
+  .film-frame[data-state="running"] .film-progress > span {
+    width: 40%;
+    animation: film-run 1.4s var(--ease-ui) infinite;
+  }
+  @keyframes film-run {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(250%);
+    }
   }
 
   /* Centred modal dialog (src/components/Dialog.tsx). */
@@ -696,6 +1178,33 @@ body {
   }
 }
 
+@layer components {
+  @media (min-width: 40rem) {
+    .page-shell,
+    .reader-main {
+      padding-block: 2rem 2.5rem;
+    }
+  }
+  @media (min-width: 64rem) {
+    .reader-frame {
+      flex-direction: row;
+      padding-inline: var(--gutter);
+    }
+    .reader-main {
+      padding-inline: 2.5rem 0;
+    }
+  }
+  @media (min-width: 90rem) {
+    /* Same left edge for book index and section pages. */
+    .reader-column {
+      max-width: 63.5rem;
+    }
+    .reader-column > :not(.reader-grid) {
+      max-width: 48rem;
+    }
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -704,18 +1213,14 @@ body {
     animation-duration: 1ms !important;
     transition-duration: 1ms !important;
   }
-
-  @media (min-width: 40rem) {
-    .page-shell {
-      padding: 2rem 2rem 2.5rem;
-    }
-    .back-navigation {
-      padding-inline: 2rem;
-    }
-  }
   .btn:active,
   .hover-tile:active {
     transform: none !important;
+  }
+  .film-frame[data-state="running"] .film-progress > span {
+    width: 100%;
+    animation: none;
+    opacity: 0.5;
   }
 
   .skeleton {

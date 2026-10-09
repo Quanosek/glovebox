@@ -13,11 +13,13 @@ Nothing is sent anywhere.
   browser singleton (listens to the `storage` event for cross-tab sync), `newId()`.
 - `hooks.ts` — `useAppData()`, `useHydrated()`, `useVehicleProfile(carId?)`,
   `setFeatureState(car, id, state | null)`, `setVehicleProfile(car, profile)`,
-  `useActiveCar(cars)`, `setActiveCar(id)`, `updateData(fn)`.
+  `useActiveCar(cars)`, `setActiveCar(id)`, `updateData(fn)`, `recordReading(entry)`,
+  `withoutBookmark(data, id)`, `saveReminder(r)`,
+  `deleteReminder(id)`.
 
 `updateData` takes a pure function `(data) => newData`; never mutate the snapshot.
 
-## Schema (version 4)
+## Schema (version 5)
 
 See `AGENTS.md` → Storage schema. Notes:
 
@@ -33,6 +35,19 @@ See `AGENTS.md` → Storage schema. Notes:
 - `settings.vehicles[carId]` is the equipment profile of one car (`docs/vehicle-profile.md`):
   only features the owner set (or accepted suggestions); there are no defaults. `sanitize`
   keeps known feature ids and valid states only.
+- `history` (v5) holds up to `HISTORY_LIMIT` (12) recently read sections, newest first, one
+  entry per `car:book:sectionId` (`historyKey`). `ReadingTracker` calls `recordReading` with the
+  section's first illustration as `thumb` (only `/media/…` URLs survive `sanitize`; links must
+  start with `/auto/`). The profile shows it under "Ostatnio czytane".
+- `reminders` (v5) are the owner's reminders per car: `kind` (`inspection` = yearly technical
+  inspection, `insurance` = OC insurance, `custom` = own entry; unknown values become
+  `custom`), `title` (required, ≤ 120 characters), optional `dueDate` (`YYYY-MM-DD`) and
+  `dueKm` (0–5 000 000), `done`. Invalid dates or mileages become `null`. `inspection` and
+  `insurance` have one entry per car with the fixed id `${kind}:${car}` (`fixedReminderId`;
+  `sanitize` rewrites their ids, so duplicates collapse and merging matches them).
+- The car page "Ulubione" bar is derived from `bookmarks` (the newest `FAVORITES_LIMIT` = 6
+  of the car); there is no separate favourites list. A `settings.favorites` object left by an
+  earlier development build is dropped by `sanitize`.
 - `lastRead.scrollY` is restored only when the user clicks "Kontynuuj czytanie"
   (a one-shot sessionStorage flag, `opel-cascada-manual:restore-scroll`).
 
@@ -49,6 +64,8 @@ See `AGENTS.md` → Storage schema. Notes:
 - `3 → 4`: `settings.ownedCars` is initialized from cars already used in this profile (active car,
   equipment, highlights, bookmarks or last-read location), rather than claiming every car in the
   manuals library.
+- `4 → 5`: adds `history` (seeded with the `lastRead` section, without thumbnail), empty
+  `reminders`.
 
 Migrations run in memory on load; the upgraded shape is written on the next change.
 
@@ -70,7 +87,8 @@ Migrations run in memory on load; the upgraded shape is written on the next chan
 - Export: `{ app: "opel-cascada-manual", exportedAt, data }` (pretty-printed JSON download).
 - Import: export file or bare `AppData`; `merge` mode keeps current data and takes the newer
   entry per id (`updatedAt`/`createdAt`), notebook pages and bookmarks are merged by id,
-  equipment profiles per car and feature (the current state wins);
+  equipment profiles per car and feature (the current state wins), history per section
+  (newest `at` wins), reminders by id (newest `updatedAt` wins);
   `replace` mode overwrites everything.
 - UI labels: "Pobierz kopię zapasową" (export), "Wczytaj kopię z pliku…" (import).
 - "Usuń wszystkie dane" removes the key; "Usuń instrukcje zapisane offline" deletes the Cache
@@ -82,3 +100,22 @@ Migrations run in memory on load; the upgraded shape is written on the next chan
 - `opel-cascada-manual:offline` — status of offline car copies (`src/lib/offline.ts`). It is
   derived state (rebuilt on the next car visit), deliberately not part of `AppData`, the
   export file or the schema version.
+
+## Layout hint cookie
+
+- `ocm-layout` (`src/lib/storage/hint.ts`) is a small JSON summary of the browser data,
+  written by `ClientEffects` after hydration on every data or offline-state change
+  (`Path=/; Max-Age=31536000; SameSite=Strict`, kept below ~3.6 kB). It holds only what the
+  first paint needs: active and owned car ids, font size, profile name, the four profile
+  counters, the "Czytaj dalej" card (title, link, preformatted date, thumbnail), the number of
+  "Ostatnio czytane" rows, which recent highlights have a comment, cars with an offline copy,
+  favourites-bar keys (bookmarks, at most six) and own reminders per car, and the due reminder count. No notes,
+  highlight text or comments.
+- The root layout reads it with `cookies()` (`parseHint` validates every field, ids with
+  `isValidId`, links must start with `/auto/` and thumbnails with `/media/`), sets
+  `<html data-font-size>` and provides it through `LayoutHintProvider`
+  (`src/lib/storage/hintContext.tsx`). Client components use `useLayoutHint()` only while
+  `useHydrated()` is false; `useActiveCar` falls back to `hint.activeCar`, so the header shows
+  the car logo from the first paint.
+- It is derived state, never trusted for anything but layout, not part of `AppData`, the
+  export file or the schema version. A missing or stale cookie only costs one layout change.

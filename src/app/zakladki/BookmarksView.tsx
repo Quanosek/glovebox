@@ -2,7 +2,12 @@
 
 import Link from "next/link";
 import { bookName, carName, type CarSummary } from "@/lib/cars";
-import { updateData, useAppData, useHydrated } from "@/lib/storage/hooks";
+import {
+  updateData,
+  useAppData,
+  useHydrated,
+  withoutBookmark,
+} from "@/lib/storage/hooks";
 import { Skeleton } from "@/components/Skeleton";
 
 export function BookmarksView({ cars }: { cars: CarSummary[] }) {
@@ -54,12 +59,7 @@ export function BookmarksView({ cars }: { cars: CarSummary[] }) {
           <button
             type="button"
             className="btn h-7 py-0"
-            onClick={() =>
-              updateData((d) => ({
-                ...d,
-                bookmarks: d.bookmarks.filter((x) => x.id !== b.id),
-              }))
-            }
+            onClick={() => updateData((d) => withoutBookmark(d, b.id))}
           >
             Usuń
           </button>

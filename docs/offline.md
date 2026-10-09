@@ -23,7 +23,7 @@ Cache API needs a secure context (`localhost` or HTTPS); on plain-HTTP LAN addre
 | `opel-cascada-manual-offline-v1` | `saveCarOffline()` — every page/image/script of one car |
 
 `install` fetches the app shell (`SHELL`: `/`, `/auta`, `/notatnik`, `/komentarze`,
-`/zakladki`, `/ustawienia`, `/dodaj-auto`), scans each HTML for `/_next/static/*` URLs (HTML
+`/zakladki`, `/przypomnienia`, `/ustawienia`, `/dodaj-auto`), scans each HTML for `/_next/static/*` URLs (HTML
 and the inline RSC payload) and pre-caches those scripts/styles too, so every shell page
 hydrates offline even if it was never visited. Then `skipWaiting()`. `activate` deletes
 other `opel-cascada-manual-*` caches and claims clients. Bump the cache name when the
@@ -44,7 +44,8 @@ strategy changes.
 - `ActiveCarTracker` (rendered by `src/app/auto/[car]/layout.tsx`) marks the car as active
   and, 1.5 s after hydration and only when `navigator.onLine`, calls `saveCarOffline(car)`.
 - `saveCarOffline` fetches `GET /api/cars/<car>/offline` → `{ version, urls }`. `urls` are
-  the car page, its equipment page (`/auto/<car>/wyposazenie`), all book, section and image
+  the car page, its equipment page (`/auto/<car>/wyposazenie`), the "Lampki kontrolne" and
+  "Dane techniczne" pages (`/auto/<car>/lampki-kontrolne`, `/auto/<car>/dane-techniczne`), all book, section and image
   URLs (`getCarUrls`) plus `/api/search-index?car=<car>` and the brand logo `/logo/<car>`
   when one is known (`docs/logos.md`);
   `version` (`getCarVersion` in `src/lib/content.ts`) hashes size + mtime of `car.json` and
@@ -58,9 +59,10 @@ strategy changes.
   (`Record<car, { version, savedAt, total }>`), separate from the versioned app data. It is
   written only when every manifest URL succeeded; otherwise an error is shown and the next
   visit retries. One job per car at a time.
-- UI: the car page panel "Bez internetu" (`CarActions`) shows progress, "Gotowe" with the
+- UI: the car page's side-column tile "Bez internetu" (`CarActions`, `#bez-internetu`) shows progress, "Gotowe" with the
   date, errors and a "Zapisz ponownie" button (`force: true`). Car cards show an "Offline"
-  badge. `useOnline()` drives the header "Offline" badge, the notice on the car list and the
+  badge; the car page number strip shows the same state.
+  `useOnline()` drives the "Bez internetu" badge in the header, the notice on the car list and the
   "Brak połączenia" message in the add-car wizard.
 - Deleting a car calls `forgetCarOffline(car)` (removes its status and cached
   `/auto/<car>…`, `/media/<car>/…` and search-index entries).
