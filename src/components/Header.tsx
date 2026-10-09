@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { hasReadableManual, type CarSummary } from "@/lib/cars";
+import { equipmentHref, hasReadableManual, type CarSummary } from "@/lib/cars";
 import { useOnline } from "@/lib/offline";
 import { useActiveCar } from "@/lib/storage/hooks";
 import { CarLogo } from "./CarLogo";
@@ -17,7 +17,7 @@ export function Header({ cars }: { cars: CarSummary[] }) {
   const nav = [
     { href: "/", label: "Profil", exact: true },
     car
-      ? { href: car.href, label: `${car.brand} ${car.model}` }
+      ? { href: equipmentHref(car.id), label: `${car.brand} ${car.model}` }
       : hasManuals
         ? { href: "/auta", label: "Wybierz auto" }
         : { href: "/dodaj-auto", label: "Dodaj auto" },

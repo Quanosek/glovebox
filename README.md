@@ -27,6 +27,8 @@ komputerze: folder `database/` jest w `.gitignore` i nie trafia do repozytorium.
 
 - **Czytnik** — spis treści ksiąg wybranego auta, poprzednia/następna sekcja, odnośniki do
   stron („str. 45”), ostrzeżenia dla wybranego auta, linki do sekcji i akapitów.
+- **Widok auta** — z tego miejsca otworzysz instrukcje, wyszukiwanie, ostrzeżenia i ustawienia
+  wyposażenia wybranego pojazdu.
 - **Wyszukiwarka** — pełnotekstowa, w obrębie wybranego auta; ignoruje wielkość liter i polskie
   znaki („swiatla” znajdzie „światła”).
 - **Zakreślacz** — zaznacz dowolny fragment tekstu i wybierz kolor (odcienie srebra, grafit,

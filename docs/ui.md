@@ -89,8 +89,9 @@ last word of a paragraph (up to 10 characters) is bound to the previous one.
   red keyboard focus outline. Native `details` disclosures use the same small red chevron.
 - The profile lists only cars assigned to that browser profile. Other readable cars can be
   added from `/dodaj-auto` without importing their manuals again; removing a car from the list
-  does not delete its manuals or saved annotations. The car overview offers the equipment editor.
-- Car overview tools are grouped in a two-column layout and include search and warnings scoped
+  does not delete its manuals or saved annotations. `/auto/<id>` redirects to the selected-car
+  page at `/auto/<id>/wyposazenie`, which also contains its manual links and equipment editor.
+- Selected-car tools are grouped in a two-column layout and include search and warnings scoped
   to that car. Warnings are opened from this view rather than the global navigation. Comments,
   bookmarks and notes remain in the app-wide navigation.
 - `.hover-tile`: clickable cards/panels (car cards, profile and book tiles) get a darker
