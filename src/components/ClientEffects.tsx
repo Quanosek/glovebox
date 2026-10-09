@@ -68,11 +68,7 @@ export function ClientEffects() {
         };
         const showFallback = () => {
           try {
-            const notification = new Notification(reminder.title, options);
-            notification.onclick = () => {
-              window.focus();
-              window.location.href = `/przypomnienia#${reminder.car}`;
-            };
+            new Notification(reminder.title, options);
           } catch {
             // Notifications may be unavailable even when the API is present.
           }

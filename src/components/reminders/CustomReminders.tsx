@@ -135,7 +135,7 @@ export function CustomReminders({
                 <div className="grid w-full grid-cols-[minmax(0,1fr)_auto] gap-1 sm:flex sm:w-auto">
                   <button
                     type="button"
-                    className={`btn h-9 min-w-0 justify-center whitespace-normal py-0 ${r.done ? "btn-pressed" : ""}`}
+                    className={`btn h-9 min-w-0 justify-center py-0 whitespace-normal ${r.done ? "btn-pressed" : ""}`}
                     aria-pressed={r.done}
                     onClick={() => saveReminder({ ...r, done: !r.done })}
                   >
