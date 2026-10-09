@@ -7,6 +7,7 @@ import { updateData, useAppData, useHydrated } from "@/lib/storage/hooks";
 import { CarPicker } from "./CarPicker";
 import { ContinueReading } from "./ContinueReading";
 import { Markdown } from "./Markdown";
+import { Skeleton } from "./Skeleton";
 import { plural } from "@/lib/typography";
 import { hasReadableManual } from "@/lib/cars";
 
@@ -147,7 +148,29 @@ export function ProfileView({ cars }: { cars: CarSummary[] }) {
             Otwórz notatnik ›
           </Link>
         </div>
-        {!hydrated ? null : pages.length === 0 ? (
+        {!hydrated ? (
+          <div
+            className="grid gap-4 md:grid-cols-3"
+            aria-busy="true"
+            aria-label="Wczytywanie notatek"
+          >
+            {[0, 1, 2].map((item) => (
+              <div key={item} className="panel flex min-h-48 flex-col">
+                <div className="panel-title">
+                  <Skeleton className="h-3 w-2/3" />
+                </div>
+                <div className="flex flex-1 flex-col gap-3 px-4 py-3">
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-3 w-5/6" />
+                  <Skeleton className="h-3 w-2/3" />
+                </div>
+                <div className="border-t border-line px-4 py-2">
+                  <Skeleton className="h-3 w-1/3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : pages.length === 0 ? (
           <div className="panel p-5 text-sm text-steel">
             Notatnik jest pusty.{" "}
             <Link href="/notatnik" className="text-red underline">
@@ -190,7 +213,7 @@ export function ProfileView({ cars }: { cars: CarSummary[] }) {
             className="group bg-white p-4 hover:bg-paper"
           >
             <span className="block text-2xl font-semibold group-hover:text-red">
-              {hydrated ? s.value : "–"}
+              {hydrated ? s.value : <Skeleton className="h-8 w-8" />}
             </span>
             <span className="text-xs text-graphite">{s.label}</span>
           </Link>

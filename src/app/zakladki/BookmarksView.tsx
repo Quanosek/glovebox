@@ -3,11 +3,28 @@
 import Link from "next/link";
 import { bookName, carName, type CarSummary } from "@/lib/cars";
 import { updateData, useAppData, useHydrated } from "@/lib/storage/hooks";
+import { Skeleton } from "@/components/Skeleton";
 
 export function BookmarksView({ cars }: { cars: CarSummary[] }) {
   const { bookmarks } = useAppData();
   const hydrated = useHydrated();
-  if (!hydrated) return <p className="mt-4 text-steel">Ładowanie…</p>;
+  if (!hydrated)
+    return (
+      <ul className="mt-4 border-t border-line" aria-busy="true">
+        {[0, 1, 2, 3].map((item) => (
+          <li
+            key={item}
+            className="flex min-h-16 items-center gap-3 border-b border-line px-3 py-2"
+          >
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
+            <Skeleton className="h-7 w-14 shrink-0" />
+          </li>
+        ))}
+      </ul>
+    );
   if (bookmarks.length === 0) {
     return (
       <p className="mt-6 text-steel">

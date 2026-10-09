@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { CarActions } from "@/components/CarActions";
 import { ContinueReading } from "@/components/ContinueReading";
 import { CarLogo } from "@/components/CarLogo";
-import { carLabel, equipmentHref } from "@/lib/cars";
+import { carLabel } from "@/lib/cars";
 import { getCar, getCarSummary } from "@/lib/content";
 import { plural } from "@/lib/typography";
 
@@ -30,11 +30,6 @@ export default async function CarPage({ params }: Props) {
       href: `/ostrzezenia?car=${car.id}`,
       title: "Ostrzeżenia",
       text: "Ostrzeżenia, przestrogi i uwagi z instrukcji.",
-    },
-    {
-      href: equipmentHref(car.id),
-      title: "Wyposażenie",
-      text: "Zaznacz, co ma Twoje auto – instrukcja dopasuje się do niego.",
     },
   ];
 

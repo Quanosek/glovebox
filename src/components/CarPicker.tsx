@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { CarSummary } from "@/lib/cars";
+import { equipmentHref, type CarSummary } from "@/lib/cars";
 import { useOfflineState, useOnline } from "@/lib/offline";
 import { setActiveCar, useAppData, useHydrated } from "@/lib/storage/hooks";
 import { plural } from "@/lib/typography";
@@ -43,6 +43,12 @@ export function CarPicker({ cars }: { cars: CarSummary[] }) {
               <div className="panel-title flex items-center justify-between gap-2">
                 <span>{car.brand}</span>
                 <span className="flex gap-1">
+                  {!hydrated && (
+                    <>
+                      <span className="skeleton h-5 w-16" />
+                      <span className="skeleton h-5 w-14" />
+                    </>
+                  )}
                   {hydrated && saved[car.id] && (
                     <span
                       className="badge"
@@ -84,10 +90,10 @@ export function CarPicker({ cars }: { cars: CarSummary[] }) {
                     Treść jeszcze niegotowa
                   </p>
                 )}
-                <div className="mt-auto flex gap-2 pt-4">
+                <div className="mt-auto flex flex-wrap gap-2 pt-4">
                   <button
                     type="button"
-                    className={`btn flex-1 justify-center ${isActive ? "" : "btn-primary"}`}
+                    className={`btn min-w-32 flex-1 justify-center ${isActive ? "" : "btn-primary"}`}
                     onClick={() => {
                       setActiveCar(car.id);
                       router.push(car.href);
@@ -95,6 +101,12 @@ export function CarPicker({ cars }: { cars: CarSummary[] }) {
                   >
                     {isActive ? "Otwórz" : "Wybierz to auto"}
                   </button>
+                  <Link
+                    href={equipmentHref(car.id)}
+                    className="btn justify-center"
+                  >
+                    Wyposażenie
+                  </Link>
                 </div>
               </div>
             </li>
