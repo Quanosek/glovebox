@@ -79,8 +79,17 @@ last word of a paragraph (up to 10 characters) is bound to the previous one.
 - Links, buttons and `summary` get a 160 ms colour/background/border fade (base layer).
 - `.btn`: hover lightens the silver gradient and darkens the border; `:active` moves the
   button 1px down, flips the gradient and adds a faint inset shadow — a subtle "pressed key".
-  A soft radial sheen sweeps across the button and fades to transparent at its edges;
+  A soft radial sheen sweeps across the silver button and fades to transparent at its edges;
   `.btn-primary` and `.btn-ghost` have matching pressed states.
+- `.btn-primary` (red) uses one smooth vertical gradient (`--red-gradient`, light top edge,
+  deeper bottom) with a faint inner top highlight. Its hover never swaps the background and
+  has no moving sheen: a single top-light overlay fades in by opacity only. Do not stack
+  radial gradients on red surfaces – they band visibly on small buttons.
+- Add-car wizard (`/dodaj-auto`): the step strip (`.wizard-track`) shows square keys on one
+  line with a red track growing with progress (`--wizard-progress`); phones show the keys plus
+  one "Etap n z 4" line. Step 1 is split into lettered panels ("A Twoje auto", "B Instrukcje",
+  `.wizard-mark`) and a sticky "Podsumowanie" card with the chosen car, missing items and the
+  main button; the PDF drop area is `.wizard-drop`.
 - `.field` (inputs, selects, textareas): hover darkens the border; focus shows exactly one
   cue — a graphite border. No outline ring, underline or shadow on top of it. Other
   focusable elements keep the global red `:focus-visible` outline for keyboard users.
