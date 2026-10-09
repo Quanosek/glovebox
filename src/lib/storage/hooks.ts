@@ -93,8 +93,7 @@ export function removeOwnedCar(carId: string): void {
     ...d,
     settings: {
       ...d.settings,
-      activeCar:
-        d.settings.activeCar === carId ? null : d.settings.activeCar,
+      activeCar: d.settings.activeCar === carId ? null : d.settings.activeCar,
       ownedCars: d.settings.ownedCars.filter((id) => id !== carId),
     },
   }));

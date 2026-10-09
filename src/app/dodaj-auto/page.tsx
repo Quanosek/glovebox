@@ -25,11 +25,7 @@ export default function AddCarPage() {
           Wybierz markę, model i rocznik, a potem dołącz instrukcje w PDF.
           Zostaną odczytane i zapisane tylko na tym komputerze.
         </p>
-      <AddCarWizard
-        cars={cars}
-        minYear={MIN_YEAR}
-        maxYear={maxYear()}
-      />
+        <AddCarWizard cars={cars} minYear={MIN_YEAR} maxYear={maxYear()} />
       </section>
     </main>
   );

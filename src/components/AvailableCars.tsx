@@ -2,7 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import type { CarSummary } from "@/lib/cars";
-import { addOwnedCar, setActiveCar, useAppData, useHydrated } from "@/lib/storage/hooks";
+import {
+  addOwnedCar,
+  setActiveCar,
+  useAppData,
+  useHydrated,
+} from "@/lib/storage/hooks";
 import { plural } from "@/lib/typography";
 
 /** Cars in the shared manuals library that are not yet assigned to this profile. */
@@ -30,14 +35,20 @@ export function AvailableCars({ cars }: { cars: CarSummary[] }) {
             <div className="panel-title">{car.brand}</div>
             <div className="flex flex-1 flex-col p-4">
               <h3 className="text-lg leading-tight font-semibold">
-                {car.model} <span className="font-normal text-steel">{car.year}</span>
+                {car.model}{" "}
+                <span className="font-normal text-steel">{car.year}</span>
               </h3>
               {car.variant && (
                 <p className="mt-1 text-sm text-graphite">{car.variant}</p>
               )}
               <p className="mt-2 text-sm text-graphite">
                 {car.books.length}{" "}
-                {plural(car.books.length, "instrukcja", "instrukcje", "instrukcji")}
+                {plural(
+                  car.books.length,
+                  "instrukcja",
+                  "instrukcje",
+                  "instrukcji",
+                )}
               </p>
               <button
                 type="button"

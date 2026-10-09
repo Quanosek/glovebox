@@ -298,10 +298,6 @@ function sanitizeHighlight(id: string, h: unknown): Highlight | null {
     return null;
   const a = h.anchor;
   if (typeof a.exact !== "string" || !a.exact) return null;
-  const ownedCars = [...new Set([
-    ...current.settings.ownedCars,
-    ...incoming.settings.ownedCars,
-  ])];
   return {
     id: str(h.id, id),
     car: h.car,
@@ -378,6 +374,9 @@ export function mergeData(current: AppData, incoming: AppData): AppData {
   const vehicles = { ...current.settings.vehicles };
   for (const [car, profile] of Object.entries(incoming.settings.vehicles))
     vehicles[car] = { ...profile, ...vehicles[car] };
+  const ownedCars = [
+    ...new Set([...current.settings.ownedCars, ...incoming.settings.ownedCars]),
+  ];
   return {
     ...current,
     highlights,

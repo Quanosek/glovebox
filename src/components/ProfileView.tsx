@@ -108,7 +108,9 @@ export function ProfileView({ cars }: { cars: CarSummary[] }) {
               }}
             >
               <label className="min-w-48 flex-1 text-sm text-graphite">
-                <span className="mb-1 block">Jak mamy się do Ciebie zwracać?</span>
+                <span className="mb-1 block">
+                  Jak mamy się do Ciebie zwracać?
+                </span>
                 <input
                   autoFocus
                   className="field h-9"

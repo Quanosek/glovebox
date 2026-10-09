@@ -170,42 +170,43 @@ describe("migrate", () => {
       },
     });
 
-    it("migrates only cars already used by the local profile into owned cars", () => {
-      const data = migrate({
-        version: 3,
-        settings: {
-          activeCar: "skoda-octavia-2019",
-          vehicles: {
-            "mazda-3-2020": {
-              "drive.towbar": { status: "has", certainty: "confirmed" },
-            },
-          },
-        },
-        bookmarks: [{ car: "volvo-v60-2021", book: "manual", sectionId: "x" }],
-        highlights: { invalid: { car: "../unsafe" } },
-      });
-      expect(data.settings.ownedCars).toEqual([
-        "skoda-octavia-2019",
-        "mazda-3-2020",
-        "volvo-v60-2021",
-      ]);
-    });
-
-    it("sanitizes owned cars and keeps an empty list by default", () => {
-      expect(createEmptyData().settings.ownedCars).toEqual([]);
-      const data = migrate({
-        version: SCHEMA_VERSION,
-        settings: {
-          ownedCars: ["skoda-octavia-2019", "../unsafe", "skoda-octavia-2019"],
-        },
-      });
-      expect(data.settings.ownedCars).toEqual(["skoda-octavia-2019"]);
-    });
     expect(data.settings.vehicles).toEqual({
       "skoda-octavia-2019": {
         "drive.towbar": { status: "has", certainty: "confirmed" },
       },
     });
+  });
+
+  it("migrates only cars already used by the local profile into owned cars", () => {
+    const data = migrate({
+      version: 3,
+      settings: {
+        activeCar: "skoda-octavia-2019",
+        vehicles: {
+          "mazda-3-2020": {
+            "drive.towbar": { status: "has", certainty: "confirmed" },
+          },
+        },
+      },
+      bookmarks: [{ car: "volvo-v60-2021", book: "manual", sectionId: "x" }],
+      highlights: { invalid: { car: "../unsafe" } },
+    });
+    expect(data.settings.ownedCars).toEqual([
+      "skoda-octavia-2019",
+      "mazda-3-2020",
+      "volvo-v60-2021",
+    ]);
+  });
+
+  it("sanitizes owned cars and keeps an empty list by default", () => {
+    expect(createEmptyData().settings.ownedCars).toEqual([]);
+    const data = migrate({
+      version: SCHEMA_VERSION,
+      settings: {
+        ownedCars: ["skoda-octavia-2019", "../unsafe", "skoda-octavia-2019"],
+      },
+    });
+    expect(data.settings.ownedCars).toEqual(["skoda-octavia-2019"]);
   });
 });
 

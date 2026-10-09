@@ -3,15 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { confirmDialog } from "@/components/Dialog";
-import {
-  saveCarOffline,
-  useOfflineState,
-  useOnline,
-} from "@/lib/offline";
-import {
-  removeOwnedCar,
-  useHydrated,
-} from "@/lib/storage/hooks";
+import { saveCarOffline, useOfflineState, useOnline } from "@/lib/offline";
+import { removeOwnedCar, useHydrated } from "@/lib/storage/hooks";
 
 /** Offline copy status and the profile removal action of the car page. */
 export function CarActions({ carId, label }: { carId: string; label: string }) {
