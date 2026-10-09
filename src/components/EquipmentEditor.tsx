@@ -19,6 +19,7 @@ import {
 } from "@/lib/storage/hooks";
 import { plural } from "@/lib/typography";
 import { confirmDialog } from "./Dialog";
+import { Skeleton } from "./Skeleton";
 
 const MAX_LINKS = 5;
 
@@ -61,7 +62,31 @@ export function EquipmentEditor({
       </p>
     );
 
-  if (!hydrated) return <p className="text-sm text-steel">Ładowanie…</p>;
+  if (!hydrated)
+    return (
+      <div className="flex flex-col gap-4" aria-busy="true">
+        {groups.map((group) => (
+          <section key={group} className="panel">
+            <div className="panel-title">
+              <Skeleton className="h-3 w-36" />
+            </div>
+            <ul className="divide-y divide-line">
+              {detected
+                .filter((feature) => feature.group === group)
+                .map((feature) => (
+                  <li
+                    key={feature.id}
+                    className="flex min-h-16 items-center gap-3 px-4 py-3"
+                  >
+                    <Skeleton className="h-4 flex-1" />
+                    <Skeleton className="h-8 w-40 shrink-0" />
+                  </li>
+                ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+    );
 
   const marked = detected.filter((f) => profile[f.id]).length;
   const choose = (id: string, choice: FeatureStatus | "unknown") =>

@@ -7,13 +7,42 @@ import { useState } from "react";
 import { HIGHLIGHT_COLORS } from "@/lib/highlightColors";
 import type { Highlight } from "@/lib/storage/schema";
 import { updateData, useAppData, useHydrated } from "@/lib/storage/hooks";
+import { Skeleton } from "@/components/Skeleton";
 
 export function CommentsView({ cars }: { cars: CarSummary[] }) {
   const data = useAppData();
   const hydrated = useHydrated();
   const [onlyComments, setOnlyComments] = useState(false);
 
-  if (!hydrated) return <p className="mt-4 text-steel">Ładowanie…</p>;
+  if (!hydrated)
+    return (
+      <div className="mt-4 space-y-4" aria-busy="true">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-4 w-48" />
+          <Skeleton className="h-4 w-40" />
+        </div>
+        {[0, 1].map((group) => (
+          <section key={group} className="panel">
+            <div className="panel-title">
+              <Skeleton className="h-3 w-2/3" />
+            </div>
+            {[0, 1].map((item) => (
+              <div
+                key={item}
+                className="flex min-h-20 items-start gap-3 border-b border-line p-3"
+              >
+                <Skeleton className="mt-1 h-4 w-4 shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-3 w-2/3" />
+                </div>
+                <Skeleton className="h-7 w-16 shrink-0" />
+              </div>
+            ))}
+          </section>
+        ))}
+      </div>
+    );
 
   const all = Object.values(data.highlights);
   const list = all

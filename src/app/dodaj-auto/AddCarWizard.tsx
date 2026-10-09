@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { EquipmentEditor } from "@/components/EquipmentEditor";
+import { Skeleton } from "@/components/Skeleton";
 import { suggestFromSpec } from "@/config/vehicle";
 import type {
   CarSpec,
@@ -848,11 +849,11 @@ export function AddCarWizard({
                           alt={`Pierwsza strona: ${d.title}`}
                           className="h-full w-full object-contain"
                         />
+                      ) : d.previewState === "loading" ? (
+                        <Skeleton className="h-3/4 w-3/4" />
                       ) : (
                         <span className="px-2 text-center text-xs text-steel">
-                          {d.previewState === "loading"
-                            ? "Generowanie podglądu…"
-                            : "Brak podglądu"}
+                          Brak podglądu
                         </span>
                       )}
                       <span className="absolute top-0 left-0 bg-ink px-1.5 py-0.5 text-xs text-white">
@@ -1053,7 +1054,16 @@ function Availability({
       "Dodawanie instrukcji wymaga połączenia z aplikacją. Zapisane auta możesz dalej czytać – wróć tutaj, gdy połączenie wróci.";
   } else if (!system) {
     return checking ? (
-      <p className="mt-4 text-sm text-steel">Sprawdzanie gotowości…</p>
+      <div
+        className="mt-4 flex min-h-20 items-center gap-4 border-l-4 border-silver bg-paper px-4 py-3"
+        aria-busy="true"
+      >
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-4 w-1/3" />
+          <Skeleton className="h-3 w-2/3" />
+        </div>
+        <Skeleton className="h-9 w-36 shrink-0" />
+      </div>
     ) : null;
   } else if (running) {
     title = "Trwa dodawanie innego auta";
@@ -1291,14 +1301,25 @@ function StepEquipment({
             </p>
           )}
           <p className="text-xs text-steel">
-            Wszystko zmienisz później na stronie „Wyposażenie” tego auta.
+            Wszystko zmienisz później na stronie głównej.
           </p>
         </div>
       </div>
       {(!equipment || equipment.state === "loading") && (
-        <p className="text-sm text-steel">
-          Wyszukiwanie wyposażenia w instrukcjach…
-        </p>
+        <div className="panel" aria-busy="true">
+          <div className="panel-title">
+            <Skeleton className="h-3 w-40" />
+          </div>
+          {[0, 1, 2].map((row) => (
+            <div
+              key={row}
+              className="flex min-h-16 items-center gap-3 border-b border-line px-4 py-3"
+            >
+              <Skeleton className="h-4 flex-1" />
+              <Skeleton className="h-8 w-40 shrink-0" />
+            </div>
+          ))}
+        </div>
       )}
       {equipment?.state === "error" && (
         <div className="flex flex-col gap-2 border-l-4 border-red bg-paper px-4 py-3 text-sm sm:flex-row sm:items-center">
@@ -1401,9 +1422,7 @@ function StepDone({
             Auto jest już na liście aut – widać je na każdym urządzeniu, które
             korzysta z aplikacji uruchomionej na tym komputerze.
           </li>
-          <li>
-            Wyposażenie auta zmienisz w każdej chwili na stronie „Wyposażenie”.
-          </li>
+          <li>Wyposażenie auta zmienisz w każdej chwili na stronie głównej.</li>
           <li>
             Po otwarciu auta jego instrukcje zapiszą się same, aby działały też
             bez internetu.

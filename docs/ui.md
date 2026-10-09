@@ -87,7 +87,8 @@ last word of a paragraph (up to 10 characters) is bound to the previous one.
   field and graphite arrow. Checkboxes use a square red selected state and retain the global
   red keyboard focus outline. Native `details` disclosures use the same small red chevron.
 - Car overview tools are grouped separately from the manual list and include only actions
-  scoped to that car; comments, bookmarks and notes remain in the app-wide navigation.
+  scoped to that car. Equipment profiles are opened from each car card on the home profile;
+  comments, bookmarks and notes remain in the app-wide navigation.
 - `.hover-tile`: clickable cards/panels (car cards, profile and book tiles) get a darker
   border and a soft shadow on hover and a 1px press on `:active`.
 - `prefers-reduced-motion: reduce` shortens all transitions/animations to 1 ms and removes

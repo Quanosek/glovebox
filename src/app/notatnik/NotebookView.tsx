@@ -12,6 +12,7 @@ import {
 import type { NotePage } from "@/lib/storage/schema";
 import { updateData, useAppData, useHydrated } from "@/lib/storage/hooks";
 import { newId } from "@/lib/storage/store";
+import { Skeleton } from "@/components/Skeleton";
 
 const AUTOSAVE_MS = 400;
 
@@ -24,7 +25,39 @@ export function NotebookView({ initialPage }: { initialPage?: string }) {
   const pages = notebook.pages;
   const selected = pages.find((p) => p.id === selectedId) ?? pages[0] ?? null;
 
-  if (!hydrated) return <p className="mt-4 text-steel">Ładowanie…</p>;
+  if (!hydrated)
+    return (
+      <div
+        className="mt-4 grid gap-4 md:grid-cols-[16rem_1fr]"
+        aria-busy="true"
+      >
+        <aside className="panel self-start">
+          <div className="panel-title">
+            <Skeleton className="h-3 w-20" />
+          </div>
+          {[0, 1, 2, 3].map((item) => (
+            <div
+              key={item}
+              className="flex min-h-16 flex-col justify-center gap-2 border-b border-line px-3 py-2"
+            >
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
+          ))}
+        </aside>
+        <section className="panel min-h-80">
+          <div className="panel-title">
+            <Skeleton className="h-3 w-28" />
+          </div>
+          <div className="space-y-4 p-4">
+            <Skeleton className="h-6 w-1/2" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
+        </section>
+      </div>
+    );
 
   const create = () => {
     const now = new Date().toISOString();

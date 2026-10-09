@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { equipmentHref, hasReadableManual, type CarSummary } from "@/lib/cars";
+import { hasReadableManual, type CarSummary } from "@/lib/cars";
 import { useOnline } from "@/lib/offline";
 import { useActiveCar } from "@/lib/storage/hooks";
 import { CarLogo } from "./CarLogo";
@@ -21,11 +21,10 @@ export function Header({ cars }: { cars: CarSummary[] }) {
       : hasManuals
         ? { href: "/auta", label: "Wybierz auto" }
         : { href: "/dodaj-auto", label: "Dodaj auto" },
-    ...(car ? [{ href: equipmentHref(car.id), label: "Wyposażenie" }] : []),
-    { href: "/ostrzezenia", label: "Ostrzeżenia" },
+    { href: "/notatnik", label: "Notatnik" },
     { href: "/komentarze", label: "Komentarze" },
     { href: "/zakladki", label: "Zakładki" },
-    { href: "/notatnik", label: "Notatnik" },
+    { href: "/ostrzezenia", label: "Ostrzeżenia" },
     ...(hasManuals ? [{ href: "/dodaj-auto", label: "Dodaj auto" }] : []),
     { href: "/ustawienia", label: "Ustawienia" },
   ];
@@ -84,7 +83,7 @@ export function Header({ cars }: { cars: CarSummary[] }) {
 
         {!online && (
           <span
-            className="badge badge-dark shrink-0"
+            className="badge badge-dark hidden shrink-0 sm:inline-flex"
             title="Brak internetu – działają instrukcje zapisane na tym urządzeniu"
           >
             Bez internetu
@@ -129,7 +128,7 @@ export function Header({ cars }: { cars: CarSummary[] }) {
 
         <button
           type="button"
-          className="btn btn-ghost h-9 xl:hidden"
+          className="btn btn-ghost h-9 lg:hidden"
           aria-expanded={open}
           aria-controls="main-nav"
           onClick={() => setOpen((v) => !v)}
@@ -141,9 +140,9 @@ export function Header({ cars }: { cars: CarSummary[] }) {
       <nav
         id="main-nav"
         aria-label="Główna nawigacja"
-        className={`${open ? "block" : "hidden"} border-t border-line bg-white xl:block xl:bg-transparent`}
+        className={`${open ? "block" : "hidden"} border-t border-line bg-white lg:block lg:bg-transparent`}
       >
-        <ul className="mx-auto flex max-w-app flex-col xl:flex-row xl:px-3">
+        <ul className="mx-auto flex max-w-app flex-col lg:flex-row lg:flex-wrap lg:px-3">
           {nav.map((item) => {
             const active =
               pathname === item.href ||
@@ -154,7 +153,7 @@ export function Header({ cars }: { cars: CarSummary[] }) {
                   href={item.href}
                   onClick={() => setOpen(false)}
                   aria-current={active ? "page" : undefined}
-                  className={`block border-b-2 px-4 py-2 text-sm xl:px-3 ${
+                  className={`block border-b-2 px-4 py-2 text-sm lg:px-3 ${
                     active
                       ? "border-red font-semibold text-ink"
                       : "border-transparent text-graphite hover:border-silver hover:text-ink"

@@ -1,8 +1,6 @@
 "use client";
 
-import Link from "next/link";
 import { useRef, useState } from "react";
-import { equipmentHref, type CarSummary } from "@/lib/cars";
 import type { FontSize } from "@/lib/storage/schema";
 import { updateData, useAppData, useHydrated } from "@/lib/storage/hooks";
 import { getStore } from "@/lib/storage/store";
@@ -17,7 +15,7 @@ const FONT_SIZES: { id: FontSize; label: string }[] = [
   { id: "xlarge", label: "Bardzo duża" },
 ];
 
-export function SettingsView({ cars }: { cars: CarSummary[] }) {
+export function SettingsView() {
   const data = useAppData();
   const hydrated = useHydrated();
   const [message, setMessage] = useState<{
@@ -27,7 +25,27 @@ export function SettingsView({ cars }: { cars: CarSummary[] }) {
   const [importMode, setImportMode] = useState<"merge" | "replace">("merge");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  if (!hydrated) return <p className="mt-4 text-steel">Ładowanie…</p>;
+  if (!hydrated)
+    return (
+      <div className="mt-4 flex flex-col gap-6" aria-busy="true">
+        {[10, 7, 12].map((height) => (
+          <div
+            key={height}
+            className="panel"
+            style={{ minHeight: `${height}rem` }}
+          >
+            <div className="panel-title">
+              <span className="skeleton h-3 w-32" />
+            </div>
+            <div className="flex flex-col gap-3 p-4">
+              <span className="skeleton h-4 w-3/4" />
+              <span className="skeleton h-8 w-2/3" />
+              <span className="skeleton h-4 w-1/2" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   const { settings } = data;
   const store = getStore();
 
@@ -166,46 +184,6 @@ export function SettingsView({ cars }: { cars: CarSummary[] }) {
               aucie”).
             </span>
           </label>
-        </div>
-      </section>
-
-      <section className="panel">
-        <h2 className="panel-title">Wyposażenie aut</h2>
-        <div className="p-4 text-sm">
-          <p className="text-graphite">
-            Dla każdego auta możesz zaznaczyć, które wyposażenie dodatkowe
-            opisane w instrukcji ma Twój egzemplarz. Sekcje o brakującym
-            wyposażeniu są wtedy zwijane i oznaczane jako „Brak w Twoim aucie”.
-          </p>
-          {cars.length === 0 ? (
-            <p className="mt-3 text-steel">Nie dodano jeszcze żadnego auta.</p>
-          ) : (
-            <ul className="mt-3 border-t border-line">
-              {cars.map((car) => {
-                const count = Object.keys(
-                  settings.vehicles[car.id] ?? {},
-                ).length;
-                return (
-                  <li
-                    key={car.id}
-                    className="flex flex-wrap items-center justify-between gap-2 border-b border-line py-2"
-                  >
-                    <span>
-                      <span className="font-semibold">{car.label}</span>
-                      <span className="ml-2 text-xs text-steel">
-                        {count > 0
-                          ? `zaznaczono ${count} ${plural(count, "element", "elementy", "elementów")}`
-                          : "nic nie zaznaczono"}
-                      </span>
-                    </span>
-                    <Link href={equipmentHref(car.id)} className="btn">
-                      Wyposażenie
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
         </div>
       </section>
 
