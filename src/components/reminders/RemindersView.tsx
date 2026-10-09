@@ -21,6 +21,7 @@ import { CarLogo } from "../CarLogo";
 import { Skeleton } from "../Skeleton";
 import { CustomReminders } from "./CustomReminders";
 import { DueBadge } from "./DueBadge";
+import { ReminderNotifications } from "./ReminderNotifications";
 
 /**
  * "Przypomnienia": per car of the profile, the yearly technical inspection,
@@ -57,15 +58,7 @@ export function RemindersView({
 
   return (
     <div className="space-y-8">
-      {myCars.length > 1 && (
-        <nav aria-label="Auta" className="flex flex-wrap gap-2">
-          {myCars.map((car) => (
-            <a key={car.id} href={`#${car.id}`} className="btn">
-              {car.label}
-            </a>
-          ))}
-        </nav>
-      )}
+      <ReminderNotifications />
       {myCars.map((car) => (
         <CarReminders
           key={car.id}
@@ -169,11 +162,12 @@ function DeadlineCard({
   reminder: Reminder | null | undefined;
 }) {
   const date = reminder?.dueDate ?? null;
+  const eventDate = reminder?.eventDate ?? "";
   const days = date ? daysUntil(date, todayIso()) : null;
   const inputId = `${kind}-${carId}`;
 
-  const save = (dueDate: string | null) => {
-    if (!dueDate) {
+  const save = (lastEventDate: string | null) => {
+    if (!lastEventDate) {
       deleteReminder(fixedReminderId(kind, carId));
       return;
     }
@@ -181,7 +175,31 @@ function DeadlineCard({
       car: carId,
       kind,
       title,
-      dueDate,
+      dueDate: addYear(lastEventDate),
+      eventDate: lastEventDate,
+      dueKm: null,
+      done: false,
+    });
+  };
+  const markDone = () => {
+    if (!date) return;
+    if (!eventDate) {
+      saveReminder({
+        car: carId,
+        kind,
+        title,
+        dueDate: addYear(date),
+        dueKm: null,
+        done: false,
+      });
+      return;
+    }
+    saveReminder({
+      car: carId,
+      kind,
+      title,
+      eventDate: date,
+      dueDate: addYear(date),
       dueKm: null,
       done: false,
     });
@@ -207,29 +225,51 @@ function DeadlineCard({
         {days != null && <DueBadge days={days} />}
       </p>
       <p className="mt-2 text-sm text-graphite">{text}</p>
-      <div className="mt-auto flex flex-wrap items-end gap-2 pt-4">
+      <div className="mt-auto flex flex-col items-stretch gap-2 pt-4 sm:flex-row sm:items-end">
         <label htmlFor={inputId} className="min-w-44 flex-1">
           <span className="mb-1 block text-sm font-semibold text-graphite">
-            Data terminu
+            {kind === "inspection"
+              ? "Data ostatniego badania"
+              : "Data rozpoczęcia polisy OC"}
           </span>
           <input
             id={inputId}
             type="date"
             className="field"
-            value={date ?? ""}
+            value={eventDate}
             disabled={reminder === undefined}
             onChange={(e) => save(e.target.value || null)}
           />
+          <span className="mt-1 block text-xs text-graphite">
+            {eventDate
+              ? `Następny termin: ${formatDate(addYear(eventDate))}.`
+              : date
+                ? `Dotychczasowy termin: ${formatDate(date)}. Wpisz datę ${
+                    kind === "inspection" ? "badania" : "rozpoczęcia polisy"
+                  }, aby obliczyć kolejny.`
+                : `Wpisz datę ${
+                    kind === "inspection" ? "badania" : "rozpoczęcia polisy"
+                  } – kolejny termin obliczymy za rok.`}
+          </span>
         </label>
         <button
           type="button"
-          className="btn"
+          className="btn justify-center"
           disabled={!date}
           title="Przesuwa termin o rok"
-          onClick={() => date && save(addYear(date))}
+          onClick={markDone}
         >
           Załatwione – za rok
         </button>
+        {reminder && (
+          <button
+            type="button"
+            className="btn btn-ghost justify-center"
+            onClick={() => deleteReminder(reminder.id)}
+          >
+            Usuń termin
+          </button>
+        )}
       </div>
     </div>
   );

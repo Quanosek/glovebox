@@ -154,8 +154,9 @@ export function withoutBookmark(d: AppData, bookmarkId: string): AppData {
 }
 
 export function saveReminder(
-  reminder: Omit<Reminder, "id" | "createdAt" | "updatedAt"> & {
+  reminder: Omit<Reminder, "id" | "createdAt" | "updatedAt" | "eventDate"> & {
     id?: string;
+    eventDate?: string | null;
   },
 ): void {
   const now = new Date().toISOString();
@@ -170,6 +171,7 @@ export function saveReminder(
     const fixed = d.reminders.find((r) => r.id === id);
     const next: Reminder = {
       ...reminder,
+      eventDate: reminder.eventDate ?? null,
       id,
       createdAt: (existing ?? fixed)?.createdAt ?? now,
       updatedAt: now,
