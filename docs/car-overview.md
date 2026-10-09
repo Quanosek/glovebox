@@ -49,9 +49,9 @@ re-extraction.
   pinning; the bar is hidden while the car has no bookmarks), `QuickTiles`, books, tools; side
   column: `TechPreview`, `ServiceReminders` (inspection and OC insurance always; a third row
   with the nearest own reminder only once one exists; "Ustaw przypomnienia" links to
-  `/przypomnienia#<car>`). The last, full-width section is `CarActions` ("Bez internetu",
-  `#bez-internetu`: status, progress, "Zapisz ponownie"); the stats strip only shows the status
-  and links there. Removing a car from the profile is done on the profile (`CarPicker`), not here.
+  `/przypomnienia#<car>`) and, as the last tile, `CarActions` ("Bez internetu",
+  `#bez-internetu`: status, progress, "Zapisz ponownie"). The stats strip cell only shows ✓ / –
+  with "dostęp bez internetu" and links to that tile. Removing a car from the profile is done on the profile (`CarPicker`), not here.
 - `/przypomnienia` (`RemindersView`, in the main navigation): one panel per car of the profile
   (`id` = car id) with two fixed yearly deadlines – "Badanie techniczne" and "Ubezpieczenie
   OC" (date field, "za N dni" badge, "Załatwione – za rok" moves the date by one year) – and

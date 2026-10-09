@@ -19,17 +19,21 @@ export function OfflineStat({ carId }: { carId: string }) {
         {progress ? (
           `${Math.round(progress.total ? (progress.done / progress.total) * 100 : 100)}%`
         ) : saved ? (
-          <span aria-hidden="true">✓</span>
+          <>
+            <span aria-hidden="true">✓</span>
+            <span className="sr-only">tak</span>
+          </>
         ) : (
-          <span className="text-silver">–</span>
+          <>
+            <span aria-hidden="true" className="text-silver">
+              –
+            </span>
+            <span className="sr-only">nie</span>
+          </>
         )}
       </span>
       <span className="mt-1.5 block text-xs text-graphite">
-        {progress
-          ? "zapisywanie"
-          : saved
-            ? "działa bez internetu"
-            : "bez internetu: jeszcze nie"}{" "}
+        {progress ? "zapisywanie" : "dostęp bez internetu"}{" "}
         <span aria-hidden="true" className="text-red">
           ›
         </span>

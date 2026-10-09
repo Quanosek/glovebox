@@ -6,8 +6,8 @@ import { useHydrated } from "@/lib/storage/hooks";
 import { Skeleton } from "./Skeleton";
 
 /**
- * Offline copy of the car, the last section of the car page. The stats strip
- * at the top only shows the status and links here (`#bez-internetu`).
+ * Offline copy of the car, the last tile of the car page's side column. The
+ * stats strip at the top only shows the status and links here (`#bez-internetu`).
  */
 export function CarActions({ carId }: { carId: string }) {
   const hydrated = useHydrated();
@@ -20,12 +20,16 @@ export function CarActions({ carId }: { carId: string }) {
   const progress = offline.running[carId];
   const offlineError = offline.errors[carId];
   return (
-    <section id="bez-internetu" aria-labelledby="car-offline-title">
-      <h2 id="car-offline-title" className="section-label">
+    <section
+      id="bez-internetu"
+      className="panel"
+      aria-labelledby="car-offline-title"
+    >
+      <h2 id="car-offline-title" className="panel-title">
         Bez internetu
       </h2>
-      <div className="panel flex flex-col gap-4 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0 sm:max-w-2xl" aria-live="polite">
+      <div className="space-y-3 p-4 text-sm">
+        <div aria-live="polite">
           {progress ? (
             <>
               <p className="font-semibold">
@@ -76,7 +80,7 @@ export function CarActions({ carId }: { carId: string }) {
         {!progress && (
           <button
             type="button"
-            className="btn shrink-0"
+            className="btn"
             disabled={!online}
             onClick={() => void saveCarOffline(carId, { force: true })}
           >
