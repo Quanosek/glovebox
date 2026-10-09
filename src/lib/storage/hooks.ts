@@ -69,6 +69,34 @@ export function setVehicleProfile(
   });
 }
 
+/** Adds a car from the shared manuals library to this browser profile. */
+export function addOwnedCar(carId: string): void {
+  updateData((d) =>
+    d.settings.ownedCars.includes(carId)
+      ? d
+      : {
+          ...d,
+          settings: {
+            ...d.settings,
+            ownedCars: [...d.settings.ownedCars, carId],
+          },
+        },
+  );
+}
+
+/** Removes a car from this browser profile without deleting its manuals. */
+export function removeOwnedCar(carId: string): void {
+  updateData((d) => ({
+    ...d,
+    settings: {
+      ...d.settings,
+      activeCar:
+        d.settings.activeCar === carId ? null : d.settings.activeCar,
+      ownedCars: d.settings.ownedCars.filter((id) => id !== carId),
+    },
+  }));
+}
+
 export function updateData(fn: (data: AppData) => AppData): void {
   getStore().update(fn);
 }
