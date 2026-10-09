@@ -27,11 +27,7 @@ const KINDS: { id: WarningKind | "all"; label: string }[] = [
   { id: "note", label: "Uwaga" },
 ];
 
-export function WarningsList({
-  items: allItems,
-}: {
-  items: WarningItem[];
-}) {
+export function WarningsList({ items: allItems }: { items: WarningItem[] }) {
   const [kind, setKind] = useState<WarningKind | "all">("all");
   const hydrated = useHydrated();
   const { settings } = useAppData();

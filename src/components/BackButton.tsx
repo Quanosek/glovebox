@@ -35,17 +35,17 @@ export function BackButton() {
         className="btn btn-ghost"
         onClick={() => {
           const selectedCar = new URLSearchParams(window.location.search).get(
-          "car",
+            "car",
           );
           const target = isValidId(selectedCar)
-          ? `/auto/${selectedCar}`
-          : fallback;
+            ? `/auto/${selectedCar}`
+            : fallback;
           const referrer = document.referrer;
           if (
-          window.history.length > 1 &&
-          referrer.startsWith(window.location.origin)
+            window.history.length > 1 &&
+            referrer.startsWith(window.location.origin)
           )
-          router.back();
+            router.back();
           else router.push(target);
         }}
       >
