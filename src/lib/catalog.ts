@@ -48,12 +48,14 @@ export interface CatalogEngine {
   share: number;
 }
 
-/** Engine version stored in `car.json` (`spec`). */
+/** Engine version chosen in the browser's vehicle profile. */
 export interface CarSpec {
   fuel: FuelKind;
   engineCm3: number | null;
   powerKw: number;
   label: string;
+  /** Manufacturer code from the manual, when the choice identifies a unique variant. */
+  code?: string;
 }
 
 export const FUEL_LABEL: Record<FuelKind, string> = {

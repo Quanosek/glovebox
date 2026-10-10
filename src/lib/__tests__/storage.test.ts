@@ -12,7 +12,13 @@ import {
   createEmptyData,
   type Highlight,
 } from "@/lib/storage/schema";
-import { AppStore, type KeyValueStorage } from "@/lib/storage/store";
+import { AppStore, getStore, type KeyValueStorage } from "@/lib/storage/store";
+import {
+  addOwnedCar,
+  initializeCarEngine,
+  setCarEngine,
+  setFeatureState,
+} from "@/lib/storage/hooks";
 
 function memoryStorage(
   initial: Record<string, string> = {},
@@ -48,6 +54,95 @@ const highlight = (
 });
 
 describe("migrate", () => {
+  it("does not inherit another owner's legacy engine when assigning a library car", () => {
+    const store = getStore();
+    store.replace(createEmptyData());
+    addOwnedCar("car");
+    initializeCarEngine("car", {
+      fuel: "diesel",
+      engineCm3: 1956,
+      powerKw: 125,
+      label: "Diesel",
+    });
+    expect(store.get().settings.engines.car).toBeNull();
+  });
+  it("preserves a legacy owned car's engine only until the owner makes a local choice", () => {
+    const store = getStore();
+    const data = createEmptyData();
+    data.settings.ownedCars = ["car"];
+    store.replace(data);
+    const engine = {
+      fuel: "diesel" as const,
+      engineCm3: 1956,
+      powerKw: 125,
+      label: "Diesel",
+    };
+    initializeCarEngine("car", engine);
+    expect(store.get().settings.engines.car).toEqual(engine);
+    expect(store.get().settings.vehicles.car["engine.diesel"].status).toBe(
+      "has",
+    );
+    setFeatureState("car", "engine.diesel", null);
+    expect(store.get().settings.vehicles.car["engine.diesel"]).toBeUndefined();
+    setCarEngine("car", null);
+    initializeCarEngine("car", engine);
+    expect(store.get().settings.engines.car).toBeNull();
+  });
+  it("upgrades v6 with empty local engine choices and preserves equipment", () => {
+    const data = migrate({
+      version: 6,
+      settings: {
+        vehicles: {
+          car: { "engine.diesel": { status: "has", certainty: "confirmed" } },
+        },
+      },
+    });
+    expect(data.settings.engines).toEqual({});
+    expect(data.settings.vehicles.car["engine.diesel"].status).toBe("has");
+  });
+
+  it("keeps valid engines and explicit unknown choices, drops malformed entries", () => {
+    const engine = {
+      fuel: "diesel",
+      engineCm3: 1956,
+      powerKw: 125,
+      label: "2.0 Diesel",
+      code: "D20",
+    };
+    const data = migrate({
+      version: SCHEMA_VERSION,
+      settings: {
+        engines: {
+          car: engine,
+          unknown: null,
+          invalid: { ...engine, powerKw: -1 },
+          "../bad": engine,
+        },
+      },
+    });
+    expect(data.settings.engines).toEqual({ car: engine, unknown: null });
+    expect(
+      parseImport(JSON.stringify({ app: "opel-cascada-manual", data })).settings
+        .engines,
+    ).toEqual(data.settings.engines);
+  });
+
+  it("merges local engines with current choices including unknown winning", () => {
+    const current = createEmptyData();
+    const incoming = createEmptyData();
+    const engine = {
+      fuel: "diesel" as const,
+      engineCm3: 1956,
+      powerKw: 125,
+      label: "2.0 Diesel",
+    };
+    current.settings.engines.car = null;
+    incoming.settings.engines = { car: engine, other: engine };
+    expect(mergeData(current, incoming).settings.engines).toEqual({
+      car: null,
+      other: engine,
+    });
+  });
   it("returns empty data for missing storage", () => {
     expect(migrate(null)).toEqual(createEmptyData());
   });

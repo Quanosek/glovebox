@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import type { FeatureState, VehicleProfile } from "@/config/vehicle";
 import type { CarSummary } from "@/lib/cars";
 import { isValidId } from "@/lib/slug";
+import type { CarSpec } from "@/lib/catalog";
+import { vehicleProfileWithEngine } from "@/lib/engines";
 import { useLayoutHint } from "./hintContext";
 import { historyKey } from "./migrations";
 import {
@@ -46,7 +48,56 @@ export function useVehicleProfile(carId?: string | null): VehicleProfile {
   const pathname = usePathname();
   const data = useAppData();
   const id = carId ?? /^\/auto\/([^/]+)/.exec(pathname)?.[1];
-  return (id && data.settings.vehicles[id]) || EMPTY_PROFILE;
+  const profile = (id && data.settings.vehicles[id]) || EMPTY_PROFILE;
+  return profile;
+}
+
+export function useCarEngine(carId: string): CarSpec | null {
+  const data = useAppData();
+  const hydrated = useHydrated();
+  const hint = useLayoutHint();
+  return (
+    (hydrated ? data.settings.engines[carId] : hint.engines[carId]) ?? null
+  );
+}
+
+export function setCarEngine(carId: string, engine: CarSpec | null): void {
+  updateData((d) => ({
+    ...d,
+    settings: {
+      ...d.settings,
+      engines: { ...d.settings.engines, [carId]: engine },
+      vehicles: {
+        ...d.settings.vehicles,
+        [carId]: vehicleProfileWithEngine(
+          d.settings.vehicles[carId] ?? {},
+          engine,
+        ),
+      },
+    },
+  }));
+}
+
+/** Old car files are read only once as a compatibility hint; never written back. */
+export function initializeCarEngine(carId: string, legacy?: CarSpec): void {
+  updateData((d) =>
+    Object.hasOwn(d.settings.engines, carId)
+      ? d
+      : {
+          ...d,
+          settings: {
+            ...d.settings,
+            engines: { ...d.settings.engines, [carId]: legacy ?? null },
+            vehicles: {
+              ...d.settings.vehicles,
+              [carId]: vehicleProfileWithEngine(
+                d.settings.vehicles[carId] ?? {},
+                legacy,
+              ),
+            },
+          },
+        },
+  );
 }
 
 /** Sets (or with `null` clears) the state of one feature of a car. */
@@ -90,6 +141,10 @@ export function addOwnedCar(carId: string): void {
           settings: {
             ...d.settings,
             ownedCars: [...d.settings.ownedCars, carId],
+            // A new assignment must not inherit an engine from another owner's legacy manuals.
+            engines: Object.hasOwn(d.settings.engines, carId)
+              ? d.settings.engines
+              : { ...d.settings.engines, [carId]: null },
           },
         },
   );

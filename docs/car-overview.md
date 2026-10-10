@@ -1,8 +1,8 @@
 # Car overview screens
 
 Navi 950 "home screen" elements built only from data the app already has: the generated
-manuals in `database/`, the catalogue engine data in `car.json` (`spec`) and the browser
-profile. Nothing here makes a network request; tiles without data are not rendered.
+manuals in `database/` and the browser profile (including the selected engine).
+The overview makes no network request; tiles without data are not rendered.
 
 ## Server collection (`src/lib/carOverview.ts`)
 
@@ -10,8 +10,8 @@ Server-only (reads `src/lib/content.ts`); results are memoised per car and
 `getCarVersion(car)`, so a re-import refreshes them.
 
 - `getCarOverview(car)` → `stats` (pages, sections, illustrations, icons, warnings by kind),
-  `tiles` ("Najczęściej potrzebne"), `glossaryCount`, `techCount`, `techPreview` (up to four
-  measured facts) and `serviceHref` (section about periodic service).
+  `tiles` ("Najczęściej potrzebne"), `glossaryCount`, `techCount`
+  and `serviceHref` (section about periodic service).
 - `getGlossary(car)` → pictograms with their explanation grouped by section: icon image blocks
   followed by text, and paragraphs that start with an inline symbol run
   (`{ icon }`, e.g. "[symbol] Kierunkowskaz str. 98"). Sections whose
@@ -24,7 +24,17 @@ Server-only (reads `src/lib/content.ts`); results are memoised per car and
   - any other section gives only measurement tables (`isMeasurementTable`: ≥ 2 rows, at least
     half with a value and unit, `hasMeasurement`).
     Two-column tables become label/value facts (`tableFacts`), others stay tables. Each links to
-    its block. `techPreview` keeps only facts with a measured value.
+    its block and preserves its preceding printed heading as context.
+- `getManualEngines(car)` joins explicitly labelled engine tables by manufacturer code
+  (`src/lib/engines.ts`).
+- `driverFacts` (`src/lib/driverFacts.ts`, client-safe) selects up to four useful values:
+  owner's engine and fuel, then tank capacity, source-reported mixed/average consumption,
+  selected engine torque, turning circle or luggage capacity. It carries units from labels,
+  deduplicates repeats and preserves alternatives and qualifications. It never calculates
+  expected real-world consumption or presents ambiguous engine matrices as personal values.
+  Source values link to their original blocks; oil-viscosity rows are not overview facts.
+  Without an engine choice, consumption and torque are omitted even from two-column tables;
+  only model-wide capacities and dimensions are eligible.
 - `getSectionThumb(ctx, section)` → first non-icon illustration (≥ 120×80) of a section.
 - `getTips(cars)` → "Czy wiesz, że…" notes (`warning` blocks of kind `note`, ≥ 40 characters),
   at most 30 per car spread over the whole manual.
@@ -44,7 +54,7 @@ re-extraction.
 ## Screens
 
 - Car page `/auto/<car>`: `CarHero` (logo, brand, model + year, engine chips from
-  `specParts`: capacity, kW and KM, fuel), `CarStatsStrip` (warnings link to
+  `specParts` from the local engine: capacity, kW and KM, fuel), `CarStatsStrip` (warnings link to
   `/ostrzezenia?car=`; the last cell is the offline copy state and jumps to `#bez-internetu`),
   "Czytaj dalej", `FavoritesBar` ("Ulubione": the six newest bookmarks of the car as numbered
   keys; bookmarks are only created with "Dodaj zakładkę" in the manual, there is no separate
@@ -64,12 +74,15 @@ re-extraction.
 - `/auto/<car>/lampki-kontrolne`: symbol cards with a local text filter; each card links to
   the image block (`#<blockId>`) in the manual.
 - `/auto/<car>/dane-techniczne`: fact cards (values in `.type-fact`) and compact tables, each with
-  "Pokaż w instrukcji". `lampki-kontrolne` and `dane-techniczne` are reserved book routes
+  "Pokaż w instrukcji". Engine tables reuse `EngineTable` from the reader, with per-table
+  expansion and the global show-all setting. `lampki-kontrolne` and `dane-techniczne` are reserved book routes
   (`RESERVED_BOOK_ROUTES`) and part of the offline copy (`getCarUrls`).
 - Reader (`/auto/<car>/<book>/<section>`): previous/next links with section thumbnails. From
   90rem a side column (`.reader-grid`, the book layout widens to 63.5rem only for it) lists
   "Na tej stronie" (level 2–3 headings), the warnings of the section by kind and "Moje
-  zaznaczenia" (client, `#hl-<id>` links).
+  zaznaczenia" (client, `#hl-<id>` links). The client `SectionOutline` tracks the visible
+  heading part and reveals its active link in the side pane; visibility thresholds and
+  the animated red marker are described in `docs/ui.md`.
 - Profile `/`: "Czytaj dalej" with the history thumbnail, "Ostatnio czytane" (history),
   "Ostatnie zaznaczenia i komentarze" and `TipCard` (random tip of the profile's cars; the
   server picks the seed, so the tip is rendered on the first paint). When only one of the two
@@ -81,7 +94,7 @@ re-extraction.
 - `/przypomnienia` without cars: a short explanation and "Dodaj auto" (`/dodaj-auto`).
 - Add-car wizard: step 2 film strip, step 4 `CarHero` from `GET /api/cars/<id>`.
 
-## Browser data (schema v6, `docs/storage.md`)
+## Browser data (schema v7, `docs/storage.md`)
 
 `history`, `reminders` and `bookmarks` back "Ostatnio czytane", "Przypomnienia"
 and "Ulubione". Reminders are shown on `/przypomnienia`, on the car page and as a count in

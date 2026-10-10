@@ -10,7 +10,11 @@ import { QuickTiles } from "@/components/car/QuickTiles";
 import { ServiceReminders } from "@/components/car/ServiceReminders";
 import { TechPreview } from "@/components/car/TechPreview";
 import { carLabel, equipmentHref } from "@/lib/cars";
-import { getCarOverview } from "@/lib/carOverview";
+import {
+  getCarOverview,
+  getManualEngines,
+  getTechCards,
+} from "@/lib/carOverview";
 import { getCar, getCarSummary } from "@/lib/content";
 import { plural } from "@/lib/typography";
 
@@ -48,8 +52,7 @@ export default async function CarPage({ params }: Props) {
           brand={car.brand}
           model={car.model}
           year={car.year}
-          variant={car.variant}
-          spec={car.spec}
+          variant={car.spec ? undefined : car.variant}
         >
           <Link
             href={equipmentHref(car.id)}
@@ -133,7 +136,8 @@ export default async function CarPage({ params }: Props) {
         <aside className="min-w-0 space-y-6" aria-label="Dodatkowe informacje">
           <TechPreview
             carId={car.id}
-            facts={overview.techPreview}
+            cards={getTechCards(file)}
+            engines={getManualEngines(file)}
             tables={overview.techCount}
           />
           <ServiceReminders carId={car.id} serviceHref={overview.serviceHref} />

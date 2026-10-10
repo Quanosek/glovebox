@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { SCHEMA_VERSION, STORAGE_KEY } from "@/lib/storage/schema";
 
 /**
  * Offline copies of cars (Cache API). Opening a car saves all its pages,
@@ -11,8 +12,8 @@ import { useSyncExternalStore } from "react";
  */
 
 /** Name of the Cache API cache shared with `public/sw.js`. */
-export const OFFLINE_CACHE = "opel-cascada-manual-offline-v1";
-const STATUS_KEY = "opel-cascada-manual:offline";
+export const OFFLINE_CACHE = `opel-cascada-manual-offline-v${SCHEMA_VERSION}`;
+const STATUS_KEY = `${STORAGE_KEY}:offline:v${SCHEMA_VERSION}`;
 const WORKERS = 3;
 
 export interface OfflineEntry {

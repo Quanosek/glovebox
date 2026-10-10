@@ -16,6 +16,14 @@ describe("layout hint", () => {
     data.settings.activeCar = car;
     data.settings.profileName = " Jan ";
     data.settings.fontSize = "large";
+    data.settings.engines[car] = {
+      fuel: "diesel",
+      engineCm3: 1956,
+      powerKw: 125,
+      label: "2.0 Diesel",
+      code: "D20",
+    };
+    data.settings.showUnavailable = true;
     data.notebook.pages = [
       { id: "p", title: "", body: "", createdAt: "x", updatedAt: "x" },
     ];
@@ -57,6 +65,8 @@ describe("layout hint", () => {
     expect(hint.bookmarks).toEqual({ [car]: 6 });
     expect(hint.offline).toEqual([car]);
     expect(hint.due).toBe(1);
+    expect(hint.engines[car]).toEqual(data.settings.engines[car]);
+    expect(hint.showUnavailable).toBe(true);
     const value = serializeHint(hint);
     expect(parseHint(value)).toEqual(hint);
     // Next.js may hand over an already decoded value.

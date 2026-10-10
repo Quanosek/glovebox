@@ -23,7 +23,7 @@ def assign_layout(doc: Document) -> None:
     ordered: list[Item] = []
     for pno in sorted(by_page):
         items = by_page[pno]
-        columns = page_columns[pno]
+        columns = merge_indented_columns(page_columns[pno], edges)
         for it in items:
             it.col = -1
             for k, (c0, c1) in enumerate(columns):
@@ -64,6 +64,18 @@ def snap_edge(c0: float, edges: list[float]) -> float:
     column) starts at the usual column edge, not at its first indented line."""
     candidates = [e for e in edges if c0 - 25 <= e <= c0 + 1]
     return max(candidates) if candidates else c0
+
+
+def merge_indented_columns(columns: list[tuple[float, float]], edges: list[float]) -> list[tuple[float, float]]:
+    """An isolated legend marker and its indented text share the recurring
+    column edge learned from other pages of this document."""
+    merged: list[tuple[float, float]] = []
+    for c0, c1 in columns:
+        if merged and snap_edge(c0, edges) == snap_edge(merged[-1][0], edges):
+            merged[-1] = (merged[-1][0], c1)
+        else:
+            merged.append((c0, c1))
+    return merged
 
 
 def find_columns(items: list[Item], width: float) -> list[tuple[float, float]]:

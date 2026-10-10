@@ -76,7 +76,7 @@ then `python3`, `python`, `py`; it accepts Python 3.10+, PyMuPDF 1.26+ and Pillo
 
 ```
 database/                       user-managed manual content (git-ignored; JSON + WebP, never PDFs)
-  <car>/car.json                CarFile: brand, model, year, variant?, catalog?, spec?, books[]
+  <car>/car.json                CarFile: brand, model, year, variant?, catalog?, books[]
   <car>/<bookId>/index.json     BookIndex (+ one ChapterFile JSON per top-level chapter)
   <car>/assets/<bookId>/<chapter>/p<page>-<n>.webp   illustrations, served as /media/<car>/...
   .import-<job>/                staging folder of a running import (skipped)
@@ -104,7 +104,7 @@ src/
     api/cars                    GET list · POST multipart import (202 {job})
     api/cars/[car]              GET · DELETE (not while importing)
     api/cars/[car]/offline      GET { version, urls } for the offline copy of a car
-    api/cars/[car]/features     GET { sections, spec } equipment found in the car's manuals
+    api/cars/[car]/features     GET { sections, engines, catalog?, year } equipment and manual engines
     api/catalog/{brands,models,engines}   GET official catalogue lists (wizard)
     api/jobs/[id]               GET import progress
     api/search-index?car=       GET search corpus of one car
@@ -218,8 +218,9 @@ Details in `docs/vehicle-profile.md`. Every car is tagged; no car has preset equ
   label, optional note) — no defaults. A feature without a stored state is neutral.
 - Profiles are per car in `settings.vehicles[carId]`, edited with `EquipmentEditor` on
   `/auto/<car>/wyposazenie` and in the wizard's equipment step ("Mam" / "Nie mam" / "Nie
-  wiem"). Owner choices are `confirmed`; `suggestFromSpec(car.spec)` (engine from the
-  catalogue) adds `probable` suggestions. Only features detected in the car's manuals are
+  wiem"). Owner choices are `confirmed`; `suggestFromSpec(settings.engines[carId])`
+  (local engine choice, never shared manual metadata) adds `probable` suggestions.
+  Only features detected in the car's manuals are
   offered (`getFeatureSections`).
 - `src/config/featureRules.ts` tags by regex on Polish **section titles** (inherited by
   sub-sections, `getSectionFeatures`) and **heading blocks** inside a section
@@ -253,7 +254,7 @@ Single localStorage key `opel-cascada-manual`, versioned (`SCHEMA_VERSION` in
 
 ```ts
 AppData {
-  version: 6;
+  version: 7;
   highlights: Record<id, { id, car, book, sectionId, sectionTitle, href,
     anchor: { exact, prefix, suffix, start, end }, color, comment, createdAt, updatedAt }>;
   notebook: { pages: { id, title, body /* Markdown */, createdAt, updatedAt }[] }; // user order
@@ -265,6 +266,7 @@ AppData {
     createdAt, updatedAt }[];
   settings: { fontSize, showUnavailable, ownedCars,
     vehicles: Record<carId, Record<featureId, FeatureState>>,
+    engines: Record<carId, CarSpec | null>,
     activeCar: string | null, profileName: string };
 }
 ```

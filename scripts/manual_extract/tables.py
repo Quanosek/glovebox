@@ -11,7 +11,7 @@ from .document import Document
 from .frames import page_frames
 from .geometry import center
 from .model import Item, Span
-from .text import REF_MARK, clean_text, join_line_texts
+from .text import REF_MARK, clean_text, join_line_texts, normalize_title
 
 
 def ruled_tables(doc: Document, pno: int, lines: list[Item]) -> list[Item]:
@@ -83,6 +83,8 @@ def ruled_tables(doc: Document, pno: int, lines: list[Item]) -> list[Item]:
                 continue
             if ln.size >= doc.body_size * 1.08:
                 return False
+            if ln.bold and normalize_title(ln.plain) in doc.outline_titles:
+                return False
             # Text across a column boundary between two rules is a caption
             # or a note between two tables, not a row.
             if any(ln.x0 + 10 < x < ln.x1 - 10 for x in big):
@@ -138,8 +140,9 @@ def split_at(ln: Item, breaks: list[float], within: float = float("inf")) -> lis
             continue
         for i in range(1, len(text)):
             if text[i] != " " and text[i - 1] == " " and xs[i] >= x - 1:
-                # Cells are further apart than words (≈ 4.5 pt vs 2.5 pt).
-                if xs[i] <= x + within and xs[i] - xs[i - 1] >= 3.5:
+                # Compare with ordinary word spaces measured in this document.
+                space = ln.data.get("space_width", ln.size * 0.28)
+                if xs[i] <= x + within and xs[i] - xs[i - 1] >= space * 1.4:
                     cuts.add(i)
                 break
     if not cuts:
@@ -230,9 +233,11 @@ def table_from_rules(doc: Document, pno: int, rules: list[dict[str, Any]], lines
             break
         if any(ln.size >= body * 1.08 or head_column(ln) is None for ln in row) or len(head) >= 6:
             break
+        if any(ln.bold and normalize_title(ln.plain) in doc.outline_titles for ln in row):
+            break
         head.append(row)
     head.reverse()
-    if head and len({head_column(ln) for ln in head[0]}) < 2 and len({head_column(ln) for row in head for ln in row}) < 2:
+    if head and all(head_column(ln) == 0 for row in head for ln in row):
         head = []
     bands: list[list[list[Item]]] = []
     if head:
@@ -241,6 +246,24 @@ def table_from_rules(doc: Document, pno: int, rules: list[dict[str, Any]], lines
         band = text_rows([ln for ln in candidates if a["y"] < center(ln.bbox)[1] < b["y"]])
         if band:
             bands.append(band)
+    # Some tables end at a page break without a bottom rule. Keep aligned
+    # cells below the last rule, but not a caption, prose or a footnote.
+    tail: list[list[Item]] = []
+    edge = last
+    for row in text_rows([ln for ln in candidates if center(ln.bbox)[1] > last]):
+        cols = {column(ln) for ln in row}
+        if (
+            min(ln.y0 for ln in row) - edge > body * 1.5
+            or None in cols
+            or any(ln.size >= body * 1.08 or ln.bold and normalize_title(ln.plain) in doc.outline_titles for ln in row)
+            or (len(cols) < 2 and (not tail or 0 in cols))
+        ):
+            break
+        tail.append(row)
+        edge = max(ln.y1 for ln in row)
+    if tail:
+        bands.append(tail)
+        last = edge
     if not bands:
         return None
     ncols = len(bounds) - 1
@@ -275,9 +298,9 @@ def table_from_rules(doc: Document, pno: int, rules: list[dict[str, Any]], lines
     if len(rules) == 1:
         # One rule under text: a one-row table ("AdBlue, ilość [l] | 7,5"),
         # unless the text is a lone header ("Nr  Obwód") over rows without rules.
-        if not any(re.search(r"\d", c) for r in rows for c in r[1:]):
+        if not tail and not any(re.search(r"\d", c) for r in rows for c in r[1:]):
             return None
-        header = False
+        header = bool(head) if tail else False
     else:
         # A table continued from the previous page starts with values.
         header = bool(head) or (len(rows) > 1 and not any(is_value(c) for c in rows[0][1:]))

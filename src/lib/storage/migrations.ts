@@ -23,6 +23,7 @@ import {
   type FeatureState,
 } from "@/config/vehicle";
 import { isValidId } from "@/lib/slug";
+import { sanitizeEngine } from "@/lib/engines";
 
 const LEGACY_CAR_ID = "opel-cascada-2016";
 
@@ -49,6 +50,14 @@ export const MIGRATIONS: Record<number, Migration> = {
   4: migrateV4toV5,
   // v6: fixed reminders retain the event date used to calculate their deadline.
   5: (data) => data,
+  // v7: engine choices live in the browser; shared manuals have no selected engine.
+  6: (data) => ({
+    ...data,
+    settings: {
+      ...(isObject(data.settings) ? data.settings : {}),
+      engines: {},
+    },
+  }),
 };
 
 const V1_ROUTES = ["/instrukcja", "/navi-950"];
@@ -309,6 +318,7 @@ export function sanitize(data: Record<string, unknown>): AppData {
   const settings: Settings = {
     ...DEFAULT_SETTINGS,
     vehicles: {},
+    engines: {},
   };
   if (FONT_SIZES.includes(s.fontSize as FontSize))
     settings.fontSize = s.fontSize as FontSize;
@@ -324,6 +334,13 @@ export function sanitize(data: Record<string, unknown>): AppData {
       if (!isValidId(car) || !isObject(profile)) continue;
       const clean = sanitizeProfile(profile);
       if (Object.keys(clean).length > 0) settings.vehicles[car] = clean;
+    }
+  }
+  if (isObject(s.engines)) {
+    for (const [car, engine] of Object.entries(s.engines)) {
+      if (!isValidId(car)) continue;
+      const clean = sanitizeEngine(engine);
+      if (engine === null || clean) settings.engines[car] = clean;
     }
   }
   out.settings = settings;
@@ -528,6 +545,11 @@ export function mergeData(current: AppData, incoming: AppData): AppData {
       .sort((a, b) => b.at.localeCompare(a.at))
       .slice(0, HISTORY_LIMIT),
     reminders,
-    settings: { ...current.settings, vehicles, ownedCars },
+    settings: {
+      ...current.settings,
+      vehicles,
+      ownedCars,
+      engines: { ...incoming.settings.engines, ...current.settings.engines },
+    },
   };
 }

@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { RESERVED_BOOK_ROUTES } from "@/lib/cars";
 import { isValidId } from "@/lib/slug";
+import { goReaderBack, readerCar } from "@/lib/readerNavigation";
 
 /** Main views from the top navigation intentionally have no back button. */
 const PRIMARY_PATHS = new Set([
@@ -16,7 +17,7 @@ const PRIMARY_PATHS = new Set([
 ]);
 
 /** Back action for the current route, or null on main views. */
-function useBack(): (() => void) | null {
+function useBack(bookIndexHref?: string): (() => void) | null {
   const pathname = usePathname();
   const router = useRouter();
   const isCarHome = /^\/auto\/[^/]+$/.test(pathname);
@@ -31,6 +32,11 @@ function useBack(): (() => void) | null {
     : "/";
 
   return () => {
+    if (readerCar(pathname) && bookIndexHref) {
+      const target = goReaderBack(pathname, bookIndexHref);
+      if (target) router.push(target);
+      return;
+    }
     const selectedCar = new URLSearchParams(window.location.search).get("car");
     const target = isValidId(selectedCar) ? `/auto/${selectedCar}` : fallback;
     const referrer = document.referrer;
@@ -72,13 +78,23 @@ const isReader = (pathname: string) => {
  * `sidebar` is the first row of the manual's table of contents, `page` sits
  * above the content of other secondary screens (aligned with `.page-shell`).
  */
-export function BackButton({ variant }: { variant: "sidebar" | "page" }) {
+export function BackButton({
+  variant,
+  bookIndexHref,
+}: {
+  variant: "sidebar" | "page";
+  bookIndexHref?: string;
+}) {
   const pathname = usePathname();
-  const back = useBack();
+  const back = useBack(bookIndexHref);
   if (!back) return null;
   if (variant === "page" && isReader(pathname)) return null;
   return variant === "sidebar" ? (
-    <button type="button" className="sidebar-back print:hidden" onClick={back}>
+    <button
+      type="button"
+      className="btn sidebar-back print:hidden"
+      onClick={back}
+    >
       <Arrow />
       Wstecz
     </button>

@@ -76,18 +76,20 @@ def outline_from_headings(doc: Document) -> list[dict[str, Any]]:
 
 
 def title_at(doc: Document, idx: int, target: str) -> int:
-    """Number of lines (1-5) starting at `idx` that spell `target`, or 0."""
+    """Number of lines starting at `idx` that spell `target`, or 0."""
     combined = ""
-    for k in range(5):
+    for k in range(len(target) + 1):
         if idx + k >= len(doc.items) or doc.items[idx + k].kind != "line":
             break
         line = doc.items[idx + k]
-        if k and not (line.page == doc.items[idx].page and line.col == doc.items[idx].col):
+        if k and not (line.page == doc.items[idx].page and line.col == doc.items[idx].col and line.band == doc.items[idx].band):
             break
         prev, sep = join_line_texts(combined, line.text) if combined else ("", "")
         combined = prev + sep + line.text
         if normalize_title(combined) == target:
             return k + 1
+        if len(normalize_title(combined)) > len(target):
+            break
     return 0
 
 
@@ -126,6 +128,7 @@ def locate_entries(doc: Document, entries: list[dict[str, Any]]) -> list[int]:
             found, e["span"] = fallback
         if found is None:
             e["span"] = 0
+            print(f"  ! outline title not found in page text: {e['title']}; retaining text at its destination", file=sys.stderr)
             if known:
                 # Fall back to the outline destination.
                 candidates = [

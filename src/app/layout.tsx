@@ -4,6 +4,7 @@ import { BackButton } from "@/components/BackButton";
 import { ClientEffects } from "@/components/ClientEffects";
 import { DialogHost } from "@/components/Dialog";
 import { Header } from "@/components/Header";
+import { EngineProfileInitializer } from "@/components/EngineProfileInitializer";
 import { LayoutHintProvider } from "@/lib/storage/hintContext";
 import { listCarSummaries } from "@/lib/content";
 import { HINT_COOKIE, parseHint } from "@/lib/storage/hint";
@@ -30,6 +31,7 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   // Summary of the browser data so the first paint matches the hydrated page.
   const hint = parseHint((await cookies()).get(HINT_COOKIE)?.value);
+  const cars = listCarSummaries();
   return (
     <html
       lang="pl"
@@ -48,7 +50,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           >
             Przejdź do treści
           </a>
-          <Header cars={listCarSummaries()} />
+          <Header cars={cars} />
+          <EngineProfileInitializer cars={cars} />
           <BackButton variant="page" />
           <ClientEffects />
           {children}

@@ -54,8 +54,14 @@ Opel (`SAME_MODELS`).
 | `GET /api/catalog/models?brand=`               | `{ models: CatalogModel[] }`   |
 | `GET /api/catalog/engines?brand=&model=&year=` | `{ engines: CatalogEngine[] }` |
 
-Errors: `{ error }` (Polish) with 404 (unknown brand/model) or 503 (catalogue unavailable). The chosen engine is stored in `car.json`
-as `spec` (`fuel`, `engineCm3`, `powerKw`, `label`) and drives `suggestFromSpec`.
+Errors: `{ error }` (Polish) with 404 (unknown brand/model) or 503 (catalogue unavailable).
+The chosen engine is stored in browser `settings.engines[carId]`
+(`fuel`, `engineCm3`, `powerKw`, `label`, optional manual `code`) and drives
+`suggestFromSpec`. The importer validates only brand/model/year and never writes engine
+choices to `car.json`. Existing shared `spec` values remain read-only compatibility hints,
+transferred once for cars already owned by the browser profile. Equipment editing prefers
+engine variants read from the manuals; catalogue variants are a fallback. The equipment list
+groups fuel types, sorts size/power ascending and displays KM first, with kW in parentheses.
 
 ## Limits
 

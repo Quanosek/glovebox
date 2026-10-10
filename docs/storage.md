@@ -19,7 +19,7 @@ Nothing is sent anywhere.
 
 `updateData` takes a pure function `(data) => newData`; never mutate the snapshot.
 
-## Schema (version 6)
+## Schema (version 7)
 
 See `AGENTS.md` → Storage schema. Notes:
 
@@ -35,6 +35,13 @@ See `AGENTS.md` → Storage schema. Notes:
 - `settings.vehicles[carId]` is the equipment profile of one car (`docs/vehicle-profile.md`):
   only features the owner set (or accepted suggestions); there are no defaults. `sanitize`
   keeps known feature ids and valid states only.
+- `settings.engines[carId]` holds the owner's selected `CarSpec` (`fuel`, displacement,
+  power, label, optional manufacturer `code`). `null` means explicitly unknown; a missing
+  entry can be initialized from a legacy shared `car.spec` once for an owned car. New imports
+  never write engine selections into `car.json`. Valid fuel kinds, finite positive numbers
+  and bounded labels/codes are checked during sanitization. `useCarEngine`, `setCarEngine`
+  and `initializeCarEngine` handle these choices. Changing an engine refreshes probable
+  equipment suggestions but preserves explicit owner choices.
 - `history` (v5) holds up to `HISTORY_LIMIT` (12) recently read sections, newest first, one
   entry per `car:book:sectionId` (`historyKey`). `ReadingTracker` calls `recordReading` with the
   section's first illustration as `thumb` (only `/media/…` URLs survive `sanitize`; links must
@@ -69,6 +76,11 @@ See `AGENTS.md` → Storage schema. Notes:
 - `4 → 5`: adds `history` (seeded with the `lastRead` section, without thumbnail), empty
   `reminders`.
 - `5 → 6`: adds `eventDate` to reminders; existing due dates are preserved.
+- `6 → 7`: adds empty per-car engine choices, preserving equipment and all other data.
+  `EngineProfileInitializer` transfers legacy shared selections only for owned cars with
+  no local choice; an explicit unknown choice is never overwritten.
+  New library assignments set an explicit unknown choice, so another owner's legacy manual
+  metadata cannot become their engine selection.
 
 Migrations run in memory on load; the upgraded shape is written on the next change.
 
@@ -93,6 +105,7 @@ Migrations run in memory on load; the upgraded shape is written on the next chan
   equipment profiles per car and feature (the current state wins), history per section
   (newest `at` wins), reminders by id (newest `updatedAt` wins);
   `replace` mode overwrites everything.
+  Engine choices are merged per car (the current choice, including `null`, wins).
 - UI labels: "Pobierz kopię zapasową" (export), "Wczytaj kopię z pliku…" (import).
 - "Usuń wszystkie dane" removes the key; "Usuń instrukcje zapisane offline" deletes the Cache
   API caches (see `docs/offline.md`). Destructive actions are confirmed with `confirmDialog`
@@ -100,12 +113,18 @@ Migrations run in memory on load; the upgraded shape is written on the next chan
 
 ## Other keys
 
-- `opel-cascada-manual:offline` — status of offline car copies (`src/lib/offline.ts`). It is
+- `opel-cascada-manual:offline:v7` — status of offline car copies (`src/lib/offline.ts`). It is
   derived state (rebuilt on the next car visit), deliberately not part of `AppData`, the
   export file or the schema version.
+  Its namespace follows the schema version so older app bundles are not treated as current
+  offline copies. Obsolete unversioned statuses are ignored.
 - `opel-cascada-manual:notifications` — last due date notified per reminder. Native browser
   notifications are optional and checked while the app is open; they are not scheduled while
   the app is closed.
+- sessionStorage `opel-cascada-manual:reader-navigation` — per-tab trails of manual pages
+  per car, pending back targets and native-history reading boundaries. Not user annotations,
+  not part of the backup or schema. Storage failures are logged and the current tab retains
+  an in-memory trail.
 
 ## Layout hint cookie
 
@@ -117,6 +136,9 @@ Migrations run in memory on load; the upgraded shape is written on the next chan
   "Ostatnio czytane" rows, which recent highlights have a comment, cars with an offline copy,
   favourites-bar keys (bookmarks, at most six) and own reminders per car, and the due reminder count. No notes,
   highlight text or comments.
+- Engine choices and `showUnavailable` are mirrored for stable first-paint car chips,
+  driver facts and engine tables. The oversized-cookie fallback retains only the active
+  car's engine before falling back to the empty hint.
 - The root layout reads it with `cookies()` (`parseHint` validates every field, ids with
   `isValidId`, links must start with `/auto/` and thumbnails with `/media/`), sets
   `<html data-font-size>` and provides it through `LayoutHintProvider`

@@ -11,6 +11,8 @@ import {
 import { NBSP, polishTypography } from "@/lib/typography";
 import { AvailabilityBadges } from "./AvailabilityBadges";
 import { SectionGate } from "./SectionGate";
+import { EngineTable } from "./EngineTable";
+import { getManualEngines } from "@/lib/carOverview";
 
 /**
  * Server component rendering extracted manual blocks. Parts under headings
@@ -128,28 +130,11 @@ function BlockView({
       );
     case "table":
       return (
-        <div id={block.id} className="overflow-x-auto">
-          <table>
-            {block.header && block.rows.length > 0 && (
-              <thead>
-                <tr>
-                  {block.rows[0].map((cell, i) => (
-                    <th key={i}>{polishTypography(cell)}</th>
-                  ))}
-                </tr>
-              </thead>
-            )}
-            <tbody>
-              {block.rows.slice(block.header ? 1 : 0).map((row, r) => (
-                <tr key={r}>
-                  {row.map((cell, i) => (
-                    <td key={i}>{polishTypography(cell)}</td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <EngineTable
+          carId={ctx.car.id}
+          block={block}
+          engines={getManualEngines(ctx.car)}
+        />
       );
     case "image":
       if (block.icon) {

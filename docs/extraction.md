@@ -40,7 +40,10 @@ implementation is the `scripts/manual_extract/` package, one module per topic:
    fonts: a glyph followed by a number is a page reference (`{ page }`), any other glyph an
    inline pictogram (`{ icon, w, h }`, rendered from the page into
    `assets/<book>/symbole/`). A lone bullet, step/legend number or pictogram is joined with
-   the text beside it. Small raised / lowered digits become Unicode super- and subscripts
+   the text beside it, keeping the character coordinates aligned with the merged text.
+   Ordinary word spaces are measured separately for each font and size in the document;
+   table-cell gaps are compared with those measurements rather than a fixed point width.
+   Small raised / lowered digits become Unicode super- and subscripts
    ("cm³", "CO₂", footnote "¹⁾"; titles are compared after NFKC normalisation).
 2. **Margins** — running headers/footers are removed: lines in the top/bottom margins
    (`--margin-top/--margin-bottom`, extended to a full-width rule under a header or over a
@@ -49,9 +52,13 @@ implementation is the `scripts/manual_extract/` package, one module per topic:
 3. **Tables** — tables drawn with horizontal rules only (the rules are split into segments at
    the column boundaries: header above or between the first rules, rows split by rules or by a
    new label in the first column or by new values lower down in a value column, multi-row cells
-   joined). Cells printed as one PDF line are cut where a word starts at a column boundary after
+   joined). Aligned cells immediately below the final rule are retained when the table has no
+   bottom border; captions, prose, footnotes and large gaps stop that continuation.
+   Cells printed as one PDF line are cut where a word starts at a column boundary after
    a gap wider than a word space; group headers spanning several columns go to the first column
-   they cover; a header-only table ("Nr Obwód") is dropped; a table continued from the previous
+   they cover, including headers with an empty label cell. Bold captions present in the document's own
+   outline stay outside the table; ordinary data labels are not excluded just because an unrelated
+   bookmark has the same wording. A header-only table ("Nr Obwód") is dropped; a table continued from the previous
    page has no header. Rules separated by an empty strip or a caption across a boundary belong
    to different tables. Then `page.find_tables(strategy="lines_strict")` for gridded tables
    (≥ 2 columns; coloured word highlights are not grids); table text is not repeated in
@@ -65,16 +72,21 @@ implementation is the `scripts/manual_extract/` package, one module per topic:
    fit in a column gives the column intervals (gaps = gutters). Items crossing a gutter are
    full-width bands; reading order is band by band, inside a band column by column (left to
    right), each column top to bottom. `--single-column` disables it. Column left edges snap to
-   edges used on many pages (a column holding only indented text keeps its indentation). The
+   edges used on many pages (a column holding only indented text keeps its indentation).
+   Narrow strips containing isolated legend markers are joined with their indented descriptions
+   when both belong to the same recurring column edge; genuine additional columns remain separate. The
    line pitch (most common baseline distance) is measured; a paragraph starts when the baseline
    distance, minus the extra space taken by sub- and superscripts, exceeds it by `--para-gap` ×
    body size.
 6. **Sections** — the PDF outline (`get_toc`) defines the hierarchy; levels up to
    `--max-page-level` become pages, deeper entries become headings. A broken outline copy
    (no destinations) is replaced by a working copy nested under a "….pdf" bookmark; entries
-   without a page are located by title. Titles are located in the text (up to 5 joined lines
+   without a page are located by title. Titles are located in the text (joined lines
    of one column, preferring a line that starts a block), falling back to the outline
-   destination. Chapter tables of contents (dot leaders) are skipped; other dot-leader lines
+   destination. Wrapped titles are not limited to five lines, and whitespace around a slash
+   is ignored when comparing titles. Unmatched outline entries are reported; their bookmark
+   text is not inserted as a fabricated heading in the manual body.
+   Chapter tables of contents (dot leaders) are skipped; other dot-leader lines
    (legends of illustrations) become page references. `--skip-title` skips "Spis treści",
    "Skorowidz", …
 7. **Blocks** — paragraphs (continued across columns and pages while the sentence is
@@ -100,7 +112,11 @@ with PyMuPDF and Pillow). It builds synthetic vehicle-manual PDFs (`scripts/test
 two columns, running headers, warnings, lists, a table, an image, page references; and a
 three-column layout with column rules, fake bold, symbol fonts, a warning box broken across
 columns, an indented note, bullets touching their text and a rule-only table) and checks
-the output. Review results from user-provided manuals because PDF layouts and scan quality vary.
+the output. `test_document_patterns.py` additionally checks scaled PDFs, open-bottom tables,
+textual table values, grouped headers, captions versus unrelated bookmark labels, merged marker
+coordinates, document-specific spacing, sparse legend columns and genuine four-column layouts.
+It also checks that absent bookmark text is not invented as body content.
+Review results from user-provided manuals because PDF layouts and scan quality vary.
 
 The synthetic PDF needs a complete regular/bold font pair with Polish glyphs. The generator
 prefers DejaVu Sans, then uses system Georgia on macOS or Windows. Georgia preserves the

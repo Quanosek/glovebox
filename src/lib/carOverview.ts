@@ -20,21 +20,20 @@ import {
 import {
   blockToText,
   firstIllustration,
-  hasMeasurement,
   iconEntries,
   isMeasurementTable,
-  isNumeric,
   shorten,
   tableFacts,
   textFacts,
   type CarStats,
   type GlossaryGroup,
   type QuickTile,
-  type TableFact,
   type TechCard,
   type Tip,
 } from "@/lib/overview";
 import type { SectionMeta } from "@/content/types";
+import { enginesFromTables } from "@/lib/engines";
+import type { CarSpec } from "@/lib/catalog";
 
 /**
  * Server-side collection of the car overview data (docs/car-overview.md):
@@ -49,8 +48,6 @@ export interface CarOverview {
   tiles: QuickTile[];
   glossaryCount: number;
   techCount: number;
-  /** A few numeric facts for the preview card on the car page. */
-  techPreview: TableFact[];
   /** Section about periodic service, linked from the reminders. */
   serviceHref: string | null;
 }
@@ -130,34 +127,11 @@ export function getCarOverview(car: CarFile): CarOverview {
       .filter((t): t is QuickTile => Boolean(t))
       .slice(0, QUICK_TOPICS_MAX);
     const tech = getTechCards(car);
-    const techPreview: TableFact[] = [];
-    const previewKeys = new Set<string>();
-    for (const card of tech)
-      for (const t of card.tables)
-        if (t.kind === "facts")
-          for (const f of t.facts) {
-            const fact = {
-              label: shorten(f.label, 60),
-              value: shorten(f.value, 40),
-            };
-            // Several books of one car repeat the same tables.
-            const key = `${fact.label}|${fact.value}`;
-            if (
-              techPreview.length < 4 &&
-              !previewKeys.has(key) &&
-              isNumeric(f.value) &&
-              hasMeasurement(f.value)
-            ) {
-              previewKeys.add(key);
-              techPreview.push(fact);
-            }
-          }
     return {
       stats,
       tiles,
       glossaryCount,
       techCount: tech.reduce((n, c) => n + c.tables.length, 0),
-      techPreview,
       serviceHref: found.get("service")?.href ?? null,
     };
   });
@@ -210,22 +184,37 @@ export function getTechCards(car: CarFile): TechCard[] {
         const href = sectionHref(ctx, s);
         const tables: TechCard["tables"] = [];
         const blocks = getBlocks(ctx, s);
+        let title = s.title;
         for (const b of blocks) {
+          if (b.type === "heading") title = blockToText(b);
           if (b.type !== "table" || b.rows.length === 0) continue;
           if (!technical && !isMeasurementTable(b)) continue;
-          const facts = tableFacts(b);
+          const engineTable = b.rows.some((row) =>
+            /^silnik$|oznaczenie kodowe.*silnik|kod silnika/i.test(
+              row[0] ?? "",
+            ),
+          );
+          const facts = engineTable ? null : tableFacts(b);
           tables.push(
             facts
-              ? { kind: "facts", id: b.id, href: `${href}#${b.id}`, facts }
+              ? {
+                  kind: "facts",
+                  id: b.id,
+                  href: `${href}#${b.id}`,
+                  title,
+                  facts,
+                }
               : {
                   kind: "table",
                   id: b.id,
                   href: `${href}#${b.id}`,
                   header: b.header,
                   rows: b.rows,
+                  title,
                 },
           );
         }
+
         if (technical)
           for (const g of textFacts(blocks))
             tables.push({
@@ -240,6 +229,18 @@ export function getTechCards(car: CarFile): TechCard[] {
     }
     return cards;
   });
+}
+
+export function getManualEngines(car: CarFile): CarSpec[] {
+  return cached(car, "engines", () =>
+    enginesFromTables(
+      bookCtxs(car).flatMap((ctx) =>
+        getBook(ctx).sections.flatMap((s) =>
+          getBlocks(ctx, s).filter((b) => b.type === "table"),
+        ),
+      ),
+    ),
+  );
 }
 
 /** First illustration of a section (thumbnail for history and navigation). */

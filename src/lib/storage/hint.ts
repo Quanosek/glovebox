@@ -1,4 +1,6 @@
 import { isValidId } from "@/lib/slug";
+import { sanitizeEngine } from "@/lib/engines";
+import type { CarSpec } from "@/lib/catalog";
 import { dueSoon, todayIso } from "@/lib/reminders";
 import { FAVORITES_LIMIT, type AppData, type FontSize } from "./schema";
 
@@ -46,6 +48,8 @@ export interface LayoutHint {
   reminders: Record<string, number>;
   /** Reminders due within 30 days or overdue (header badge). */
   due: number;
+  engines: Record<string, CarSpec | null>;
+  showUnavailable: boolean;
 }
 
 export const EMPTY_HINT: LayoutHint = {
@@ -61,6 +65,8 @@ export const EMPTY_HINT: LayoutHint = {
   bookmarks: {},
   reminders: {},
   due: 0,
+  engines: {},
+  showUnavailable: false,
 };
 
 const FONT_SIZES: FontSize[] = ["small", "normal", "large", "xlarge"];
@@ -120,6 +126,12 @@ export function buildHint(
     bookmarks,
     reminders,
     due: dueSoon(data.reminders, today, settings.ownedCars).length,
+    engines: Object.fromEntries(
+      Object.entries(settings.engines)
+        .filter(([id]) => ownedCars.includes(id) || id === settings.activeCar)
+        .slice(0, MAX_CARS),
+    ),
+    showUnavailable: settings.showUnavailable,
   };
 }
 
@@ -134,6 +146,10 @@ export function serializeHint(hint: LayoutHint): string {
         bookmarks: {},
         reminders: {},
         offline: [],
+        engines:
+          hint.activeCar && Object.hasOwn(hint.engines, hint.activeCar)
+            ? { [hint.activeCar]: hint.engines[hint.activeCar] }
+            : {},
       }),
     );
   return value.length > MAX_COOKIE
@@ -180,6 +196,17 @@ export function parseHint(value: string | undefined | null): LayoutHint {
         if (isValidId(car) && count(n, max) > 0) out[car] = count(n, max);
     return out;
   };
+  const engines: LayoutHint["engines"] = {};
+  if (isObject(raw.engines)) {
+    for (const [car, engine] of Object.entries(raw.engines).slice(
+      0,
+      MAX_CARS,
+    )) {
+      if (!isValidId(car)) continue;
+      const clean = sanitizeEngine(engine);
+      if (engine === null || clean) engines[car] = clean;
+    }
+  }
   return {
     activeCar: isValidId(raw.activeCar) ? raw.activeCar : null,
     ownedCars,
@@ -211,5 +238,7 @@ export function parseHint(value: string | undefined | null): LayoutHint {
     bookmarks: perCar(raw.bookmarks, FAVORITES_LIMIT),
     reminders: perCar(raw.reminders, 50),
     due: count(raw.due, 999),
+    engines,
+    showUnavailable: raw.showUnavailable === true,
   };
 }

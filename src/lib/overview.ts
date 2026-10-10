@@ -241,13 +241,20 @@ export interface TechCard {
   book: string;
   href: string;
   tables: Array<
-    | { kind: "facts"; id: string; href: string; facts: TableFact[] }
+    | {
+        kind: "facts";
+        id: string;
+        href: string;
+        title?: string;
+        facts: TableFact[];
+      }
     | {
         kind: "table";
         id: string;
         href: string;
         header: boolean;
         rows: string[][];
+        title?: string;
       }
   >;
 }

@@ -14,12 +14,15 @@ import type { CarFeatureSections } from "@/lib/cars";
 import {
   setFeatureState,
   setVehicleProfile,
+  setCarEngine,
+  useCarEngine,
   useHydrated,
   useVehicleProfile,
 } from "@/lib/storage/hooks";
 import { plural } from "@/lib/typography";
 import { confirmDialog } from "./Dialog";
 import { Skeleton } from "./Skeleton";
+import { EngineSelector } from "./EngineSelector";
 
 const MAX_LINKS = 5;
 
@@ -37,34 +40,37 @@ const CHOICES: { id: FeatureStatus | "unknown"; label: string }[] = [
  */
 export function EquipmentEditor({
   carId,
-  spec,
+  engines,
+  catalog,
+  year,
   sections,
 }: {
   carId: string;
-  spec?: CarSpec;
+  engines: CarSpec[];
+  catalog?: { brand: string; model: string };
+  year?: number;
   sections: CarFeatureSections;
 }) {
   const hydrated = useHydrated();
   const profile = useVehicleProfile(carId);
+  const spec = useCarEngine(carId);
   const detected = FEATURES.filter((f) => sections[f.id]?.length);
-  const suggestions = Object.entries(suggestFromSpec(spec)).filter(
+  const suggestions = Object.entries(suggestFromSpec(spec ?? undefined)).filter(
     ([id]) => sections[id]?.length && !profile[id],
   );
   const groups = (Object.keys(FEATURE_GROUPS) as FeatureGroupId[]).filter((g) =>
     detected.some((f) => f.group === g),
   );
 
-  if (detected.length === 0)
-    return (
-      <p className="border-l-4 border-silver bg-paper px-4 py-3 text-sm text-graphite">
-        W instrukcjach tego auta nie znaleziono opisów wyposażenia dodatkowego.
-        Cała treść będzie zawsze widoczna.
-      </p>
-    );
-
   if (!hydrated)
     return (
       <div className="flex flex-col gap-4" aria-busy="true">
+        <EngineSelector
+          carId={carId}
+          engines={engines}
+          catalog={catalog}
+          year={year}
+        />
         {groups.map((group) => (
           <section key={group} className="panel">
             <div className="panel-title">
@@ -98,6 +104,18 @@ export function EquipmentEditor({
 
   return (
     <div className="flex flex-col gap-4">
+      <EngineSelector
+        carId={carId}
+        engines={engines}
+        catalog={catalog}
+        year={year}
+      />
+      {detected.length === 0 && (
+        <p className="border-l-4 border-silver bg-paper px-4 py-3 text-sm text-graphite">
+          W instrukcjach tego auta nie znaleziono opisów wyposażenia
+          dodatkowego.
+        </p>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <p className="text-graphite">
           Zaznaczono {marked} z {detected.length}{" "}
@@ -126,11 +144,14 @@ export function EquipmentEditor({
                 const ok = await confirmDialog({
                   title: "Wyczyścić wyposażenie?",
                   message:
-                    "Wszystkie zaznaczenia wyposażenia tego auta zostaną usunięte. Instrukcja znów pokaże całą treść.",
+                    "Wybór silnika i wszystkie zaznaczenia wyposażenia tego auta zostaną usunięte. Instrukcja znów pokaże całą treść.",
                   confirmLabel: "Wyczyść",
                   danger: true,
                 });
-                if (ok) setVehicleProfile(carId, {});
+                if (ok) {
+                  setCarEngine(carId, null);
+                  setVehicleProfile(carId, {});
+                }
               }}
             >
               Wyczyść wszystko

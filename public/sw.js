@@ -14,8 +14,8 @@
 /* global self, caches, fetch, URL, Response */
 
 const PREFIX = "opel-cascada-manual-";
-const CACHE = `${PREFIX}runtime-v2`;
-const OFFLINE_CACHE = `${PREFIX}offline-v1`;
+const CACHE = `${PREFIX}runtime-v3`;
+const OFFLINE_CACHE = `${PREFIX}offline-v7`;
 const SHELL = [
   "/",
   "/auta",
@@ -53,7 +53,7 @@ self.addEventListener("install", (event) => {
       await Promise.all(
         [...assets].map(async (url) => {
           try {
-            if (await caches.match(url)) return;
+            if (await matchCurrent(url)) return;
             const res = await fetch(url);
             if (res.ok) await cache.put(url, res);
           } catch {
@@ -101,8 +101,17 @@ async function put(request, res) {
   }
 }
 
+// Never serve an obsolete app bundle that cannot read the current profile schema.
+async function matchCurrent(request, options) {
+  for (const name of [CACHE, OFFLINE_CACHE]) {
+    const cache = await caches.open(name);
+    const hit = await cache.match(request, options);
+    if (hit) return hit;
+  }
+}
+
 async function cacheFirst(request) {
-  const cached = await caches.match(request);
+  const cached = await matchCurrent(request);
   if (cached) return cached;
   const res = await fetch(request);
   put(request, res.clone());
@@ -111,7 +120,7 @@ async function cacheFirst(request) {
 
 async function staleWhileRevalidate(event) {
   const { request } = event;
-  const cached = await caches.match(request);
+  const cached = await matchCurrent(request);
   const network = fetch(request).then((res) => {
     put(request, res.clone());
     return res;
@@ -131,13 +140,13 @@ async function networkFirst(request) {
     put(request, res.clone());
     return res;
   } catch (err) {
-    const exact = await caches.match(request);
+    const exact = await matchCurrent(request);
     if (exact) return exact;
     // A failed RSC request makes Next.js fall back to a full page load,
     // which is then answered from the cached HTML below.
     if (isRsc) return Response.error();
     for (const c of [url.pathname, url.pathname.replace(/\/$/, "") || "/"]) {
-      const hit = await caches.match(c, { ignoreSearch: true });
+      const hit = await matchCurrent(c, { ignoreSearch: true });
       if (hit) return hit;
     }
     if (request.mode === "navigate") {

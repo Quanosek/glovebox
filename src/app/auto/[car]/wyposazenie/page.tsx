@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { EquipmentEditor } from "@/components/EquipmentEditor";
 import { carLabel } from "@/lib/cars";
 import { getCar, getCarSummary, getFeatureSections } from "@/lib/content";
+import { getManualEngines } from "@/lib/carOverview";
 
 type Props = PageProps<"/auto/[car]/wyposazenie">;
 
@@ -20,17 +21,17 @@ export default async function EquipmentPage({ params }: Props) {
     ["Marka", car.brand],
     ["Model", car.model],
     ["Rocznik", String(car.year)],
-    ...(car.spec
-      ? [["Silnik", car.spec.label] as [string, string]]
-      : car.variant
-        ? [["Wersja", car.variant] as [string, string]]
-        : []),
+    ...(!car.spec && car.variant
+      ? [["Wersja", car.variant] as [string, string]]
+      : []),
   ];
 
   return (
     <main id="main" className="page-shell">
       <h1 className="page-title">Wyposażenie – {car.label}</h1>
-      <dl className="mt-4 grid gap-px border border-line bg-line text-sm sm:grid-cols-2">
+      <dl
+        className={`mt-4 grid gap-px border border-line bg-line text-sm ${facts.length === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}
+      >
         {facts.map(([k, v]) => (
           <div key={k} className="bg-white px-4 py-2">
             <dt className="text-xs tracking-[0.08em] text-steel uppercase">
@@ -49,7 +50,9 @@ export default async function EquipmentPage({ params }: Props) {
       </p>
       <EquipmentEditor
         carId={car.id}
-        spec={car.spec}
+        engines={getManualEngines(file)}
+        catalog={car.catalog}
+        year={car.year}
         sections={getFeatureSections(file)}
       />
     </main>

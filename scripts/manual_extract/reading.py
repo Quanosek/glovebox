@@ -23,6 +23,7 @@ def read_pages(doc: Document) -> None:
         raw_lines.extend(merge_markers(lines))
     strip_margins(doc, raw_lines)
     compute_body_size(doc)
+    measure_word_spaces(doc)
 
 
 def stroked_glyphs(page: Any) -> dict[int, list[float]]:
@@ -124,6 +125,8 @@ def merge_markers(lines: list[Item]) -> list[Item]:
     the text line beside it."""
     drop: set[int] = set()
     for marker in lines:
+        if id(marker) in drop:
+            continue
         label = clean_text(marker.text)
         bare_number = bool(re.fullmatch(r"\d{1,2}", label))
         pictogram = all(sp.icon for sp in marker.spans if sp.text.strip())
@@ -142,6 +145,12 @@ def merge_markers(lines: list[Item]) -> list[Item]:
                     best = other
         if best is None:
             continue
+        marker_xs = marker.data.get("char_x")
+        best_xs = best.data.get("char_x")
+        if marker_xs is not None and best_xs is not None and len(marker_xs) == len(marker.text) and len(best_xs) == len(best.text):
+            best.data["char_x"] = marker_xs + [marker.x1] + best_xs
+        else:
+            best.data.pop("char_x", None)
         best.spans = [Span(s.text, s.bold, s.italic, s.size, s.font, s.bbox, s.icon) for s in marker.spans] + [Span(" ", False, False, best.size, "", None)] + best.spans
         best.bbox = (marker.x0, min(marker.y0, best.y0), best.x1, max(marker.y1, best.y1))
         drop.add(id(marker))
@@ -234,6 +243,31 @@ def compute_body_size(doc: Document) -> None:
             sizes[s.size] += len(s.text.strip())
     if sizes:
         doc.body_size = sizes.most_common(1)[0][0]
+
+
+def measure_word_spaces(doc: Document) -> None:
+    """Learn ordinary word spacing per font and size, not a fixed PDF unit."""
+    widths: dict[tuple[str, float], Counter[float]] = {}
+    for it in doc.items:
+        xs = it.data.get("char_x", [])
+        if len(xs) != len(it.text):
+            continue
+        pos = 0
+        for span in it.spans:
+            key = (span.font, span.size)
+            for k, ch in enumerate(span.text):
+                i = pos + k
+                if ch == " " and i + 1 < len(xs) and not it.text[i + 1].isspace():
+                    gap = xs[i + 1] - xs[i]
+                    if 0 < gap < span.size * 0.8:
+                        widths.setdefault(key, Counter())[round(gap, 1)] += 1
+            pos += len(span.text)
+    spaces = {key: counts.most_common(1)[0][0] for key, counts in widths.items()}
+    for it in doc.items:
+        ordinary = [s for s in it.spans if s.text.strip() and not s.icon]
+        if ordinary:
+            span = max(ordinary, key=lambda s: len(s.text))
+            it.data["space_width"] = spaces.get((span.font, span.size), span.size * 0.28)
 
 
 def script_shift(glyphs: list[tuple[float, float]], base: float) -> dict[str, float]:

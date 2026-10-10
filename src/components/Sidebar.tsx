@@ -11,6 +11,7 @@ import {
 } from "@/lib/storage/hooks";
 import type { VehicleProfile } from "@/config/vehicle";
 import { BackButton } from "./BackButton";
+import { trackReaderPage } from "@/lib/readerNavigation";
 
 export interface SidebarNode {
   id: string;
@@ -43,6 +44,7 @@ export function Sidebar({
   const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
+    trackReaderPage(pathname);
     navRef.current
       ?.querySelector<HTMLElement>('[aria-current="page"]')
       ?.scrollIntoView({ block: "nearest" });
@@ -50,7 +52,7 @@ export function Sidebar({
 
   return (
     <aside className="border-b border-line bg-paper lg:sticky lg:top-(--header-h) lg:flex lg:h-[calc(100vh-var(--header-h))] lg:w-80 lg:shrink-0 lg:flex-col lg:border-x lg:border-b-0 print:hidden">
-      <BackButton variant="sidebar" />
+      <BackButton variant="sidebar" bookIndexHref={current} />
       <button
         type="button"
         className="btn btn-ghost w-full justify-between px-(--gutter) lg:hidden"

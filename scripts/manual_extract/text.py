@@ -58,6 +58,7 @@ def normalize_title(text: str) -> str:
     # NFKC: "CO₂" in the text matches "CO2" in the outline.
     text = unicodedata.normalize("NFKC", text.replace("\u00ad", "").replace(REF_MARK, ""))
     text = re.sub(r"\s+", " ", text).strip().lower()
+    text = re.sub(r"\s*/\s*", "/", text)
     return text.rstrip(" .:")
 
 

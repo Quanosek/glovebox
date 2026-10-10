@@ -15,7 +15,6 @@ from .document import Document
 from .figures import add_tables_and_figures
 from .layout import assign_layout
 from .leaders import mark_toc_lines
-from .model import Item, Span
 from .outline import locate_entries, outline
 from .reading import read_pages
 from .text import slugify
@@ -129,9 +128,8 @@ def assemble(doc: Document, args: argparse.Namespace, assets_dir: Path | None) -
         else:
             level = e["level"] - args.max_page_level + 1
             heading_items = [it for it in doc.items[start : start + title_span] if it.kind == "line"]
-            if not heading_items:
-                heading_items = [Item("line", e["page"], (0, 0, 0, 0), spans=[Span(e["title"], True, False, doc.body_size, "")])]
-            builder.heading(heading_items, level)
+            if heading_items:
+                builder.heading(heading_items, level)
         for it in doc.items[start + title_span : end]:
             if not it.data.get("toc"):
                 builder.feed(it)

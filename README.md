@@ -22,6 +22,12 @@ wybierasz:
 Wybrane auto, zaznaczenia, komentarze, zakładki i notatki zapisują się w tej przeglądarce
 (localStorage), a wyposażenie — osobno dla każdego auta. Instrukcje aut są tylko na Twoim
 komputerze: folder `database/` jest w `.gitignore` i nie trafia do repozytorium.
+Silnik również jest częścią Twojego wyposażenia, a nie wspólnych instrukcji. Wybierzesz
+go lub zmienisz na stronie „Wyposażenie”. Dopasowane dane silnika w tabelach są pokazywane
+przed pozostałymi wersjami; przyciskiem „Pokaż wszystkie silniki” odsłonisz pełną tabelę.
+Gdy dopasowanie nie jest pewne, aplikacja niczego nie ukrywa.
+Po tej aktualizacji otwórz potrzebne auta przy działającej aplikacji, aby odnowić ich
+kopie do czytania bez połączenia. Zaznaczenia i notatki zostają zachowane.
 
 ## Funkcje
 
@@ -32,7 +38,8 @@ komputerze: folder `database/` jest w `.gitignore` i nie trafia do repozytorium.
 - **Widok auta** — duża karta auta (logo, model, rocznik, silnik), liczby z instrukcji, kafle
   „Najczęściej potrzebne” (np. ciśnienie w oponach, bezpieczniki, żarówki – tylko te, które
   są w instrukcji), pasek „Ulubione” z sześcioma najnowszymi zakładkami tego auta, podgląd danych
-  technicznych, najbliższe przypomnienia oraz wyszukiwanie, ostrzeżenia i wyposażenie.
+  technicznych (wybrany silnik, paliwo i np. zbiornik paliwa — tylko dane dostępne w
+  instrukcji), najbliższe przypomnienia oraz wyszukiwanie, ostrzeżenia i wyposażenie.
 - **Przypomnienia** — dla każdego Twojego auta termin badania technicznego, ubezpieczenia OC
   i własne przypomnienia (data, przebieg). Na 30 dni przed terminem liczba przy
   „Przypomnienia” w menu podpowiada, że coś się zbliża. Terminy zostają tylko w tej
@@ -118,12 +125,12 @@ otworzyć kreator i dodać własne auto. Kreator przeprowadza przez cztery kroki
    z oficjalnych danych rejestracyjnych (Europejska Agencja Środowiska — wszystkie nowe auta
    osobowe rejestrowane w UE od 2010 r.; NHTSA — modele sprzedawane w USA od 2000 r.), więc
    nie da się wybrać modelu ani rocznika, który nie istniał. Silnik jest opcjonalny („Nie
-   wiem / pomiń”). Dla aut spoza katalogu (np. starszych) wybierz markę **„Inna (wpiszę
+   wiem / pomiń”) i zapisuje się tylko w Twoim profilu. Dla aut spoza katalogu (np. starszych) wybierz markę **„Inna (wpiszę
    ręcznie)”** — wtedy wpisujesz markę i model, wybierasz rocznik (obowiązkowe) i opcjonalnie
    wersję. Niżej pole do przeciągania plików z siatką instrukcji: podgląd pierwszej strony,
    liczba stron, nazwa, kolejność. Limit: **10 plików PDF** na auto (do 250 MB każdy).
 2. **Odczytywanie** — aplikacja odczytuje tekst, rozdziały, ostrzeżenia, tabele i ilustracje.
-3. **Wyposażenie** — lista wyposażenia opcjonalnego znalezionego w instrukcjach; zaznacz, co
+3. **Wyposażenie** — silniki i lista wyposażenia opcjonalnego znalezione w instrukcjach; zaznacz, co
    ma Twoje auto (można pominąć i uzupełnić później na stronie „Wyposażenie” auta).
 4. **Gotowe** — auto zostaje dodane do profilu. **Pliki PDF są zawsze usuwane** (także po błędzie).
 

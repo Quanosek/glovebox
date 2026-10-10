@@ -14,7 +14,6 @@ import {
 import { EquipmentEditor } from "@/components/EquipmentEditor";
 import { CarHero } from "@/components/car/CarHero";
 import { Skeleton } from "@/components/Skeleton";
-import { suggestFromSpec } from "@/config/vehicle";
 import type {
   CarSpec,
   CatalogBrand,
@@ -25,12 +24,7 @@ import { carHref, type CarFeatureSections, type CarSummary } from "@/lib/cars";
 import { useOnline } from "@/lib/offline";
 import { renderPdfPreview } from "@/lib/pdfPreview";
 import { slugify } from "@/lib/slug";
-import { getStore } from "@/lib/storage/store";
-import {
-  addOwnedCar,
-  setActiveCar,
-  setVehicleProfile,
-} from "@/lib/storage/hooks";
+import { addOwnedCar, setActiveCar, setCarEngine } from "@/lib/storage/hooks";
 import { plural } from "@/lib/typography";
 
 /* ------------------------------------------------------------------ types */
@@ -188,7 +182,13 @@ export function AddCarWizard({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [equipment, setEquipment] = useState<
     | { state: "loading" }
-    | { state: "done"; sections: CarFeatureSections; spec?: CarSpec }
+    | {
+        state: "done";
+        sections: CarFeatureSections;
+        engines: CarSpec[];
+        catalog?: { brand: string; model: string };
+        year: number;
+      }
     | { state: "error" }
     | null
   >(null);
@@ -435,7 +435,6 @@ export function AddCarWizard({
     form.set("brand", brandIsOther ? brand : brandChoice);
     form.set("model", brandIsOther ? model : modelChoice);
     form.set("year", year);
-    if (!brandIsOther && engine) form.set("engine", engine.id);
     if (brandIsOther && variant.trim()) form.set("variant", variant.trim());
     for (const d of docs) {
       form.append("files", d.file, d.file.name);
@@ -450,8 +449,20 @@ export function AddCarWizard({
     xhr.onload = () => {
       setUpload(100);
       const body = xhr.response as { job?: Job; error?: string } | null;
-      if (xhr.status === 202 && body?.job) setJob(body.job);
-      else
+      if (xhr.status === 202 && body?.job) {
+        setCarEngine(
+          body.job.carId,
+          !brandIsOther && engine
+            ? {
+                fuel: engine.fuel,
+                engineCm3: engine.engineCm3,
+                powerKw: engine.powerKw,
+                label: engine.label,
+              }
+            : null,
+        );
+        setJob(body.job);
+      } else
         setSubmitError(
           body?.error ??
             "Nie udało się rozpocząć dodawania auta. Spróbuj ponownie za chwilę.",
@@ -506,18 +517,11 @@ export function AddCarWizard({
       if (!r.ok) throw new Error();
       const body = (await r.json()) as {
         sections: CarFeatureSections;
-        spec: CarSpec | null;
+        engines: CarSpec[];
+        catalog?: { brand: string; model: string };
+        year: number;
       };
-      const spec = body.spec ?? undefined;
-      // Pre-fill what the engine tells for sure (shown as suggestions).
-      if (!getStore().get().settings.vehicles[carId]) {
-        const suggested = Object.entries(suggestFromSpec(spec)).filter(
-          ([id]) => body.sections[id]?.length,
-        );
-        if (suggested.length > 0)
-          setVehicleProfile(carId, Object.fromEntries(suggested));
-      }
-      setEquipment({ state: "done", sections: body.sections, spec });
+      setEquipment({ state: "done", ...body });
     } catch {
       setEquipment({ state: "error" });
     }
@@ -1463,7 +1467,13 @@ function StepEquipment({
   job: Job;
   equipment:
     | { state: "loading" }
-    | { state: "done"; sections: CarFeatureSections; spec?: CarSpec }
+    | {
+        state: "done";
+        sections: CarFeatureSections;
+        engines: CarSpec[];
+        catalog?: { brand: string; model: string };
+        year: number;
+      }
     | { state: "error" }
     | null;
   onRetry: () => void;
@@ -1480,14 +1490,6 @@ function StepEquipment({
             którego nie masz, zostaną zwinięte. Gdy nie masz pewności, zostaw
             „Nie wiem”: wtedy nic nie jest ukrywane.
           </p>
-          {equipment?.state === "done" && equipment.spec && (
-            <p>
-              Silnik:{" "}
-              <strong className="text-ink">{equipment.spec.label}</strong>. Na
-              tej podstawie część pozycji jest już podpowiedziana – możesz je
-              zmienić.
-            </p>
-          )}
           <p className="text-xs text-steel">
             Wszystko zmienisz później na stronie głównej.
           </p>
@@ -1523,7 +1525,9 @@ function StepEquipment({
       {equipment?.state === "done" && (
         <EquipmentEditor
           carId={job.carId}
-          spec={equipment.spec}
+          engines={equipment.engines}
+          catalog={equipment.catalog}
+          year={equipment.year}
           sections={equipment.sections}
         />
       )}
@@ -1591,8 +1595,7 @@ function StepDone({
             brand={car.brand}
             model={car.model}
             year={car.year}
-            variant={car.variant}
-            spec={car.spec}
+            variant={car.spec ? undefined : car.variant}
             badge="Dodano"
             heading="h2"
           />

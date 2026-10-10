@@ -1,5 +1,7 @@
+"use client";
+
 import type { ReactNode } from "react";
-import type { CarSpec } from "@/lib/catalog";
+import { useCarEngine } from "@/lib/storage/hooks";
 import { specParts } from "@/lib/overview";
 import { CarLogo } from "../CarLogo";
 
@@ -14,7 +16,6 @@ export function CarHero({
   model,
   year,
   variant,
-  spec,
   badge,
   heading: Heading = "h1",
   children,
@@ -24,12 +25,12 @@ export function CarHero({
   model: string;
   year: number;
   variant?: string;
-  spec?: CarSpec;
   badge?: string;
   /** Heading level of the model name (h2 inside the wizard). */
   heading?: "h1" | "h2";
   children?: ReactNode;
 }) {
+  const spec = useCarEngine(carId);
   const engine = spec ? specParts(spec) : [];
   return (
     <section className="car-hero">
@@ -51,17 +52,19 @@ export function CarHero({
           <Heading className="type-display">
             {model} <span className="font-normal text-steel">{year}</span>
           </Heading>
-          {engine.length > 0 ? (
-            <ul className="mt-3 flex flex-wrap gap-2 text-sm">
-              {engine.map((part) => (
-                <li key={part} className="car-hero-spec">
-                  {part}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            variant && <p className="mt-2 text-graphite">{variant}</p>
-          )}
+          <div className="mt-3 min-h-8">
+            {engine.length > 0 ? (
+              <ul className="flex flex-wrap gap-2 text-sm">
+                {engine.map((part) => (
+                  <li key={part} className="car-hero-spec">
+                    {part}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              variant && <p className="mt-2 text-graphite">{variant}</p>
+            )}
+          </div>
         </div>
         {children && (
           <div className="flex shrink-0 flex-col gap-2 sm:items-end">

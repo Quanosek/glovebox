@@ -119,10 +119,11 @@ export function getCarSummary(car: CarFile): CarSummary {
     brand: car.brand,
     model: car.model,
     year: car.year,
-    variant: car.variant,
+    variant: car.spec ? undefined : car.variant,
     label: carLabel(car),
     href: carHref(car.id),
     ...(car.spec ? { spec: car.spec } : {}),
+    ...(car.catalog ? { catalog: car.catalog } : {}),
     books: bookCtxs(car).map((ctx) => {
       const index = getBook(ctx);
       return {

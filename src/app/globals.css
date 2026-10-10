@@ -610,6 +610,8 @@ body {
     font-size: 0.875rem;
     font-weight: 600;
     text-align: left;
+    justify-content: flex-start;
+    cursor: pointer;
   }
   .sidebar-back svg {
     color: var(--color-red);
@@ -649,6 +651,43 @@ body {
   .reader-column {
     max-width: 48rem;
     margin-inline: auto;
+  }
+  .reader-outline {
+    position: relative;
+    border-left: 1px solid var(--color-line);
+  }
+  .reader-outline::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -1px;
+    width: 2px;
+    background: var(--color-red);
+    transform: scaleY(var(--reader-outline-progress, 0));
+    transform-origin: top;
+    transition: transform 200ms linear;
+    pointer-events: none;
+  }
+  .reader-outline-link {
+    display: block;
+    margin-left: -1px;
+    border-left: 2px solid transparent;
+    padding-block: 0.125rem;
+    padding-right: 0.25rem;
+    color: var(--color-graphite);
+    font-weight: 400;
+    transition: none;
+  }
+  .reader-outline-link[data-level="2"] {
+    font-weight: 600;
+  }
+  .reader-outline-link:hover,
+  .reader-outline-link[aria-current="location"] {
+    color: var(--color-ink);
+  }
+  .reader-outline-link[aria-current="location"] {
+    background-color: rgb(200 16 46 / 8%);
   }
 
   /*

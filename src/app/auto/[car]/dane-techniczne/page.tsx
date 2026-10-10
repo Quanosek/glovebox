@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { carHref, carLabel } from "@/lib/cars";
-import { getTechCards } from "@/lib/carOverview";
+import { getManualEngines, getTechCards } from "@/lib/carOverview";
 import { getCar } from "@/lib/content";
-import { isNumeric } from "@/lib/overview";
+import { EngineTable } from "@/components/EngineTable";
 
 type Props = PageProps<"/auto/[car]/dane-techniczne">;
 
@@ -20,6 +20,7 @@ export default async function TechDataPage({ params }: Props) {
   const car = getCar((await params).car);
   if (!car) notFound();
   const cards = getTechCards(car);
+  const engines = getManualEngines(car);
 
   return (
     <main id="main" className="page-shell">
@@ -52,49 +53,30 @@ export default async function TechDataPage({ params }: Props) {
               {card.tables.map((t) => (
                 <div key={t.id} className="panel">
                   {t.kind === "facts" ? (
-                    <dl className="grid gap-px bg-line sm:grid-cols-2 lg:grid-cols-3">
+                    <dl className="flex flex-wrap gap-px bg-line">
                       {t.facts.map((f, i) => (
-                        <div key={i} className="bg-white px-4 py-2.5">
+                        <div
+                          key={i}
+                          className="min-w-0 grow basis-full bg-white px-4 py-2.5 sm:basis-[calc(50%-1px)] lg:basis-[calc(33.333%-1px)]"
+                        >
                           <dt className="text-sm text-graphite">{f.label}</dt>
                           <dd className="type-fact mt-0.5">{f.value}</dd>
                         </div>
                       ))}
                     </dl>
                   ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <tbody>
-                          {t.rows.map((row, r) => (
-                            <tr
-                              key={r}
-                              className={
-                                t.header && r === 0
-                                  ? "silver-bar font-semibold"
-                                  : "border-b border-line last:border-0"
-                              }
-                            >
-                              {row.map((cell, c) =>
-                                t.header && r === 0 ? (
-                                  <th
-                                    key={c}
-                                    scope="col"
-                                    className="px-3 py-2 text-left"
-                                  >
-                                    {cell}
-                                  </th>
-                                ) : (
-                                  <td
-                                    key={c}
-                                    className={`px-3 py-2 align-top ${isNumeric(cell) ? "font-semibold tabular-nums" : ""}`}
-                                  >
-                                    {cell}
-                                  </td>
-                                ),
-                              )}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                    <div className="prose-manual px-3">
+                      <EngineTable
+                        carId={car.id}
+                        engines={engines}
+                        anchorId={null}
+                        block={{
+                          type: "table",
+                          id: t.id,
+                          header: t.header,
+                          rows: t.rows,
+                        }}
+                      />
                     </div>
                   )}
                   <div className="border-t border-line px-4 py-2 text-right text-sm">

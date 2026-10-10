@@ -26,7 +26,7 @@ export interface CarFile {
   variant?: string;
   /** Catalogue ids when the car was chosen from the official list. */
   catalog?: { brand: string; model: string };
-  /** Engine chosen from the official catalogue. */
+  /** Legacy engine hint; new imports never store an engine on shared manuals. */
   spec?: CarSpec;
   createdAt: string;
   books: CarBook[];
@@ -42,6 +42,7 @@ export interface CarSummary {
   label: string;
   href: string;
   spec?: CarSpec;
+  catalog?: { brand: string; model: string };
   books: Array<
     CarBook & {
       href: string;

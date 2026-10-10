@@ -8,6 +8,7 @@ from typing import Any
 
 from .model import Item
 from .pdf import pymupdf
+from .text import normalize_title
 
 
 class Document:
@@ -17,6 +18,7 @@ class Document:
     def __init__(self, args: argparse.Namespace) -> None:
         self.args = args
         self.pdf = pymupdf.open(args.pdf)
+        self.outline_titles = {normalize_title(title) for _, title, *_ in self.pdf.get_toc()}
         self.page_count = self.pdf.page_count if not args.max_pages else min(args.max_pages, self.pdf.page_count)
         self.ref_font_re = re.compile(args.ref_font, re.I)
         self.bold_font_re = re.compile(r"bold|black|heavy|semibold|demi", re.I)

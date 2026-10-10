@@ -1,4 +1,5 @@
 import type { FeatureState } from "@/config/vehicle";
+import type { CarSpec } from "@/lib/catalog";
 
 /**
  * Persisted application data (localStorage, single key).
@@ -7,7 +8,7 @@ import type { FeatureState } from "@/config/vehicle";
  */
 
 export const STORAGE_KEY = "opel-cascada-manual";
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 export const EXPORT_APP_ID = "opel-cascada-manual";
 
 export type HighlightColor = "light" | "silver" | "graphite" | "red";
@@ -128,6 +129,8 @@ export interface Settings {
    * state are unknown ("Nie wiem").
    */
   vehicles: Record<string, Record<string, FeatureState>>;
+  /** Engine of the owner's car, not of the shared manual library. Null means explicitly unknown. */
+  engines: Record<string, CarSpec | null>;
   /** Car chosen on the profile page (`database/<car>`), if any. */
   activeCar: string | null;
   /** Cars added to this browser profile from the shared manuals library. */
@@ -157,6 +160,7 @@ export const DEFAULT_SETTINGS: Settings = {
   fontSize: "normal",
   showUnavailable: false,
   vehicles: {},
+  engines: {},
   activeCar: null,
   ownedCars: [],
   profileName: "",
@@ -171,7 +175,7 @@ export function createEmptyData(): AppData {
     lastRead: null,
     history: [],
     reminders: [],
-    settings: { ...DEFAULT_SETTINGS, vehicles: {} },
+    settings: { ...DEFAULT_SETTINGS, vehicles: {}, engines: {} },
   };
 }
 

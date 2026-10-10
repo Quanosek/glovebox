@@ -40,6 +40,8 @@ Europe screens. Every screen should be self-explanatory, calm and consistent. Vi
   `.badge` stay on one line; use `truncate` (with a `title`) for single-line names.
 - `text-wrap: balance` on headings and `.panel-title`, `text-wrap: pretty` on paragraphs and
   list items; `hyphens: auto` (with `lang="pl"`) in manual text and notebook previews.
+- Fact grids do not leave permanent empty grey cells: three car metadata or technical-preview
+  facts share one row, and longer technical fact lists stretch the final row.
 
 ## Type scale (`src/app/globals.css`)
 
@@ -140,6 +142,24 @@ placeholder?, defaultValue?, maxLength?, ... })` asks for one line of text (e.g.
   `.car-hero-logo`, `.car-hero-spec`, `.stat-strip`/`.stat-cell`, `.nav-key`, `.section-label`
   (red dash + uppercase label), `.fav-bar`/`.fav-key`/`.fav-num` and `.thumb` (framed
   manual illustration).
+- The reader's "Na tej stronie" outline follows the most visible heading part below the
+  sticky header. A part must occupy at least one third of that readable viewport; shorter
+  parts must be fully visible. Equal coverage prefers the part nearest the upper-third
+  reading line. Hidden equipment parts are excluded. Scroll, resizing, illustrations and
+  equipment/table expansion all update the measurement. The active link has
+  `aria-current="location"` and a square red background at 8% opacity without animation.
+  Main headings (level 2) are always semibold, while subheadings (level 3) stay regular.
+  Selection never changes font weight, adds text shadows or alters line breaks.
+  A continuous red progress bar grows from the top of the silver track in discrete steps,
+  always ending at the bottom of the active heading's link. It does not interpolate within
+  a heading part. It reaches full when the end of the content is visible and remains full
+  afterwards. Each step animates with a 200 ms CSS transform. The side pane smoothly reveals the active link
+  with 96 px of context above and below (at most one quarter of the pane height), without
+  scrolling the article. Scrolling clamps at the edges, revealing the 48 px end padding
+  instead of pinning the final heading to the pane's bottom. When the document's end becomes
+  visible, the pane scrolls fully to its end, including any warnings and final padding.
+  Resizing recalculates both
+  progress and side-pane positioning. All motion respects `prefers-reduced-motion`.
 - Add-car wizard (`/dodaj-auto`): the step strip (`.wizard-track`) shows square keys on one
   line with a red track growing with progress (`--wizard-progress`); phones show the keys plus
   one "Etap n z 4" line. Step 1 is split into lettered panels ("A Twoje auto", "B Instrukcje",
@@ -173,8 +193,17 @@ placeholder?, defaultValue?, maxLength?, ... })` asks for one line of text (e.g.
   above the book groups); on other secondary screens it sits above the content in
   `.back-navigation`, aligned with `.page-shell`. Main views
   of the top navigation (`/`, car page, `/auta`, `/przypomnienia`, `/notatnik`, `/komentarze`,
-  `/zakladki`, `/ustawienia`) intentionally have none. It returns to the prior same-origin view
-  and uses the relevant car, book, or profile as a direct-entry fallback.
+  `/zakladki`, `/ustawienia`) intentionally have none. The reader key uses `.btn` cursor,
+  focus, hover and press feedback. It returns to the previous distinct manual page of the
+  current car, skipping other screens and in-page anchors. The public Navigation API
+  provides exact native history traversal where available; otherwise a per-tab reader trail
+  is consumed. Once exhausted, it opens the current book's introductory index without a
+  selected category, then the car home screen on the next click. The fallback sets a
+  boundary so it cannot loop back to the
+  exhausted page. Other secondary screens retain the prior same-origin-view fallback.
+- Technical fact layouts contain no grey empty cells: preview cards with three values have
+  three columns; larger fact lists wrap and stretch their final row to fill the available
+  width.
 - `prefers-reduced-motion: reduce` shortens all transitions/animations to 1 ms and removes
   the press movement.
 

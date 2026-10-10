@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { CarSpec } from "@/lib/catalog";
 import { RESERVED_BOOK_ROUTES, type CarBook, type CarFile } from "@/lib/cars";
 import { getCar, getDatabaseDir } from "@/lib/content";
 import { isValidId, slugify, uniqueSlug } from "@/lib/slug";
@@ -60,13 +59,12 @@ export interface ImportJob {
 export interface ImportRequest {
   /**
    * `catalog`: brand/model are catalogue ids checked against the official
-   * list (and `engine` an engine id from it); `other`: typed by hand.
+   * list; `other`: typed by hand. Engine choice belongs to the browser profile.
    */
   source: "catalog" | "other";
   brand: string;
   model: string;
   year: number;
-  engine?: string;
   variant?: string;
   docs: Array<{ file: File; title: string }>;
 }
@@ -78,7 +76,6 @@ interface ValidImport {
   year: number;
   variant?: string;
   catalog?: { brand: string; model: string };
-  spec?: CarSpec;
   docs: Array<{ file: File; title: string }>;
 }
 
@@ -130,7 +127,6 @@ export async function validateImport(req: ImportRequest): Promise<ValidImport> {
   let model = clean(req.model);
   let variant = req.variant ? clean(req.variant, 120) : undefined;
   let catalog: ValidImport["catalog"];
-  let spec: CarSpec | undefined;
   if (!brand || !slugify(brand)) throw new ImportError("Podaj markę auta.");
   if (!model || !slugify(model)) throw new ImportError("Podaj model auta.");
   if (
@@ -146,7 +142,6 @@ export async function validateImport(req: ImportRequest): Promise<ValidImport> {
         brand,
         model,
         year: req.year,
-        engine: req.engine || undefined,
       });
     } catch (err) {
       if (err instanceof CatalogUnavailableError)
@@ -154,8 +149,8 @@ export async function validateImport(req: ImportRequest): Promise<ValidImport> {
       throw err;
     }
     if (typeof resolved === "string") throw new ImportError(resolved);
-    ({ brand, model, catalog, spec } = resolved);
-    variant = spec?.label;
+    ({ brand, model, catalog } = resolved);
+    variant = undefined;
   } else if (req.source !== "other") {
     throw new ImportError("Wybierz markę z listy albo „Inna”.");
   }
@@ -179,7 +174,6 @@ export async function validateImport(req: ImportRequest): Promise<ValidImport> {
     year: req.year,
     variant,
     ...(catalog ? { catalog } : {}),
-    ...(spec ? { spec } : {}),
     docs: req.docs.map((d) => ({
       file: d.file,
       title:
@@ -337,7 +331,6 @@ async function processJob(
       year: req.year,
       ...(req.variant ? { variant: req.variant } : {}),
       ...(req.catalog ? { catalog: req.catalog } : {}),
-      ...(req.spec ? { spec: req.spec } : {}),
       createdAt: new Date().toISOString(),
       books,
     };
