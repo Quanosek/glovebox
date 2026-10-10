@@ -22,6 +22,7 @@ import make_sample_pdf  # noqa: E402
 from manual_extract import cli, legends, outline, reading, runs, tables, text  # noqa: E402
 from manual_extract.build import build  # noqa: E402
 from manual_extract.model import Item, Span  # noqa: E402
+from manual_extract.pdf import pymupdf  # noqa: E402
 
 
 class SampleFontTests(unittest.TestCase):
@@ -261,6 +262,18 @@ class ThreeColumnExtractionTests(unittest.TestCase):
 
     def texts(self, kind: str = "paragraph") -> list[str]:
         return [runs.runs_to_text(b["runs"]) for b in self.blocks if b["type"] == kind]
+
+    def test_fixture_text_stays_inside_columns(self) -> None:
+        with pymupdf.open(Path(self.tmp.name) / "three.pdf") as pdf:
+            for block in pdf[0].get_text("dict")["blocks"]:
+                for line in block.get("lines", []):
+                    x0, y0, x1, _ = line["bbox"]
+                    if y0 < 29:
+                        continue
+                    column = max(x for x in make_sample_pdf.COLS3 if x <= x0 + 1)
+                    value = "".join(span["text"] for span in line["spans"])
+                    with self.subTest(text=value):
+                        self.assertLessEqual(x1, column + make_sample_pdf.COL3_W)
 
     def test_sentence_continues_in_next_column(self) -> None:
         self.assertIn(

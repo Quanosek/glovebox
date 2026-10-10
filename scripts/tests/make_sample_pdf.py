@@ -271,15 +271,16 @@ def build_three_columns(path: str) -> None:
     text(p1, c0, 82, [("Wymiana", "bold")])
     text(p1, c0, 95, [("Wymianę zlecić warsztatowi.", "reg")])
     # A sentence running from the bottom of the first into the second column.
-    y = 315
-    for line in ["Szyby otwierane elektrycznie działają", "po włączeniu zapłonu. Mechanizm", "zabezpieczający zatrzymuje szybę,"]:
+    y = 305
+    for line in ["Szyby otwierane elektrycznie", "działają po włączeniu zapłonu.", "Mechanizm zabezpieczający", "zatrzymuje szybę,"]:
         text(p1, c0, y, [(line, "reg")])
         y += 10
-    text(p1, c1, 50, [("gdy napotka opór. Po zwolnieniu", "reg")])
-    text(p1, c1, 60, [("przełącznika szyba zatrzymuje się", "reg")])
-    text(p1, c1, 70, [("w aktualnym położeniu.", "reg")])
-    text(p1, c1, 83, [("Nacisnąć przycisk ", "reg"), ("c", "symb"), (".", "reg")])
-    text(p1, c1, 96, [("Szczegóły ", "reg"), ("Þ", "symb"), (" 12.", "reg")])
+    text(p1, c1, 50, [("gdy napotka opór.", "reg")])
+    text(p1, c1, 60, [("Po zwolnieniu przełącznika", "reg")])
+    text(p1, c1, 70, [("szyba zatrzymuje się", "reg")])
+    text(p1, c1, 80, [("w aktualnym położeniu.", "reg")])
+    text(p1, c1, 93, [("Nacisnąć przycisk ", "reg"), ("c", "symb"), (".", "reg")])
+    text(p1, c1, 106, [("Szczegóły ", "reg"), ("Þ", "symb"), (" 12.", "reg")])
     # "Przestroga" box open at the bottom, continued in the third column.
     top = 120
     vline(p1, c1, top, 343)

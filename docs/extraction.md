@@ -189,6 +189,8 @@ label, heading, legend entry, definition, list item, continuation, paragraph).
 The synthetic PDF needs a complete regular/bold font pair with Polish glyphs. The generator
 prefers DejaVu Sans, then uses system Georgia on macOS or Windows. Georgia preserves the
 fixture's ASCII hyphens when embedded; Arial may map them to soft hyphens during extraction.
+Fixture text must fit its column with either supported font family; the three-column tests
+check the rendered line bounds to catch font-dependent overflow into gutters.
 It checks the standard
 DejaVu directories on Linux, `/System/Library/Fonts/Supplemental`, `/Library/Fonts` and
 `~/Library/Fonts` on macOS, and `C:/Windows/Fonts` on Windows. If neither family is available,
