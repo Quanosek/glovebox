@@ -8,9 +8,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# AGENTS.md — car-manual-library
+# AGENTS.md — Glovebox
 
-Private, local-only Next.js app for reading vehicle manuals from any manufacturer, with
+**Glovebox** (package `glovebox`; name in `src/lib/brand.ts`, use it everywhere the app names
+itself) is a private, local-only Next.js app for reading vehicle manuals from any manufacturer, with
 highlighting, comments, bookmarks and a Markdown notebook. The visual hierarchy takes
 inspiration from Opel's Navi 950 interface; the vehicle database itself is generic and user
 populated. There is no bundled example, default vehicle, manual template or generated content.
@@ -65,7 +66,7 @@ pnpm typecheck         # next typegen && tsc --noEmit
 pnpm test              # Vitest (src/**/*.test.ts)
 pnpm format            # Prettier (+ Tailwind class sorting); `pnpm format:check` only checks
 pnpm test:extract      # Python unittest for the extractor (same interpreter lookup as the importer)
-pnpm icons             # src/app/icon.svg -> apple-icon.png + favicon.ico
+pnpm icons             # src/app/icon.svg -> favicon.ico, apple-icon.png, public/icon-*.png
 ```
 
 The importer finds Python via `PYTHON`, then `.venv/bin/python` / `.venv\Scripts\python.exe`,
@@ -89,6 +90,7 @@ scripts/                        generic PDF extraction (Python), tests, icon gen
 public/sw.js                    service worker (shell precache + runtime caching, docs/offline.md)
 src/
   app/
+    manifest.ts                 web app manifest (install name, light colours, icons)
     page.tsx                    profile (ProfileView): assigned cars / notebook / continue reading,
                                 reading history, recent highlights, "Czy wiesz, że…" tips
     auta/                       car list (CarPicker)
@@ -130,6 +132,7 @@ src/
   lib/server/                   importer (jobs), official catalogue, python, cross-site guard
   lib/catalog.ts                client-safe catalogue types + name normalisation
   lib/logos.ts                  brand logo matching + year selection (pure, tested)
+  lib/brand.ts                  app name + description (metadata, header, manifest, User-Agent)
   lib/cars.ts, lib/slug.ts      client-safe car types/helpers and id rules
   lib/storage/                  localStorage store, schema, migrations, React hooks,
                                 layout hint cookie (hint.ts, hintContext.tsx)
@@ -199,8 +202,11 @@ which then shows the equipment step.
   `polishTypography()` (`src/lib/typography.ts`) on the server for manual content,
   `watchTypography()` on the client for everything else. Editorial Polish (`„…”`, `–`, `…`,
   sentence case, one term per concept). Details in `docs/ui.md`.
-- Favicon: generic open-book mark on white (`src/app/icon.svg`). After editing it run
-  `pnpm icons`. With an active car the header and the car
+- App icon: Glovebox mark (open manual in a glovebox, ink lines + red latch) in
+  `src/app/icon.svg`; its `prefers-color-scheme: dark` rules switch only the browser tab icon to
+  a dark tile — the app itself stays light-only (`colorScheme: "light"`). `Logo.tsx` draws the
+  same mark. After editing the SVG run `pnpm icons` (ICO 16/32/48, apple-icon 180, manifest
+  192/512 + maskable 512, always light); `src/app/manifest.ts` lists them. With an active car the header and the car
   page show the official brand logo of the car's model year instead (`CarLogo`,
   `docs/logos.md`); brand logos keep their own colours (content, not UI chrome).
 - **Never use native `window.confirm` / `alert` / `prompt`.** Use `confirmDialog()` /
@@ -249,7 +255,9 @@ Details in `docs/vehicle-profile.md`. Every car is tagged; no car has preset equ
 
 ## Storage schema
 
-Single localStorage key `opel-cascada-manual`, versioned (`SCHEMA_VERSION` in
+Single localStorage key `opel-cascada-manual` (a legacy internal id kept on purpose, like the
+export `app` id and cache name prefixes: renaming it would lose existing browser data; never
+show it in the UI), versioned (`SCHEMA_VERSION` in
 `src/lib/storage/schema.ts`):
 
 ```ts

@@ -6,6 +6,7 @@ import { DialogHost } from "@/components/Dialog";
 import { Header } from "@/components/Header";
 import { EngineProfileInitializer } from "@/components/EngineProfileInitializer";
 import { LayoutHintProvider } from "@/lib/storage/hintContext";
+import { APP_DESCRIPTION, APP_NAME } from "@/lib/brand";
 import { listCarSummaries } from "@/lib/content";
 import { HINT_COOKIE, parseHint } from "@/lib/storage/hint";
 import "./globals.css";
@@ -14,12 +15,13 @@ import "./globals.css";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
+  applicationName: APP_NAME,
   title: {
-    default: "Moje instrukcje aut",
-    template: "%s · Moje instrukcje aut",
+    default: APP_NAME,
+    template: `%s · ${APP_NAME}`,
   },
-  description:
-    "Prywatna biblioteka instrukcji samochodowych wszystkich marek z zaznaczeniami, komentarzami i notatnikiem.",
+  description: APP_DESCRIPTION,
+  appleWebApp: { title: APP_NAME, statusBarStyle: "default" },
   robots: { index: false, follow: false },
 };
 

@@ -1,7 +1,7 @@
 # Brand logos
 
 When a car is active, the header (and the car page) shows the official logo of the car's
-brand **as used in the car's model year** instead of the app icon (`src/components/Logo.tsx`,
+brand **as used in the car's model year** instead of the Glovebox app mark (`src/components/Logo.tsx`,
 still used without a car and as the fallback).
 
 ## Source
