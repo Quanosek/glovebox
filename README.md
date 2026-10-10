@@ -1,7 +1,9 @@
-# Biblioteka instrukcji samochodowych
+# Glovebox
 
-Prywatna, lokalna aplikacja (Next.js) do czytania instrukcji samochodowych wszystkich marek z
-zakreślaczem, komentarzami i notatnikiem. Każda osoba dodaje **własne auta i instrukcje PDF** —
+**Glovebox** (czyt. „glawboks”, ang. schowek w desce rozdzielczej) to Twój cyfrowy schowek na
+dokumenty auta: prywatna, lokalna aplikacja (Next.js) do czytania instrukcji samochodowych
+wszystkich marek z zakreślaczem, komentarzami i notatnikiem, a przy okazji menedżer Twoich aut
+(wyposażenie, przypomnienia o badaniu i OC) — wszystkie Twoje dane zostają lokalnie. Każda osoba dodaje **własne auta i instrukcje PDF** —
 markę, model, rocznik i silnik można wybrać z oficjalnych katalogów, a dane spoza katalogu
 wprowadzić ręcznie. Aplikacja nie zawiera domyślnego auta ani przykładowej instrukcji.
 
@@ -69,6 +71,9 @@ kopie do czytania bez połączenia. Zaznaczenia i notatki zostają zachowane.
 - **Offline** — po otwarciu auta wszystkie jego strony i ilustracje zapisują się same w tle;
   potem całe auto działa bez internetu (znaczek „Offline” w nagłówku). Połączenie jest
   potrzebne tylko do dodawania aut i odświeżenia listy aut.
+- **Ikona aplikacji** — schowek z instrukcją w kolorach aplikacji. W karcie przeglądarki ikona
+  dopasowuje się do jasnego lub ciemnego motywu systemu; sama aplikacja zawsze ma jasny wygląd.
+  Aplikację można też zainstalować na pulpicie lub ekranie głównym telefonu.
 - **Proste w obsłudze** — okna potwierdzeń na środku ekranu, czytelne komunikaty po polsku
   bez technicznego żargonu, jasny wygląd inspirowany podziałem i stylistyką ekranów Opel Navi 950.
 - **Prywatność** — brak bazy danych, kont i analityki. Pliki PDF są przetwarzane tylko na
@@ -93,8 +98,8 @@ repozytorium (są w `.gitignore` i są usuwane po imporcie).
 ## Instalacja i uruchomienie
 
 ```bash
-git clone <adres-repozytorium> car-manual-library
-cd car-manual-library
+git clone <adres-repozytorium> glovebox
+cd glovebox
 pnpm install
 
 # tryb deweloperski: http://localhost:3000
@@ -195,17 +200,17 @@ Dane ze starszej wersji aplikacji są automatycznie przenoszone do aktualnego fo
 
 ## Polecenia
 
-| Polecenie           | Opis                                                 |
-| ------------------- | ---------------------------------------------------- |
-| `pnpm dev`          | serwer deweloperski                                  |
-| `pnpm build`        | wersja produkcyjna (`.next/`)                        |
-| `pnpm start`        | uruchomienie wersji produkcyjnej na :3000            |
-| `pnpm icons`        | wygenerowanie `apple-icon.png` i `favicon.ico` z SVG |
-| `pnpm test`         | testy jednostkowe (Vitest)                           |
-| `pnpm test:extract` | testy skryptu ekstrakcji (Python)                    |
-| `pnpm lint`         | ESLint                                               |
-| `pnpm typecheck`    | sprawdzenie typów TypeScript                         |
-| `pnpm format`       | formatowanie (Prettier)                              |
+| Polecenie           | Opis                                                             |
+| ------------------- | ---------------------------------------------------------------- |
+| `pnpm dev`          | serwer deweloperski                                              |
+| `pnpm build`        | wersja produkcyjna (`.next/`)                                    |
+| `pnpm start`        | uruchomienie wersji produkcyjnej na :3000                        |
+| `pnpm icons`        | wygenerowanie ikon PNG/ICO (karta, iOS, instalacja) z `icon.svg` |
+| `pnpm test`         | testy jednostkowe (Vitest)                                       |
+| `pnpm test:extract` | testy skryptu ekstrakcji (Python)                                |
+| `pnpm lint`         | ESLint                                                           |
+| `pnpm typecheck`    | sprawdzenie typów TypeScript                                     |
+| `pnpm format`       | formatowanie (Prettier)                                          |
 
 Pełna kontrola projektu: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:extract && pnpm format:check && pnpm build`.
 

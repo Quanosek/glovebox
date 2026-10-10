@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { APP_NAME } from "@/lib/brand";
 import { hasReadableManual, type CarSummary } from "@/lib/cars";
 import { useOnline } from "@/lib/offline";
 import { dueSoon, todayIso } from "@/lib/reminders";
@@ -145,7 +146,7 @@ export function Header({ cars }: { cars: CarSummary[] }) {
               </>
             ) : (
               <span className="block text-base font-semibold tracking-wide uppercase">
-                Moje instrukcje
+                {APP_NAME}
               </span>
             )}
           </span>

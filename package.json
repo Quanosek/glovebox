@@ -1,6 +1,6 @@
 {
-  "name": "car-manual-library",
-  "version": "0.1.0",
+  "name": "glovebox",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
