@@ -206,7 +206,10 @@ which then shows the equipment step.
   `src/app/icon.svg`; its `prefers-color-scheme: dark` rules switch only the browser tab icon to
   a dark tile — the app itself stays light-only (`colorScheme: "light"`). `Logo.tsx` draws the
   same mark. After editing the SVG run `pnpm icons` (ICO 16/32/48, apple-icon 180, manifest
-  192/512 + maskable 512, always light); `src/app/manifest.ts` lists them. With an active car the header and the car
+  96/192/512, maskable 192/512 and monochrome 512, always light); `src/app/manifest.ts` lists
+  them together with the SVG, app shortcuts and the install screenshots in `public/screenshots/`
+  (wide 1280×800 and narrow phone shots of the profile in an empty browser profile; retake them
+  when the profile page changes). iOS/iPadOS use the `appleWebApp` metadata of the root layout. With an active car the header and the car
   page show the official brand logo of the car's model year instead (`CarLogo`,
   `docs/logos.md`); brand logos keep their own colours (content, not UI chrome).
 - **Never use native `window.confirm` / `alert` / `prompt`.** Use `confirmDialog()` /

@@ -74,7 +74,10 @@ kopie do czytania bez połączenia. Zaznaczenia i notatki zostają zachowane.
   potrzebne tylko do dodawania aut i odświeżenia listy aut.
 - **Ikona aplikacji** — schowek z instrukcją w kolorach aplikacji. W karcie przeglądarki ikona
   dopasowuje się do jasnego lub ciemnego motywu systemu; sama aplikacja zawsze ma jasny wygląd.
-  Aplikację można też zainstalować na pulpicie lub ekranie głównym telefonu.
+  Aplikację można też zainstalować na pulpicie (Chrome, Edge, Safari na macOS) lub na ekranie
+  głównym telefonu i tabletu (Android, iPhone, iPad – w Safari: Udostępnij → Do ekranu
+  początkowego). Zainstalowana aplikacja otwiera się we własnym oknie, ma skróty do listy aut,
+  wyszukiwania, przypomnień i notatnika, a wybrane auta działają bez internetu.
 - **Proste w obsłudze** — okna potwierdzeń na środku ekranu, czytelne komunikaty po polsku
   bez technicznego żargonu, jasny wygląd inspirowany podziałem i stylistyką ekranów Opel Navi 950.
 - **Prywatność** — brak bazy danych, kont i analityki. Pliki PDF są przetwarzane tylko na

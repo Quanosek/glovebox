@@ -22,8 +22,9 @@ Cache API needs a secure context (`localhost` or HTTPS); on plain-HTTP LAN addre
 | `opel-cascada-manual-runtime-v3` | the service worker (app shell, visited pages, assets)   |
 | `opel-cascada-manual-offline-v7` | `saveCarOffline()` — every page/image/script of one car |
 
-`install` fetches the app shell (`SHELL`: `/`, `/auta`, `/notatnik`, `/komentarze`,
-`/zakladki`, `/przypomnienia`, `/ustawienia`, `/dodaj-auto`), scans each HTML for `/_next/static/*` URLs (HTML
+`install` fetches the install metadata (`/manifest.webmanifest` and the 192/512/maskable
+icons, so the installed app starts offline) and the app shell (`SHELL`: `/`, `/auta`,
+`/notatnik`, `/komentarze`, `/zakladki`, `/przypomnienia`, `/ustawienia`, `/dodaj-auto`), scans each HTML for `/_next/static/*` URLs (HTML
 and the inline RSC payload) and pre-caches those scripts/styles too, so every shell page
 hydrates offline even if it was never visited. Then `skipWaiting()`. `activate` deletes
 other `opel-cascada-manual-*` caches and claims clients. Bump the cache name when the

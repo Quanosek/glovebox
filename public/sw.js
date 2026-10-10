@@ -17,6 +17,11 @@ const PREFIX = "opel-cascada-manual-";
 const CACHE = `${PREFIX}runtime-v3`;
 const OFFLINE_CACHE = `${PREFIX}offline-v7`;
 const SHELL = [
+  // Install metadata, so the installed app starts offline with its icons.
+  "/manifest.webmanifest",
+  "/icon-192.png",
+  "/icon-512.png",
+  "/icon-maskable-512.png",
   "/",
   "/auta",
   "/notatnik",

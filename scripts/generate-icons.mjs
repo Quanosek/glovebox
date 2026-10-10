@@ -3,9 +3,12 @@
 // browsers need. Usage: pnpm icons
 // - src/app/favicon.ico: 16/32/48 px PNG-in-ICO (legacy tab icon);
 // - src/app/apple-icon.png: 180×180 (iOS home screen);
-// - public/icon-192.png, public/icon-512.png: web app manifest icons;
-// - public/icon-maskable-512.png: manifest icon with the mark inside the
-//   maskable safe zone (Android adaptive icons).
+// - public/icon-96.png, public/icon-192.png, public/icon-512.png: web app
+//   manifest icons (96 px for app shortcuts);
+// - public/icon-maskable-192.png, public/icon-maskable-512.png: manifest
+//   icons with the mark inside the maskable safe zone (Android adaptive icons);
+// - public/icon-monochrome-512.png: the mark alone on transparency, for
+//   themed (monochrome) launcher icons.
 // The SVG itself switches to a dark tile under `prefers-color-scheme: dark`;
 // raster icons cannot, so they always use the light (default) colours.
 import { readFile, writeFile } from "node:fs/promises";
@@ -47,12 +50,48 @@ const maskable = async (size) => {
     .toBuffer();
 };
 
+// Monochrome icon: only the alpha channel matters, so the mark is drawn in
+// black on transparency, inside the same safe zone as the maskable icon.
+const monochrome = async (size) => {
+  const mark = Buffer.from(
+    svg
+      .toString()
+      .replace(/\.bg\s*\{[^}]*\}/, ".bg { fill: none; }")
+      .replace(/#2b2e31|#c8102e/g, "#000000"),
+  );
+  const inner = Math.round(size * 0.72);
+  const pad = Math.floor((size - inner) / 2);
+  const drawn = await sharp(mark, { density: Math.ceil((72 * inner) / 64) * 2 })
+    .resize(inner, inner)
+    .png()
+    .toBuffer();
+  return sharp(drawn)
+    .extend({
+      top: pad,
+      bottom: size - inner - pad,
+      left: pad,
+      right: size - inner - pad,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    })
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+};
+
 await writeFile(path.join(appDir, "apple-icon.png"), await png(180));
+await writeFile(path.join(publicDir, "icon-96.png"), await png(96));
 await writeFile(path.join(publicDir, "icon-192.png"), await png(192));
 await writeFile(path.join(publicDir, "icon-512.png"), await png(512));
 await writeFile(
+  path.join(publicDir, "icon-maskable-192.png"),
+  await maskable(192),
+);
+await writeFile(
   path.join(publicDir, "icon-maskable-512.png"),
   await maskable(512),
+);
+await writeFile(
+  path.join(publicDir, "icon-monochrome-512.png"),
+  await monochrome(512),
 );
 
 // ICO container with embedded PNG images (supported by all modern browsers).
@@ -82,5 +121,5 @@ await writeFile(
   Buffer.concat([header, ...entries, ...images]),
 );
 console.log(
-  "✓ favicon.ico, apple-icon.png, icon-192.png, icon-512.png, icon-maskable-512.png generated from src/app/icon.svg",
+  "✓ favicon.ico, apple-icon.png and the manifest icons (96, 192, 512, maskable 192/512, monochrome 512) generated from src/app/icon.svg",
 );

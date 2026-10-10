@@ -21,13 +21,20 @@ export const metadata: Metadata = {
     template: `%s · ${APP_NAME}`,
   },
   description: APP_DESCRIPTION,
-  appleWebApp: { title: APP_NAME, statusBarStyle: "default" },
+  // iOS/iPadOS home screen app (the manifest covers the other platforms).
+  appleWebApp: { capable: true, title: APP_NAME, statusBarStyle: "default" },
+  // Page numbers and part numbers of manuals are not phone numbers.
+  formatDetection: { telephone: false, email: false, address: false },
   robots: { index: false, follow: false },
 };
 
 export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
   themeColor: "#ffffff",
   colorScheme: "light",
+  // The on-screen keyboard shrinks the layout instead of covering the notebook.
+  interactiveWidget: "resizes-content",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
