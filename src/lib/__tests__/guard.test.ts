@@ -71,3 +71,34 @@ describe("isLoopbackHost", () => {
     expect(isLoopbackHost(host)).toBe(expected);
   });
 });
+
+describe("mutating API routes", () => {
+  const routes = import.meta.glob<Record<string, unknown>>(
+    "/src/app/api/**/route.ts",
+  );
+  const crossSite = (method: string) =>
+    new Request("http://localhost:3000/api/x", {
+      method,
+      headers: {
+        host: "localhost:3000",
+        origin: "https://example.com",
+        "sec-fetch-site": "cross-site",
+      },
+    });
+
+  it("reject cross-site requests before doing anything", async () => {
+    let checked = 0;
+    for (const load of Object.values(routes)) {
+      const route = await load();
+      for (const method of ["POST", "PUT", "PATCH", "DELETE"]) {
+        const handler = route[method];
+        if (typeof handler !== "function") continue;
+        const ctx = { params: Promise.resolve({ car: "test-auto", id: "x" }) };
+        const res = (await handler(crossSite(method), ctx)) as Response;
+        expect(res.status, method).toBe(403);
+        checked++;
+      }
+    }
+    expect(checked).toBeGreaterThan(0);
+  });
+});

@@ -1,0 +1,3 @@
+# Extractor runtime plus the Python linter used by `pnpm lint:py`.
+-r requirements.txt
+ruff>=0.15

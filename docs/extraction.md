@@ -22,7 +22,7 @@ implementation is the `scripts/manual_extract/` package, one module per topic:
 | Module                                          | Topic                                                                            |
 | ----------------------------------------------- | -------------------------------------------------------------------------------- |
 | `cli.py`, `build.py`                            | arguments; pipeline, section tree and JSON output                                |
-| `document.py`, `model.py`                       | state of one PDF (items, body size, pitch, frames); spans and items              |
+| `document.py`, `model.py`                       | state of one PDF (items, body size, pitch, frames); spans, items, `Box`          |
 | `reading.py`                                    | characters, fake bold, symbol fonts, lone markers, running headers, page numbers |
 | `tables.py`, `figures.py`, `frames.py`          | rule-only and gridded tables; illustrations; warning boxes                       |
 | `layout.py`, `definitions.py`, `leaders.py`     | columns, bands, pitch, paragraphs; definition lists; dot leaders                 |
@@ -178,6 +178,13 @@ textual table values, grouped headers, captions versus unrelated bookmark labels
 coordinates, document-specific spacing, sparse legend columns and genuine four-column layouts.
 It also checks that absent bookmark text is not invented as body content.
 Review results from user-provided manuals because PDF layouts and scan quality vary.
+
+`pnpm lint:py` checks the package with ruff (`scripts/ruff.toml`: pyflakes, import order,
+bugbear, pyupgrade; long lines allowed). A refactor of the extractor must keep its output:
+re-extract the local manuals into a temporary folder and compare every JSON file with the
+current `database/` before replacing it. Lines are copied with `Span.copy()` and
+`Item.with_spans()`; `SectionBuilder._line()` is a pipeline of named steps (footnote, warning
+label, heading, legend entry, definition, list item, continuation, paragraph).
 
 The synthetic PDF needs a complete regular/bold font pair with Polish glyphs. The generator
 prefers DejaVu Sans, then uses system Georgia on macOS or Windows. Georgia preserves the

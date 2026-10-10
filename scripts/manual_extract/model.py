@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 from .text import REF_MARK
+
+# A rectangle in PDF points: (x0, y0, x1, y1).
+Box = tuple[float, float, float, float]
 
 
 @dataclass
@@ -15,21 +18,29 @@ class Span:
     italic: bool
     size: float
     font: str
-    bbox: tuple[float, float, float, float] | None = None
+    bbox: Box | None = None
     icon: bool = False  # glyphs of a pictogram font, rendered as an inline image
     color: int | None = None
+
+    def copy(self, text: str | None = None) -> Span:
+        """A copy of this span, optionally with other text."""
+        return replace(self, text=self.text if text is None else text)
 
 
 @dataclass
 class Item:
     kind: str  # "line" | "table" | "image"
     page: int  # pdf page index (0-based)
-    bbox: tuple[float, float, float, float]
+    bbox: Box
     col: int = 0  # -1 full width, otherwise the column index (0 = leftmost)
     band: int = 0
     spans: list[Span] = field(default_factory=list)
     data: dict[str, Any] = field(default_factory=dict)
     base: float = 0.0  # baseline of the first text glyph (lines only)
+
+    def with_spans(self, spans: list[Span]) -> Item:
+        """A copy of this line with other spans (its data copied too)."""
+        return Item(self.kind, self.page, self.bbox, self.col, self.band, spans, dict(self.data), self.base)
 
     @property
     def text(self) -> str:

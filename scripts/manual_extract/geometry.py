@@ -4,16 +4,15 @@ from __future__ import annotations
 
 from typing import Any
 
+from .model import Box
 from .pdf import pymupdf
 
-Box = tuple[float, float, float, float]
 
-
-def center(b: tuple[float, float, float, float]) -> tuple[float, float]:
+def center(b: Box) -> tuple[float, float]:
     return ((b[0] + b[2]) / 2, (b[1] + b[3]) / 2)
 
 
-def contains(b: tuple[float, float, float, float], p: tuple[float, float]) -> bool:
+def contains(b: Box, p: tuple[float, float]) -> bool:
     return b[0] <= p[0] <= b[2] and b[1] <= p[1] <= b[3]
 
 

@@ -7,6 +7,7 @@ import type {
 } from "@/content/types";
 import { FUEL_LABEL, type CarSpec } from "@/lib/catalog";
 import type { QuickTopicId } from "@/config/quickTopics";
+import { formatDecimal } from "@/lib/files";
 
 /**
  * Pure helpers and shared types for the car overview screens (car page,
@@ -202,8 +203,7 @@ export const kwToHp = (kw: number) => Math.round(kw * 1.35962);
 /** Engine description for the car card, e.g. "1,6 l · 125 kW (170 KM) · benzyna". */
 export function specParts(spec: CarSpec): string[] {
   const parts: string[] = [];
-  if (spec.engineCm3)
-    parts.push(`${(spec.engineCm3 / 1000).toFixed(1).replace(".", ",")} l`);
+  if (spec.engineCm3) parts.push(`${formatDecimal(spec.engineCm3 / 1000)} l`);
   parts.push(`${spec.powerKw} kW (${kwToHp(spec.powerKw)} KM)`);
   parts.push(FUEL_LABEL[spec.fuel]);
   return parts;
@@ -257,12 +257,6 @@ export interface TechCard {
         title?: string;
       }
   >;
-}
-
-export interface SectionThumb {
-  title: string;
-  href: string;
-  thumb: string | null;
 }
 
 export interface Tip {

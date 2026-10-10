@@ -141,14 +141,18 @@ def find_columns(items: list[Item], width: float, edges: list[float] | None = No
         inside = [s for s in spans if c0 <= s[0] and s[1] <= c1]
         narrow = [s for s in inside if s[1] - s[0] <= median * 1.3]
         parts = cluster_spans(narrow)
-        def genuine(p0: float, p1: float) -> bool:
-            return sum(1 for s in narrow if p0 <= s[0] and s[1] <= p1) >= 5 or any(abs(p0 - e) <= 3 for e in edges or [])
-
-        if 1 < len(parts) and len(inside) - len(narrow) <= 3 and all(genuine(p0, p1) for p0, p1 in parts):
+        if len(parts) > 1 and len(inside) - len(narrow) <= 3 and all(genuine_column(p, narrow, edges or []) for p in parts):
             out.extend(widen(parts, inside))
         else:
             out.extend(split_at_edges(inside, edges or []))
     return out
+
+
+def genuine_column(part: tuple[float, float], spans: list[tuple[float, float]], edges: list[float]) -> bool:
+    """A part of a cluster is a column when it holds several lines or starts
+    at a column edge used on many pages."""
+    p0, p1 = part
+    return sum(1 for s in spans if p0 <= s[0] and s[1] <= p1) >= 5 or any(abs(p0 - e) <= 3 for e in edges)
 
 
 def split_at_edges(spans: list[tuple[float, float]], edges: list[float]) -> list[tuple[float, float]]:

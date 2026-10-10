@@ -18,9 +18,10 @@ sys.path.insert(0, str(HERE.parent))
 sys.path.insert(0, str(HERE))
 
 import make_sample_pdf  # noqa: E402
+
 from manual_extract import cli, legends, outline, reading, runs, tables, text  # noqa: E402
-from manual_extract.model import Item, Span  # noqa: E402
 from manual_extract.build import build  # noqa: E402
+from manual_extract.model import Item, Span  # noqa: E402
 
 
 class SampleFontTests(unittest.TestCase):
@@ -46,9 +47,8 @@ class SampleFontTests(unittest.TestCase):
 
     def test_missing_fonts_report_searched_directories(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
-            with patch.object(make_sample_pdf, "FONT_DIRS", [directory]):
-                with self.assertRaises(RuntimeError) as error:
-                    make_sample_pdf._fonts()
+            with patch.object(make_sample_pdf, "FONT_DIRS", [directory]), self.assertRaises(RuntimeError) as error:
+                make_sample_pdf._fonts()
             self.assertIn("DejaVu Sans", str(error.exception))
             self.assertIn(directory, str(error.exception))
 

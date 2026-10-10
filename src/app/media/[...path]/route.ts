@@ -28,8 +28,13 @@ export async function GET(
     !rest.every((s) => SEGMENT.test(s) && !s.includes(".."))
   )
     return new Response("Not found", { status: 404 });
-  const base = path.join(getDatabaseDir(), car, "assets");
-  const file = path.join(base, ...rest);
+  // User data read at run time: not traced into the build output.
+  const base = path.join(
+    /* turbopackIgnore: true */ getDatabaseDir(),
+    car,
+    "assets",
+  );
+  const file = path.join(/* turbopackIgnore: true */ base, ...rest);
   if (!file.startsWith(base + path.sep))
     return new Response("Not found", { status: 404 });
   try {

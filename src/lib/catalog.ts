@@ -5,6 +5,8 @@
  * The fetching and caching lives in `src/lib/server/catalog.ts`.
  */
 
+import { formatDecimal } from "@/lib/files";
+
 export interface CatalogBrand {
   /** Normalised key (`A-Z0-9`), stable across sources. */
   id: string;
@@ -813,7 +815,7 @@ export function engineLabel(
 ): string {
   const size =
     engineCm3 && fuel !== "electric"
-      ? `${(engineCm3 / 1000).toFixed(1).replace(".", ",")} `
+      ? `${formatDecimal(engineCm3 / 1000)} `
       : "";
   return `${size}${FUEL_LABEL[fuel]} · ${powerKw} kW (${kwToHp(powerKw)} KM)`;
 }

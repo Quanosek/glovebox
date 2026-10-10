@@ -242,7 +242,7 @@ def merge_markers(lines: list[Item], circles: list[tuple[float, float, float, fl
             best.data["char_x"] = marker_xs + [marker.x1] + best_xs
         else:
             best.data.pop("char_x", None)
-        best.spans = [Span(s.text, s.bold, s.italic, s.size, s.font, s.bbox, s.icon, s.color) for s in marker.spans] + [Span(" ", False, False, best.size, "", None)] + best.spans
+        best.spans = [s.copy() for s in marker.spans] + [Span(" ", False, False, best.size, "", None)] + best.spans
         best.bbox = (marker.x0, min(marker.y0, best.y0), best.x1, max(marker.y1, best.y1))
         drop.add(id(marker))
     return [ln for ln in lines if id(ln) not in drop]

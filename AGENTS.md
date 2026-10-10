@@ -61,13 +61,19 @@ pnpm install           # install from pnpm-lock.yaml (CI: --frozen-lockfile)
 pnpm dev               # dev server (service worker + automatic offline copies disabled)
 pnpm build             # next build (server output in .next/)
 pnpm start             # next start on :3000 (needed for database/ and the import wizard)
-pnpm lint              # ESLint (flat config: next core-web-vitals + typescript)
+pnpm lint              # ESLint, no warnings allowed (flat config: next core-web-vitals + typescript)
+pnpm lint:py           # ruff on scripts/ (scripts/ruff.toml; needs scripts/requirements-dev.txt)
 pnpm typecheck         # next typegen && tsc --noEmit
+pnpm unused            # knip: unused files, exports and dependencies (knip.json)
 pnpm test              # Vitest (src/**/*.test.ts)
 pnpm format            # Prettier (+ Tailwind class sorting); `pnpm format:check` only checks
 pnpm test:extract      # Python unittest for the extractor (same interpreter lookup as the importer)
+pnpm check             # all of the above in one go + production build (also run by CI)
 pnpm icons             # src/app/icon.svg -> favicon.ico, apple-icon.png, public/icon-*.png
 ```
+
+For `pnpm lint:py` install the Python dev requirements into the same interpreter:
+`.venv/bin/python -m pip install -r scripts/requirements-dev.txt`.
 
 The importer finds Python via `PYTHON`, then `.venv/bin/python` / `.venv\Scripts\python.exe`,
 then `python3`, `python`, `py`; it accepts Python 3.10+, PyMuPDF 1.26+ and Pillow 12.3+
@@ -87,6 +93,10 @@ scripts/                        generic PDF extraction (Python), tests, icon gen
   extract.py                    CLI entry: PDF -> JSON blocks + WebP images (PyMuPDF, Pillow)
   manual_extract/               extractor package, one module per topic (docs/extraction.md)
   run-python.mjs                runs Python found like the importer does (pnpm test:extract)
+  ruff.toml, requirements-dev.txt   Python lint rules and dev dependencies (pnpm lint:py)
+.github/workflows/check.yml     CI: `pnpm check` on every push and pull request to master
+.github/prompts/porzadki.prompt.md   `/porzadki` maintenance pass (see Conventions)
+knip.json                       unused-code detection (pnpm unused)
 public/sw.js                    service worker (shell precache + runtime caching, docs/offline.md)
 src/
   app/
@@ -101,7 +111,9 @@ src/
     auto/[car]/dane-techniczne/   technical data cards (tables of technical chapters)
     auto/[car]/wyposazenie/     per-car equipment editor (EquipmentEditor)
     auto/[car]/[book]/          book index + sidebar layout; [...slug]/ section pages
-    dodaj-auto/                 add library car or import wizard (car + PDFs, reading, equipment)
+    dodaj-auto/                 add library car or import wizard (car + PDFs, reading, equipment):
+                                AddCarWizard (state + step 1 form), ImportSteps (reading,
+                                equipment, done), Availability, WizardChrome, wizardModel
     api/system                  GET environment + manual count check (Node, Python, database)
     api/cars                    GET list · POST multipart import (202 {job})
     api/cars/[car]              GET · DELETE (not while importing)
@@ -120,7 +132,8 @@ src/
   components/CarLogo.tsx        brand logo of the active car (header, car page), falls back to Logo
   components/Header.tsx         header, main navigation (due reminders badge) and Navi-like clock
   components/reminders/         /przypomnienia: inspection, OC insurance, own reminders per car
-  components/car/               car overview parts (CarHero, CarStatsStrip, QuickTiles, ...)
+  components/car/               car overview parts (CarHero, CarStatsStrip, QuickTiles,
+                                CarCardTitle shared by the car lists, ...)
   components/profile/, reader/  profile activity/tips, reader side column highlights
   config/quickTopics.ts         title rules for "Najczęściej potrzebne", glossary, technical data
   config/vehicle.ts             generic optional features (no defaults) + suggestFromSpec
@@ -134,6 +147,7 @@ src/
   lib/logos.ts                  brand logo matching + year selection (pure, tested)
   lib/brand.ts                  app name + description (metadata, header, manifest, User-Agent)
   lib/cars.ts, lib/slug.ts      client-safe car types/helpers and id rules
+  lib/files.ts                  manual file title, file size and decimal-comma formatting
   lib/storage/                  localStorage store, schema, migrations, React hooks,
                                 layout hint cookie (hint.ts, hintContext.tsx)
   lib/reminders.ts              reminder dates, due/soon rules (pure, tested)
@@ -303,5 +317,21 @@ More detail: `docs/ui.md`, `docs/import.md`, `docs/offline.md`, `docs/storage.md
 - Never import `src/lib/content.ts` or `src/lib/server/*` (Node `fs`, `child_process`) from
   client components; pass data as props or fetch the JSON API routes.
 - Every UI string is Polish; every identifier/comment English.
-- Before finishing a change run:
-  `pnpm lint && pnpm typecheck && pnpm test && pnpm format:check && pnpm build`.
+- Before finishing a change run `pnpm check` (lint, ruff, typecheck, knip, Prettier, Vitest,
+  extractor tests, build). CI runs the same command.
+- Tests cover the critical paths and must grow with them: the database reader
+  (`content.test.ts`), import validation (`importer.test.ts`), path safety of `/media`
+  (`media.test.ts`), cross-site rejection of every mutating API route (`guard.test.ts`),
+  storage migrations, anchoring, the service worker and the install manifest, plus the
+  extractor rules in `scripts/tests/`. Test databases are built in a temporary folder with
+  `src/lib/__tests__/fixtures/database.ts`, never in `database/`.
+- Extractor refactors must not change the output: regenerate the local manuals and compare the
+  JSON before and after (`docs/extraction.md`, "Testing").
+
+### Maintenance pass (`/porzadki`)
+
+After merging an approved pull request, or after a series of large commits pushed directly to
+`master`, run the maintenance pass (`.github/prompts/porzadki.prompt.md`, chat command
+`/porzadki`): remove unused code (`pnpm unused`, ruff, `tsc --noUnusedLocals`), improve
+readability and logical layout, extract repeated code into shared helpers, update `docs/`,
+`AGENTS.md` and `README.md`, extend the tests of critical paths and finish with `pnpm check`.

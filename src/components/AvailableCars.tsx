@@ -9,6 +9,7 @@ import {
   useHydrated,
 } from "@/lib/storage/hooks";
 import { plural } from "@/lib/typography";
+import { CarCardTitle } from "@/components/car/CarCardTitle";
 
 /** Cars in the shared manuals library that are not yet assigned to this profile. */
 export function AvailableCars({ cars }: { cars: CarSummary[] }) {
@@ -38,13 +39,7 @@ export function AvailableCars({ cars }: { cars: CarSummary[] }) {
             <li key={car.id} className="panel flex flex-col">
               <div className="panel-title">{car.brand}</div>
               <div className="flex flex-1 flex-col p-4">
-                <h3 className="type-card">
-                  {car.model}{" "}
-                  <span className="font-normal text-steel">{car.year}</span>
-                </h3>
-                {car.variant && (
-                  <p className="mt-1 text-sm text-graphite">{car.variant}</p>
-                )}
+                <CarCardTitle car={car} />
                 <p className="mt-2 text-sm text-graphite">
                   {car.books.length}{" "}
                   {plural(

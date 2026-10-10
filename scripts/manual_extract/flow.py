@@ -8,7 +8,7 @@ from typing import Any
 
 from .document import Document
 from .headings import is_heading
-from .model import Item, Span
+from .model import Item
 from .text import BULLET_RE, ORDERED_RE, REF_MARK, SENTENCE_END, clean_text
 
 
@@ -112,7 +112,7 @@ def dash_is_punctuation(prev: Item | None) -> bool:
 
 def strip_marker(it: Item) -> Item:
     """Copy of a list line without its bullet or step number."""
-    spans = [Span(s.text, s.bold, s.italic, s.size, s.font, s.bbox, s.icon, s.color) for s in it.spans]
+    spans = [s.copy() for s in it.spans]
     for s in spans:
         if not s.text.strip():
             continue
@@ -122,7 +122,7 @@ def strip_marker(it: Item) -> Item:
         elif s.text.strip() in "■●•▪◆○◦–—-" or re.fullmatch(r"\d{1,2}[.)]", s.text.strip()):
             s.text = ""
         break
-    return Item("line", it.page, it.bbox, it.col, it.band, spans, dict(it.data), it.base)
+    return it.with_spans(spans)
 
 
 def list_marker(it: Item, glyph: str) -> dict[str, str]:
@@ -142,14 +142,14 @@ def list_marker(it: Item, glyph: str) -> dict[str, str]:
 
 def strip_label(it: Item, label: str) -> Item:
     """Copy of a legend line without its mark ("A", "12")."""
-    spans = [Span(s.text, s.bold, s.italic, s.size, s.font, s.bbox, s.icon, s.color) for s in it.spans]
+    spans = [s.copy() for s in it.spans]
     for s in spans:
         if not s.text.strip():
             continue
         if s.text.lstrip().startswith(label):
             s.text = s.text.lstrip()[len(label) :].lstrip()
         break
-    return Item("line", it.page, it.bbox, it.col, it.band, spans, dict(it.data), it.base)
+    return it.with_spans(spans)
 
 
 def split_at_pictogram(prev: Item, it: Item) -> bool:

@@ -11,7 +11,7 @@ from typing import Any
 from PIL import Image, ImageOps
 
 from .document import Document
-from .model import Item, Span
+from .model import Box, Item, Span
 from .pdf import pymupdf
 
 
@@ -40,7 +40,7 @@ def render_icon(doc: Document, assets_dir: Path | None, assets_url: str, pno: in
 
 
 def render_region(
-    doc: Document, assets_dir: Path | None, assets_url: str, pno: int, rect: tuple[float, float, float, float], whiten: bool = False
+    doc: Document, assets_dir: Path | None, assets_url: str, pno: int, rect: Box, whiten: bool = False
 ) -> dict[str, Any] | None:
     """A pictogram drawn in a page region as an icon run. With `whiten` an
     even light background (a shaded table row) becomes white."""
@@ -84,7 +84,7 @@ def whiten_background(img: Image.Image) -> Image.Image:
     return out
 
 
-def cell_graphic(doc: Document, pno: int, box: tuple[float, float, float, float]) -> tuple[float, float, float, float] | None:
+def cell_graphic(doc: Document, pno: int, box: Box) -> Box | None:
     """Area of the pictogram drawn in a table cell (vector paths or a small
     raster image), without cell backgrounds and rules."""
     page = doc.pdf[pno]

@@ -43,7 +43,8 @@ import type {
 export function getDatabaseDir(): string {
   return process.env.MANUALS_DATABASE_DIR
     ? path.resolve(process.env.MANUALS_DATABASE_DIR)
-    : path.join(process.cwd(), "database");
+    : // User data read at run time: not traced into the build output.
+      path.join(/* turbopackIgnore: true */ process.cwd(), "database");
 }
 
 export interface BookCtx {
@@ -369,8 +370,6 @@ function getPageMap(ctx: BookCtx): Map<number, string> {
   pageMaps.set(key, { index, map });
   return map;
 }
-
-export { blockToText, runsToText };
 
 export interface WarningEntry {
   car: string;

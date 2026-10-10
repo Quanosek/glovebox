@@ -1,0 +1,47 @@
+# Full validation of every push and pull request to master (`pnpm check`):
+# ESLint, ruff, TypeScript, knip (unused code), Prettier, Vitest, the
+# extractor's unittest suite and a production build. No car manuals are
+# needed: the tests build synthetic PDFs and databases.
+name: Check
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: scripts/requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          pnpm install --frozen-lockfile
+          python -m pip install -r scripts/requirements-dev.txt
+          sudo apt-get install -y --no-install-recommends fonts-dejavu-core
+
+      - run: pnpm check

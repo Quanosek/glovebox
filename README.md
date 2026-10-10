@@ -213,10 +213,13 @@ Dane ze starszej wersji aplikacji są automatycznie przenoszone do aktualnego fo
 | `pnpm icons`        | wygenerowanie ikon PNG/ICO (karta, iOS, instalacja) z `icon.svg` |
 | `pnpm test`         | testy jednostkowe (Vitest)                                       |
 | `pnpm test:extract` | testy skryptu ekstrakcji (Python)                                |
-| `pnpm lint`         | ESLint                                                           |
+| `pnpm lint`         | ESLint (bez ostrzeżeń)                                           |
+| `pnpm lint:py`      | ruff dla kodu Pythona                                            |
 | `pnpm typecheck`    | sprawdzenie typów TypeScript                                     |
-| `pnpm format`       | formatowanie (Prettier)                                          |
+| `pnpm unused`       | wyszukanie nieużywanego kodu (knip)                              |
+| `pnpm format`       | formatowanie (Prettier); `pnpm format:check` tylko sprawdza      |
+| `pnpm check`        | pełna kontrola projektu (wszystko powyżej i build)               |
 
-Pełna kontrola projektu: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:extract && pnpm format:check && pnpm build`.
-
-Dokumentacja techniczna (po angielsku): [`AGENTS.md`](AGENTS.md) i katalog [`docs/`](docs/).
+`pnpm lint:py` wymaga narzędzi deweloperskich Pythona:
+`.venv/bin/python -m pip install -r scripts/requirements-dev.txt`. Ta sama kontrola
+(`pnpm check`) uruchamia się automatycznie w GitHub Actions dla każdej zmiany w `master`.

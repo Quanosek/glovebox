@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { RESERVED_BOOK_ROUTES, type CarBook, type CarFile } from "@/lib/cars";
+import { documentTitle } from "@/lib/files";
 import { getCar, getDatabaseDir } from "@/lib/content";
 import { isValidId, slugify, uniqueSlug } from "@/lib/slug";
 import { CatalogUnavailableError, resolveCatalogCar } from "./catalog";
@@ -176,8 +177,7 @@ export async function validateImport(req: ImportRequest): Promise<ValidImport> {
     ...(catalog ? { catalog } : {}),
     docs: req.docs.map((d) => ({
       file: d.file,
-      title:
-        clean(d.title, 120) || clean(d.file.name.replace(/\.pdf$/i, ""), 120),
+      title: clean(d.title, 120) || clean(documentTitle(d.file.name), 120),
     })),
   };
 }

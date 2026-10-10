@@ -10,7 +10,7 @@ from typing import Any
 from .document import Document
 from .frames import page_frames
 from .geometry import center
-from .model import Item, Span
+from .model import Box, Item, Span
 from .text import REF_MARK, clean_text, join_line_texts, normalize_title
 
 
@@ -155,7 +155,7 @@ def split_at(ln: Item, breaks: list[float], within: float = float("inf")) -> lis
         for s in ln.spans:
             a, b = max(start, pos), min(end, pos + len(s.text))
             if a < b:
-                spans.append(Span(s.text[a - pos : b - pos], s.bold, s.italic, s.size, s.font, s.bbox, s.icon, s.color))
+                spans.append(s.copy(s.text[a - pos : b - pos]))
             pos += len(s.text)
         x1 = xs[end] - 1 if end < len(text) else ln.x1
         data = {**ln.data, "char_x": xs[start:end]}
@@ -352,7 +352,7 @@ def grid_tables(doc: Document, page: Any) -> list[Item]:
             continue
         # Explanations printed in a last row across the whole table ("X: Nie
         # można zamontować…") are notes under the table, not a row.
-        notes: list[tuple[float, float, float, float]] = []
+        notes: list[Box] = []
         width = tab.bbox[2] - tab.bbox[0]
         while len(rows) > 2 and boxes[-1][0] and all(b is None for b in boxes[-1][1:]) and boxes[-1][0][2] - boxes[-1][0][0] >= width * 0.9:
             notes.insert(0, boxes[-1][0])

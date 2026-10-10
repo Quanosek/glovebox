@@ -11,6 +11,7 @@ from typing import Any
 from .model import Item, Span
 from .text import ICON_MARK, REF_MARK, REF_RE, URL_RE, join_line_texts
 
+
 def build_runs(chars: list[tuple[Any, ...]]) -> list[Any]:
     """Convert styled characters into JSON runs; resolve page references.
 

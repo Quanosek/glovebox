@@ -95,6 +95,7 @@ export async function confirmDialog(options: DialogOptions): Promise<boolean> {
 }
 
 /** Shows a message with a single "OK" button. */
+/** @public Part of the dialog API that replaces `window.alert` (AGENTS.md). */
 export async function alertDialog(options: DialogOptions): Promise<void> {
   await open("alert", options);
 }

@@ -6,7 +6,13 @@ server converts uploaded PDF manuals into the JSON + WebP format and stores them
 checkout has its own local vehicle database (copy the folder to move cars between
 computers).
 
-## Wizard (`src/app/dodaj-auto/AddCarWizard.tsx`)
+## Wizard (`src/app/dodaj-auto/`)
+
+`AddCarWizard.tsx` holds the state and the step 1 form; `ImportSteps.tsx` the reading,
+equipment and done steps; `Availability.tsx` the status shown when cars cannot be added;
+`WizardChrome.tsx` the step strip and shared panel parts; `wizardModel.ts` the types,
+constants and catalogue list loading. File titles and sizes come from `src/lib/files.ts`
+(shared with the server importer).
 
 Written for non-technical users: plain Polish, no paths, commands, file formats or install
 instructions in the UI (those live in `README.md`, section "Dodawanie aut"). Four steps:

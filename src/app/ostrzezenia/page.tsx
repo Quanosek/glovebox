@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import {
-  blockToText,
-  getAllWarnings,
-  getCar,
-  getCarSummary,
-} from "@/lib/content";
+import { getAllWarnings, getCar, getCarSummary } from "@/lib/content";
+import { blockToText } from "@/lib/overview";
 import { WarningsList, type WarningItem } from "./WarningsList";
 
 export const metadata: Metadata = { title: "Ostrzeżenia" };

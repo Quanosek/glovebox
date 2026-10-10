@@ -11,13 +11,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from manual_extract import cli, layout, outline, reading, tables, text  # noqa: E402
-from manual_extract.build import build  # noqa: E402
-from manual_extract.builder import SectionBuilder  # noqa: E402
+from manual_extract.build import build, inline_leaf_children, merge_lone_children  # noqa: E402
+from manual_extract.builder import SectionBuilder, attach_captions  # noqa: E402
 from manual_extract.document import Document  # noqa: E402
-from manual_extract.flow import list_marker, strip_marker  # noqa: E402
+from manual_extract.figures import attach_figure_captions  # noqa: E402
+from manual_extract.flow import list_marker, split_at_pictogram, strip_marker  # noqa: E402
 from manual_extract.model import Item, Span  # noqa: E402
 from manual_extract.pdf import pymupdf  # noqa: E402
-from manual_extract.runs import runs_to_text  # noqa: E402
+from manual_extract.runs import build_runs, runs_to_text  # noqa: E402
 
 
 def arguments(pdf: Path, root: Path):
@@ -170,7 +171,6 @@ class DocumentPatternTests(unittest.TestCase):
                 self.assertEqual(text.normalize_title(printed), text.normalize_title(outlined))
 
     def test_reference_arrows_with_words_become_page_references(self) -> None:
-        from manual_extract.runs import build_runs
 
         def runs(value: str) -> list:
             return build_runs([(c, False, False) for c in value])
@@ -213,7 +213,6 @@ class DocumentPatternTests(unittest.TestCase):
         self.assertEqual([runs_to_text(item) for item in block["items"]], ["Podczas jazdy z nowymi oponami zachować ostrożność.", "Okresowo sprawdzać opony."])
 
     def test_empty_category_with_one_sub_category_is_merged(self) -> None:
-        from manual_extract.build import merge_lone_children
 
         entries = [
             {"level": 1, "title": "Dane techniczne"},
@@ -230,7 +229,6 @@ class DocumentPatternTests(unittest.TestCase):
         self.assertFalse(entries[4].get("merged"))
 
     def test_category_with_leaf_sub_categories_is_one_page(self) -> None:
-        from manual_extract.build import inline_leaf_children
 
         entries = [
             {"level": 1, "title": "Ogólny wygląd pojazdu"},
@@ -245,7 +243,6 @@ class DocumentPatternTests(unittest.TestCase):
         self.assertEqual([bool(e.get("inline")) for e in entries], [False, True, True, False, False, False, False])
 
     def test_internet_addresses_become_links(self) -> None:
-        from manual_extract.runs import build_runs
 
         runs = build_runs([(c, False, False) for c in "Adres: www.seat.com/owners. Koniec"])
         self.assertEqual(runs, ["Adres: ", {"t": "www.seat.com/owners", "href": "https://www.seat.com/owners"}, ". Koniec"])
@@ -273,7 +270,6 @@ class TableAndFigureTests(unittest.TestCase):
         self.assertIsNone(tables.cell_spans([[(0, 0, 10, 10), (10, 0, 20, 10)]]))
 
     def test_caption_under_illustration_joins_the_image(self) -> None:
-        from manual_extract.builder import attach_captions
 
         blocks = [
             {"type": "image", "id": "b1", "src": "a.webp", "alt": "Ilustracja"},
@@ -287,7 +283,6 @@ class TableAndFigureTests(unittest.TestCase):
 
 class CaptionAndListTests(unittest.TestCase):
     def test_caption_beside_an_illustration_belongs_to_it(self) -> None:
-        from manual_extract.figures import attach_figure_captions
 
         figure = Item("image", 0, (40, 90, 420, 240))
         caption = line("Rys. 170 Regulacja ogrzewania na tablicy roz-", 430, 230, width=140, size=6.5)
@@ -298,7 +293,6 @@ class CaptionAndListTests(unittest.TestCase):
         self.assertEqual(figure.data["caption_lines"], [caption, wrapped])
 
     def test_line_cut_by_a_pictogram_stays_in_its_item(self) -> None:
-        from manual_extract.flow import split_at_pictogram
 
         head = line("● Nacisnąć przycisk", 330, 317, width=60, size=6.5)
         tail = Item("line", 0, (397, 310, 437, 318), spans=[Span("\uf0d8", False, False, 6.5, "Sym", icon=True), Span(" jednokrotnie.", False, False, 6.5, "Body")], base=317.2)

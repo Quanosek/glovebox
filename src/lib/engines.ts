@@ -7,6 +7,7 @@ import {
   type FuelKind,
 } from "./catalog";
 import { suggestFromSpec, type VehicleProfile } from "@/config/vehicle";
+import { formatDecimal } from "@/lib/files";
 
 const normal = (value: string) =>
   stripDiacritics(value).toLowerCase().replace(/\s+/g, " ").trim();
@@ -46,7 +47,7 @@ export const engineChoiceKey = (engine: CarSpec) =>
 
 export function engineChoiceLabel(engine: CarSpec): string {
   const size = engine.engineCm3
-    ? `${(engine.engineCm3 / 1000).toFixed(1).replace(".", ",")} l · `
+    ? `${formatDecimal(engine.engineCm3 / 1000)} l · `
     : "";
   return `${size}${kwToHp(engine.powerKw)} KM (${engine.powerKw.toLocaleString("pl-PL")} kW)`;
 }

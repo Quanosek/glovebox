@@ -14,6 +14,7 @@ import {
 } from "@/lib/storage/hooks";
 import { useLayoutHint } from "@/lib/storage/hintContext";
 import { plural } from "@/lib/typography";
+import { CarCardTitle } from "@/components/car/CarCardTitle";
 
 /** Grid of cars from `database/` plus the "add your own car" tile. */
 export function CarPicker({
@@ -92,13 +93,7 @@ export function CarPicker({
                 </span>
               </div>
               <div className="flex flex-1 flex-col p-4">
-                <h3 className="type-card">
-                  {car.model}{" "}
-                  <span className="font-normal text-steel">{car.year}</span>
-                </h3>
-                {car.variant && (
-                  <p className="mt-1 text-sm text-graphite">{car.variant}</p>
-                )}
+                <CarCardTitle car={car} />
                 <ul className="mt-3 space-y-0.5 text-sm text-graphite">
                   {car.books.map((b) => (
                     <li key={b.id} className="flex gap-2">

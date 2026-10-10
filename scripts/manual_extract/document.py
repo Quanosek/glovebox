@@ -6,7 +6,7 @@ import argparse
 import re
 from typing import Any
 
-from .model import Item
+from .model import Box, Item
 from .pdf import pymupdf
 from .text import normalize_title
 
@@ -53,8 +53,8 @@ class Document:
                 bottom = min(bottom, y - 1)
         return top, bottom
 
-    def horizontal_rules(self, pno: int) -> list[tuple[float, float, float, float]]:
-        out: list[tuple[float, float, float, float]] = []
+    def horizontal_rules(self, pno: int) -> list[Box]:
+        out: list[Box] = []
         for d in self.drawings(self.pdf[pno]):
             for op in d["items"]:
                 if op[0] == "l":

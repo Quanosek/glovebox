@@ -23,6 +23,7 @@ TEXT_ARROWS = "→⇒⇨➜➔➞►▶›"
 # Direction marks, zero-width spaces and joiners carried by some outlines and texts.
 INVISIBLE = "\u200b\u200c\u200d\u200e\u200f\u202a\u202b\u202c\u202d\u202e\u2060\u2066\u2067\u2068\u2069\ufeff"
 INVISIBLE_RE = re.compile("[" + INVISIBLE + "]")
+DASHES = "\u2013\u2014-"
 # Bullet glyphs may touch the text ("■Centralny zamek"); dashes need a space.
 BULLET_RE = re.compile(r"^([■●•▪◆○◦](?=\s*\S)|[\u2013\u2014\-](?=\s))\s*")
 MARKER_ONLY_RE = re.compile(r"^(?:[■●•▪◆○◦\u2013\u2014\-]|\d{1,2}[.)])$")

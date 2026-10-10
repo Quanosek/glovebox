@@ -14,10 +14,10 @@ from .geometry import center, contains
 from .headings import is_heading, strong
 from .images import cell_graphic, render_icon, render_image, render_region
 from .legends import numbered_tables
-from .model import Item
+from .model import Box, Item
 from .reading import circled
 from .runs import join_runs, lines_to_runs, runs_to_text, without_bold
-from .text import BULLET_RE, CAPTION_RE, DEFINITION_RE, FOOTNOTE_RE, ORDERED_RE, SENTENCE_END, clean_text
+from .text import BULLET_RE, CAPTION_RE, DASHES, DEFINITION_RE, FOOTNOTE_RE, ORDERED_RE, SENTENCE_END, clean_text
 
 
 class SectionBuilder:
@@ -68,109 +68,150 @@ class SectionBuilder:
 
     def feed(self, it: Item) -> None:
         if it.kind == "table":
-            self.flush_all()
-            header = it.data.get("header")
-            if header is None:
-                header = self._styled_first_row(it)
-            block = {"type": "table", "id": self.next_id(), "header": bool(header), "rows": it.data["rows"], "page": self.page_of(it)}
-            if header and it.data.get("header_rows"):
-                block["headerRows"] = it.data["header_rows"]
-            if it.data.get("spans"):
-                block["spans"] = it.data["spans"]
-            cells = self._table_cells(it)
-            if cells is not None:
-                block["cells"] = cells
-            self.blocks.append(block)
-            for box in it.data.get("notes", []):
-                self._table_notes(it, box)
-            return
-        if it.kind == "image":
-            rect = self._warning_frame_rect()
-            is_icon = max(it.bbox[2] - it.bbox[0], it.bbox[3] - it.bbox[1]) < self.doc.args.icon_size
-            if rect is not None and is_icon and it.page == self.warning["page_index"] and contains(rect, center(it.bbox)):  # type: ignore[index]
-                return  # decorative pictogram inside a warning box
-            self.flush_all()
-            block = render_image(self.doc, self.assets_dir, self.assets_url, self.section, it, is_icon, self.page_of(it))
-            if block and it.data.get("caption_lines"):
-                caption = self._runs(it.data["caption_lines"])
-                if caption:
-                    block["caption"] = caption
-                    block["alt"] = runs_to_text(caption)
-            if block:
-                self.blocks.append({"type": "image", "id": self.next_id(), **block})
-            return
-        self._line(it)
+            self._table(it)
+        elif it.kind == "image":
+            self._image(it)
+        else:
+            self._line(it)
+
+    def _table(self, it: Item) -> None:
+        self.flush_all()
+        header = it.data.get("header")
+        if header is None:
+            header = self._styled_first_row(it)
+        block = {"type": "table", "id": self.next_id(), "header": bool(header), "rows": it.data["rows"], "page": self.page_of(it)}
+        if header and it.data.get("header_rows"):
+            block["headerRows"] = it.data["header_rows"]
+        if it.data.get("spans"):
+            block["spans"] = it.data["spans"]
+        cells = self._table_cells(it)
+        if cells is not None:
+            block["cells"] = cells
+        self.blocks.append(block)
+        for box in it.data.get("notes", []):
+            self._table_notes(it, box)
+
+    def _image(self, it: Item) -> None:
+        rect = self._warning_frame_rect()
+        is_icon = max(it.bbox[2] - it.bbox[0], it.bbox[3] - it.bbox[1]) < self.doc.args.icon_size
+        if rect is not None and is_icon and it.page == self.warning["page_index"] and contains(rect, center(it.bbox)):  # type: ignore[index]
+            return  # decorative pictogram inside a warning box
+        self.flush_all()
+        block = render_image(self.doc, self.assets_dir, self.assets_url, self.section, it, is_icon, self.page_of(it))
+        if block and it.data.get("caption_lines"):
+            caption = self._runs(it.data["caption_lines"])
+            if caption:
+                block["caption"] = caption
+                block["alt"] = runs_to_text(caption)
+        if block:
+            self.blocks.append({"type": "image", "id": self.next_id(), **block})
 
     def _line(self, it: Item) -> None:
+        """A text line goes to the first step that takes it: footnote,
+        warning label, heading, legend entry, definition, list item, list
+        continuation, paragraph."""
         text = clean_text(it.text)
-        if it.data.get("footnote"):
-            if self.notes and not FOOTNOTE_RE.match(text):
-                self.notes[-1].append(it)
-            else:
-                self.notes.append([it])
-            return
-        label = warning_label_of(it)
-        if label and self.warning is not None and self.warning["frame"] is not None and it.data.get("frame") == self.warning["frame"]:
-            label = None  # the word inside the text of its own box
-        if label:
-            kind, title, rest = label
-            self.flush_all()
-            self.warning = {
-                "kind": kind,
-                "title": title,
-                "blocks": [],
-                "page": self.page_of(it),
-                "page_index": it.page,
-                "frame": it.data.get("frame"),
-                "indent": it.x0 - it.col_x0,
-                "anchor": it,
-                "lines": 0,
-            }
-            self.last_line = it
-            if rest:
-                self._line(Item("line", it.page, it.bbox, it.col, it.band, rest, dict(it.data), it.base))
+        if self._footnote(it, text) or self._warning_start(it):
             return
         if self.warning is not None and not belongs_to_warning(self.doc, self.warning, self.last_line or self.warning["anchor"], it):
             self.close_warning()
-        if self.warning is None:
-            if self._continues_heading(it):
-                prev = self.blocks[-1]
-                prev["runs"] = join_runs(prev["runs"], without_bold(self._runs([it])))
-                self.last_heading = it
-                self.last_line = it
-                return
-            level = is_heading(self.doc, it)
-            if level is not None:
-                self.heading([it], level)
-                self.last_line = it
-                return
+        if self.warning is None and self._heading_line(it):
+            return
         if self.warning is not None:
             self.warning["lines"] += 1
-        legend = it.data.get("legend")
-        if legend:
-            # A legend entry under an illustration ("Ⓐ Kontrola poziomu").
-            self.flush_para()
-            if self.list is None or self.list["ordered"] or self.list.get("definitions"):
-                self.flush_list()
-                self.list = {"ordered": False, "items": [], "page": self.page_of(it), "x": it.x0 - it.col_x0, "markers": []}
-            marker = {"glyph": circled(legend)}
-            if it.data.get("legend_color"):
-                marker["color"] = it.data["legend_color"]
-            self.list["markers"].append(marker)
-            self.list["item_x"] = it.x0 - it.col_x0
-            self.list["items"].append([strip_label(it, legend)])
+        if self._legend_item(it) or self._definition_item(it, text) or self._list_item(it, text):
             self.last_line = it
             return
-        definitions = self.list is not None and self.list.get("definitions")
-        footnote = it.size < self.doc.body_size * 0.95 and FOOTNOTE_RE.match(text)
+        if self.list is not None and self.list["items"] and self._continues(it, list_mode=True):
+            self.list["items"][-1].append(it)
+        else:
+            self.flush_list()
+            if self.para and not self._continues(it, list_mode=False):
+                self.flush_para()
+            self.para.append(it)
+        self.last_line = it
+
+    def _footnote(self, it: Item, text: str) -> bool:
+        """Footnotes read aside (`footnotes()` in layout) wait for the end of
+        the block they interrupted."""
+        if not it.data.get("footnote"):
+            return False
+        if self.notes and not FOOTNOTE_RE.match(text):
+            self.notes[-1].append(it)
+        else:
+            self.notes.append([it])
+        return True
+
+    def _warning_start(self, it: Item) -> bool:
+        label = warning_label_of(it)
+        if label and self.warning is not None and self.warning["frame"] is not None and it.data.get("frame") == self.warning["frame"]:
+            label = None  # the word inside the text of its own box
+        if not label:
+            return False
+        kind, title, rest = label
+        self.flush_all()
+        self.warning = {
+            "kind": kind,
+            "title": title,
+            "blocks": [],
+            "page": self.page_of(it),
+            "page_index": it.page,
+            "frame": it.data.get("frame"),
+            "indent": it.x0 - it.col_x0,
+            "anchor": it,
+            "lines": 0,
+        }
+        self.last_line = it
+        if rest:
+            self._line(it.with_spans(rest))
+        return True
+
+    def _heading_line(self, it: Item) -> bool:
+        if self._continues_heading(it):
+            prev = self.blocks[-1]
+            prev["runs"] = join_runs(prev["runs"], without_bold(self._runs([it])))
+            self.last_heading = it
+            self.last_line = it
+            return True
+        level = is_heading(self.doc, it)
+        if level is None:
+            return False
+        self.heading([it], level)
+        self.last_line = it
+        return True
+
+    def _legend_item(self, it: Item) -> bool:
+        """A legend entry under an illustration ("Ⓐ Kontrola poziomu")."""
+        legend = it.data.get("legend")
+        if not legend:
+            return False
+        self.flush_para()
+        if self.list is None or self.list["ordered"] or self.list.get("definitions"):
+            self.flush_list()
+            self.list = {"ordered": False, "items": [], "page": self.page_of(it), "x": it.x0 - it.col_x0, "markers": []}
+        marker = {"glyph": circled(legend)}
+        if it.data.get("legend_color"):
+            marker["color"] = it.data["legend_color"]
+        self.list["markers"].append(marker)
+        self.list["item_x"] = it.x0 - it.col_x0
+        self.list["items"].append([strip_label(it, legend)])
+        return True
+
+    def _bullet(self, it: Item, text: str) -> re.Match[str] | None:
         glyph = BULLET_RE.match(text)
         first = next((s for s in it.spans if s.text.strip()), None)
         if glyph and first is not None and first.icon:
-            glyph = None  # a pictogram drawn with a "-" glyph of a symbol font
-        # "●Strefa A : Nie dolewać oleju." is a bullet item; "kontrolna : …"
-        # continues a sentence and starts no definition.
-        # A lower-case "term" continues a word broken at the line end
-        # ("przeciwmgiel- / nego : …") or a sentence when nothing follows its colon.
+            return None  # a pictogram drawn with a "-" glyph of a symbol font
+        return glyph
+
+    def _definition_item(self, it: Item, text: str) -> bool:
+        """"Term : description" entries. A bullet glyph wins ("●Strefa A :
+        Nie dolewać oleju." is a bullet item); a lower-case "term" continues
+        a word broken at the line end ("przeciwmgiel- / nego : …") or a
+        sentence when nothing follows its colon ("kontrolna :")."""
+        definitions = bool(self.list is not None and self.list.get("definitions"))
+        footnote = it.size < self.doc.body_size * 0.95 and FOOTNOTE_RE.match(text)
+        glyph = self._bullet(it, text)
         prev_text = clean_text(self.last_line.text) if self.last_line is not None else ""
         bare = re.sub(r"[\s\ue000-\uf8ff]", "", re.split(r"[:=]", it.plain, maxsplit=1)[-1]) == ""
         continuation = (
@@ -181,20 +222,25 @@ class SectionBuilder:
         )
         term = DEFINITION_RE.match(text) and not footnote and not continuation
         defitem = it.data.get("defitem") and not continuation
-        if (defitem or (term and (it.data.get("para_before", True) or definitions))) and not (glyph and glyph.group(1) not in "\u2013\u2014-"):
-            self.flush_para()
-            if self.list is None or not self.list.get("definitions"):
-                self.flush_list()
-                # Wrapped descriptions are indented, terms start at the column edge.
-                self.list = {"ordered": False, "items": [], "page": self.page_of(it), "x": 6.0, "definitions": True}
-            self.list["items"].append([it])
-            self.last_line = it
-            return
-        bullet = glyph
+        if not (defitem or (term and (it.data.get("para_before", True) or definitions))):
+            return False
+        if glyph and glyph.group(1) not in DASHES:
+            return False
+        self.flush_para()
+        if not definitions:
+            self.flush_list()
+            # Wrapped descriptions are indented, terms start at the column edge.
+            self.list = {"ordered": False, "items": [], "page": self.page_of(it), "x": 6.0, "definitions": True}
+        self.list["items"].append([it])  # type: ignore[index]
+        return True
+
+    def _list_item(self, it: Item, text: str) -> bool:
+        """Bulleted (with the original glyph and colour) or numbered items."""
+        bullet = self._bullet(it, text)
         ordered = ORDERED_RE.match(text)
         if (
             bullet
-            and bullet.group(1) in "\u2013\u2014-"
+            and bullet.group(1) in DASHES
             and self.list is None
             and dash_is_punctuation(self.last_line)
             # A dash that starts a new block is a list marker.
@@ -208,29 +254,20 @@ class SectionBuilder:
             or it.size < self.doc.body_size * 0.95
         ):
             ordered = None
-        if bullet or ordered:
-            self.flush_para()
-            is_ordered = bool(ordered and not bullet)
-            if self.list is None or self.list["ordered"] != is_ordered or self.list.get("definitions"):
-                self.flush_list()
-                self.list = {"ordered": is_ordered, "items": [], "page": self.page_of(it), "x": it.x0 - it.col_x0}
-                if not is_ordered:
-                    self.list["markers"] = []
+        if not (bullet or ordered):
+            return False
+        self.flush_para()
+        is_ordered = bool(ordered and not bullet)
+        if self.list is None or self.list["ordered"] != is_ordered or self.list.get("definitions"):
+            self.flush_list()
+            self.list = {"ordered": is_ordered, "items": [], "page": self.page_of(it), "x": it.x0 - it.col_x0}
             if not is_ordered:
-                self.list["markers"].append(list_marker(it, bullet.group(1)) if bullet else None)
-            self.list["item_x"] = it.x0 - it.col_x0
-            self.list["items"].append([strip_marker(it)])
-            self.last_line = it
-            return
-        if self.list is not None and self.list["items"] and self._continues(it, list_mode=True):
-            self.list["items"][-1].append(it)
-            self.last_line = it
-            return
-        self.flush_list()
-        if self.para and not self._continues(it, list_mode=False):
-            self.flush_para()
-        self.para.append(it)
-        self.last_line = it
+                self.list["markers"] = []
+        if not is_ordered:
+            self.list["markers"].append(list_marker(it, bullet.group(1)) if bullet else None)
+        self.list["item_x"] = it.x0 - it.col_x0
+        self.list["items"].append([strip_marker(it)])
+        return True
 
     # -------------------------------------------------------------- helpers
 
@@ -289,7 +326,7 @@ class SectionBuilder:
         second = styled(boxes[rows]) if len(boxes) > rows else None
         return bool(first) and not second
 
-    def _table_notes(self, table: Item, box: tuple[float, float, float, float]) -> None:
+    def _table_notes(self, table: Item, box: Box) -> None:
         """Paragraphs of a notes row taken out of a table: a new note starts
         at the left edge after a finished sentence."""
         lines = sorted((ln for ln in table.data.get("lines", []) if contains(box, center(ln.bbox))), key=lambda ln: (round(ln.base), ln.x0))
@@ -307,7 +344,7 @@ class SectionBuilder:
                 group.append(ln)
 
     @staticmethod
-    def _without_foreign_legend(ln: Item, box: tuple[float, float, float, float] | None) -> Item:
+    def _without_foreign_legend(ln: Item, box: Box | None) -> Item:
         """A legend mark merged with the text of the next cell stays in its own cell."""
         mark = ln.data.get("legend")
         circle = ln.data.get("legend_box")
@@ -315,7 +352,7 @@ class SectionBuilder:
             return strip_label(ln, mark)
         return ln
 
-    def _warning_frame_rect(self) -> tuple[float, float, float, float] | None:
+    def _warning_frame_rect(self) -> Box | None:
         if self.warning is None or self.warning.get("frame") is None:
             return None
         pno, k = self.warning["frame"]

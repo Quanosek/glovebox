@@ -1,0 +1,10 @@
+# Lint rules of the PDF extractor (`pnpm lint:py`). Lines may be long: the
+# extraction rules read better on one line than wrapped.
+target-version = "py310"
+line-length = 160
+
+[lint]
+# pyflakes, syntax errors, import order, bugbear, pyupgrade
+select = ["F", "E9", "I", "B", "UP"]
+# zip() over lists of equal length by construction
+ignore = ["B905"]

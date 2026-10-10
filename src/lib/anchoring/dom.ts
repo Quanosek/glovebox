@@ -45,7 +45,7 @@ export function offsetOf(
       total += t.data.length;
     }
     // Text node inside an ignored element: snap to the nearest text after it.
-    return snapAfter(root, nodes, node);
+    return snapAfter(nodes, node);
   }
   // Element boundary: the position before child `offset`.
   const child = node.childNodes[offset] ?? null;
@@ -64,7 +64,7 @@ function precedes(a: Node, b: Node): boolean {
   );
 }
 
-function snapAfter(root: Node, nodes: Text[], node: Node): number {
+function snapAfter(nodes: Text[], node: Node): number {
   let total = 0;
   for (const t of nodes) {
     if (precedes(node, t)) return total;
