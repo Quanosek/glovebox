@@ -152,8 +152,12 @@ placeholder?, defaultValue?, maxLength?, ... })` asks for one line of text (e.g.
   Selection never changes font weight, adds text shadows or alters line breaks.
   A continuous red progress bar grows from the top of the silver track in discrete steps,
   always ending at the bottom of the active heading's link. It does not interpolate within
-  a heading part. It reaches full when the end of the content is visible and remains full
-  afterwards. Each step animates with a 200 ms CSS transform. The side pane smoothly reveals the active link
+  a heading part. When the content end is visible, the final visible heading is selected
+  even if the preceding part occupies more of the viewport. This selection persists past
+  the content end. Fill is always derived from that same selected link, never independently
+  forced to 100%; hidden trailing parts do not advance it beyond the selected heading.
+  Selection and fill update in one React commit. Each step animates with a 200 ms CSS
+  transform. The side pane smoothly reveals the active link
   with 96 px of context above and below (at most one quarter of the pane height), without
   scrolling the article. Scrolling clamps at the edges, revealing the 48 px end padding
   instead of pinning the final heading to the pane's bottom. When the document's end becomes

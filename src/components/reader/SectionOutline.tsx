@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   activeReaderHeading,
   readerOutlineProgress,
@@ -15,8 +15,19 @@ export interface OutlineHeading {
 
 export function SectionOutline({ headings }: { headings: OutlineHeading[] }) {
   const listRef = useRef<HTMLUListElement>(null);
-  const [active, setActive] = useState<string | null>(null);
-  const [atEnd, setAtEnd] = useState(false);
+  const [{ active, atEnd, progress }, setPosition] = useState<{
+    active: string | null;
+    atEnd: boolean;
+    progress: number;
+  }>({
+    active: null,
+    atEnd: false,
+    progress: 0,
+  });
+  const progressStyle: CSSProperties & { "--reader-outline-progress": number } =
+    {
+      "--reader-outline-progress": progress,
+    };
 
   useEffect(() => {
     const list = listRef.current;
@@ -58,19 +69,18 @@ export function SectionOutline({ headings }: { headings: OutlineHeading[] }) {
         : null;
       const finished =
         shown && sections.length > 0 && bottom <= window.innerHeight;
-      setActive(current);
-      setAtEnd(finished);
       const link = current ? links.get(current) : undefined;
       const bounds = list.getBoundingClientRect();
-      list.style.setProperty(
-        "--reader-outline-progress",
-        String(
-          readerOutlineProgress(
-            link ? link.getBoundingClientRect().bottom - bounds.top : null,
-            shown ? bounds.height : 0,
-            finished,
-          ),
-        ),
+      const fill = readerOutlineProgress(
+        link ? link.getBoundingClientRect().bottom - bounds.top : null,
+        shown ? bounds.height : 0,
+      );
+      setPosition((previous) =>
+        previous.active === current &&
+        previous.atEnd === finished &&
+        previous.progress === fill
+          ? previous
+          : { active: current, atEnd: finished, progress: fill },
       );
     };
     const schedule = () => {
@@ -151,7 +161,11 @@ export function SectionOutline({ headings }: { headings: OutlineHeading[] }) {
   return (
     <div>
       <h2 className="section-label mb-2">Na tej stronie</h2>
-      <ul ref={listRef} className="reader-outline space-y-1 text-sm">
+      <ul
+        ref={listRef}
+        className="reader-outline space-y-1 text-sm"
+        style={progressStyle}
+      >
         {headings.map((heading) => (
           <li key={heading.id}>
             <a

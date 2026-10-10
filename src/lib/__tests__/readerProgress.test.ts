@@ -33,18 +33,19 @@ describe("reader outline progress", () => {
 
   describe("stepped outline progress", () => {
     it("starts empty and fills exactly through the active link, including wrapped labels", () => {
-      expect(readerOutlineProgress(null, 200, false)).toBe(0);
-      expect(readerOutlineProgress(40, 200, false)).toBe(0.2);
-      expect(readerOutlineProgress(120, 200, false)).toBe(0.6);
+      expect(readerOutlineProgress(null, 200)).toBe(0);
+      expect(readerOutlineProgress(40, 200)).toBe(0.2);
+      expect(readerOutlineProgress(120, 200)).toBe(0.6);
     });
     it("clamps the fill to its track and keeps a hidden outline empty", () => {
-      expect(readerOutlineProgress(-10, 200, false)).toBe(0);
-      expect(readerOutlineProgress(250, 200, false)).toBe(1);
-      expect(readerOutlineProgress(40, 0, true)).toBe(0);
+      expect(readerOutlineProgress(-10, 200)).toBe(0);
+      expect(readerOutlineProgress(250, 200)).toBe(1);
+      expect(readerOutlineProgress(40, 0)).toBe(0);
     });
-    it("fills completely at the document end even without an active link", () => {
-      expect(readerOutlineProgress(120, 200, true)).toBe(1);
-      expect(readerOutlineProgress(null, 200, true)).toBe(1);
+    it("fills completely only through the selected final link, never independently of the selection", () => {
+      expect(readerOutlineProgress(200, 200)).toBe(1);
+      expect(readerOutlineProgress(120, 200)).toBe(0.6);
+      expect(readerOutlineProgress(null, 200)).toBe(0);
     });
   });
 
@@ -87,6 +88,34 @@ describe("reader outline progress", () => {
       activeReaderHeading([{ id: "a", top: -2000, bottom: 2000 }], 100, 1000),
     ).toBe("a");
   });
+  it("selects the final short part when the content end is visible, even if the previous part occupies more space", () => {
+    expect(
+      activeReaderHeading(
+        [
+          { id: "previous", top: -500, bottom: 850 },
+          { id: "last", top: 850, bottom: 950 },
+        ],
+        100,
+        1000,
+      ),
+    ).toBe("last");
+  });
+  it("switches to the final heading exactly at the content end and restores the previous selection on upward scroll", () => {
+    const sections = [
+      { id: "previous", top: -500, bottom: 900 },
+      { id: "last", top: 900, bottom: 1000 },
+    ];
+    const offset = (amount: number) =>
+      sections.map((section) => ({
+        ...section,
+        top: section.top + amount,
+        bottom: section.bottom + amount,
+      }));
+    expect(activeReaderHeading(offset(1), 100, 1000)).toBe("previous");
+    expect(activeReaderHeading(sections, 100, 1000)).toBe("last");
+    expect(activeReaderHeading(offset(-1000), 100, 1000)).toBe("last");
+    expect(activeReaderHeading(offset(1), 100, 1000)).toBe("previous");
+  });
   it("follows the most visible section when scrolling forward or backward", () => {
     const sections = [
       { id: "a", top: -500, bottom: 500 },
@@ -118,20 +147,25 @@ describe("reader outline progress", () => {
     ).toBe("a");
   });
   it("allows short parts only when they are fully visible", () => {
+    const next = { id: "b", top: 999, bottom: 2000 };
     expect(
-      activeReaderHeading([{ id: "a", top: 200, bottom: 300 }], 100, 1000),
+      activeReaderHeading(
+        [{ id: "a", top: 200, bottom: 300 }, next],
+        100,
+        1000,
+      ),
     ).toBe("a");
     expect(
-      activeReaderHeading([{ id: "a", top: 50, bottom: 150 }], 100, 1000),
+      activeReaderHeading([{ id: "a", top: 50, bottom: 150 }, next], 100, 1000),
     ).toBeNull();
   });
-  it("clears selection before the first heading and after all manual content", () => {
+  it("clears selection before the first heading and keeps the final heading after the content", () => {
     expect(
       activeReaderHeading([{ id: "a", top: 1200, bottom: 1400 }], 100, 1000),
     ).toBeNull();
     expect(
       activeReaderHeading([{ id: "a", top: -500, bottom: 50 }], 100, 1000),
-    ).toBeNull();
+    ).toBe("a");
     expect(activeReaderHeading([], 100, 1000)).toBeNull();
     expect(
       activeReaderHeading([{ id: "a", top: 0, bottom: 1000 }], 1000, 1000),

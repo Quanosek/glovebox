@@ -7,10 +7,9 @@ export interface ReaderHeadingRange {
 export function readerOutlineProgress(
   activeBottom: number | null,
   height: number,
-  atEnd: boolean,
 ): number {
   if (height <= 0) return 0;
-  return atEnd ? 1 : Math.min(1, Math.max(0, (activeBottom ?? 0) / height));
+  return Math.min(1, Math.max(0, (activeBottom ?? 0) / height));
 }
 
 /** Keep neighbouring headings visible, clamping to reveal the pane's end padding. */
@@ -37,7 +36,7 @@ export function readerOutlineScrollTop({
   return Math.max(0, Math.min(target, scrollHeight - height));
 }
 
-/** Prefer the most visible part; short parts must be fully visible. */
+/** Prefer the most visible part until the content end reveals the final part. */
 export function activeReaderHeading(
   sections: ReaderHeadingRange[],
   viewportTop: number,
@@ -45,6 +44,8 @@ export function activeReaderHeading(
 ): string | null {
   const height = viewportBottom - viewportTop;
   if (height <= 0) return null;
+  const last = sections.at(-1);
+  if (last && last.bottom <= viewportBottom) return last.id;
   const readingLine = viewportTop + height / 3;
   let active: string | null = null;
   let mostVisible = 0;
