@@ -499,6 +499,8 @@ function collectImages(block: Block, urls: Set<string>) {
   if (block.type === "paragraph" || block.type === "heading")
     addIcons(block.runs);
   if (block.type === "list") block.items.forEach(addIcons);
+  if (block.type === "table")
+    block.cells?.forEach((row) => row.forEach(addIcons));
   if (block.type === "warning")
     block.blocks.forEach((b) => collectImages(b, urls));
 }

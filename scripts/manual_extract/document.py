@@ -32,6 +32,10 @@ class Document:
         self.frames: dict[int, list[Any]] = {}
         self.labeled_frames: set[tuple[int, int]] = set()
         self.pitch = 0.0
+        # Line pitch of text styles (font, size) that wrap with their own leading.
+        self.style_pitch: dict[tuple[str, float], float] = {}
+        # Wrapped lines of bulleted items start under the bullet (no hanging indent).
+        self.flush_bullets = False
 
     def rule_limits(self, pno: int) -> tuple[float, float]:
         """Top / bottom margin of a page. A full-width rule near the top or the
@@ -81,4 +85,9 @@ class Document:
             return True
         size = max(prev.size, it.size, self.body_size)
         pitch = self.pitch * size / self.body_size
+        style = it.style
+        if style == prev.style and style in self.style_pitch:
+            # Never more breaks than the body text pitch would give, and
+            # never a leading far looser than the body text.
+            pitch = max(pitch, min(self.style_pitch[style], pitch * 1.25))
         return delta > pitch + self.body_size * self.args.para_gap

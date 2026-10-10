@@ -10,10 +10,13 @@ export const CONTENT_FORMAT_VERSION = 1;
 /** Book id: lowercase slug, also the directory name inside the car folder. */
 export type BookId = string;
 
-/** Inline text run. Plain strings are regular text. */
+/**
+ * Inline text run. Plain strings are regular text; `href` marks an internet
+ * address printed in the manual (opened as an external link).
+ */
 export type Run =
   | string
-  | { t: string; b?: true; i?: true }
+  | { t: string; b?: true; i?: true; href?: string }
   /** Reference to a printed page number of the same book ("patrz str. 45"). */
   | { page: number }
   /** Inline pictogram from the manual (button, warning lamp), shown at text size. */
@@ -42,6 +45,8 @@ export interface ListBlock {
   id: string;
   ordered: boolean;
   items: Run[][];
+  /** Original PDF bullet glyphs and colours, aligned with `items`. */
+  markers?: Array<{ glyph: string; color?: string } | null>;
   page?: number;
 }
 
@@ -61,6 +66,18 @@ export interface TableBlock {
   /** First row is the header when `header` is true. */
   header: boolean;
   rows: string[][];
+  /**
+   * Runs of every cell, aligned with `rows`, when some cell holds a
+   * pictogram, a page reference or a link. `rows` keeps the plain text.
+   */
+  cells?: Run[][][];
+  /**
+   * Merged cells, aligned with `rows`: `[colspan, rowspan]` for a cell,
+   * `null` for a position covered by a merged cell. Absent when none.
+   */
+  spans?: Array<Array<[number, number] | null>>;
+  /** Number of header rows when `header` is true (default 1). */
+  headerRows?: number;
   page?: number;
 }
 
@@ -74,6 +91,13 @@ export interface ImageBlock {
   alt: string;
   /** Small pictograms (e.g. control indicators) rendered inline-sized. */
   icon?: boolean;
+  /**
+   * Width of the illustration as a share of the PDF page width (0–1); the
+   * reader keeps illustrations of one book at the same scale.
+   */
+  share?: number;
+  /** Caption printed under the illustration ("Rys. 45 Kluczyki samochodowe"). */
+  caption?: Run[];
   page?: number;
 }
 

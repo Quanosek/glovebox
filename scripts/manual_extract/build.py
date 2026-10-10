@@ -17,7 +17,7 @@ from .layout import assign_layout
 from .leaders import mark_toc_lines
 from .outline import locate_entries, outline
 from .reading import read_pages
-from .text import slugify
+from .text import clean_text, normalize_title, slugify
 
 FORMAT_VERSION = 1
 
@@ -102,6 +102,9 @@ def assemble(doc: Document, args: argparse.Namespace, assets_dir: Path | None) -
     bounds = positions + [len(doc.items)]
     for n in range(len(entries)):
         mark_toc_lines(doc, positions[n], max(positions[n], bounds[n + 1]))
+    own_text = [has_own_text(doc, positions[n] + e.get("span", 0), bounds[n + 1]) for n, e in enumerate(entries)]
+    merge_lone_children(entries, own_text, args.max_page_level)
+    inline_leaf_children(entries, args.max_page_level)
     skip_level: int | None = None
     current: dict[str, Any] | None = None
     builder: SectionBuilder | None = None
@@ -121,12 +124,19 @@ def assemble(doc: Document, args: argparse.Namespace, assets_dir: Path | None) -
             current, builder = None, None
             continue
         title_span = e.get("span", 0)
-        if e["level"] <= args.max_page_level or current is None or builder is None:
+        if (e.get("merged") or e.get("inline")) and builder is not None:
+            # Part of its parent's page: its title (unless it repeats the
+            # parent's) becomes a heading.
+            heading_items = [it for it in doc.items[start : start + title_span] if it.kind == "line"]
+            if heading_items and not (e.get("merged") and e.get("same_title")):
+                builder.heading(heading_items, 2)
+        elif e["level"] <= args.max_page_level or current is None or builder is None:
             finish_current()
             current = tree.add(e)
             builder = SectionBuilder(doc, current, assets_dir, args.assets_url)
         else:
-            level = e["level"] - args.max_page_level + 1
+            # Heading levels count from the page the entry is part of.
+            level = e["level"] - (current["level"] if current else args.max_page_level) + 1
             heading_items = [it for it in doc.items[start : start + title_span] if it.kind == "line"]
             if heading_items:
                 builder.heading(heading_items, level)
@@ -135,6 +145,46 @@ def assemble(doc: Document, args: argparse.Namespace, assets_dir: Path | None) -
                 builder.feed(it)
     finish_current()
     return tree
+
+
+def has_own_text(doc: Document, start: int, end: int) -> bool:
+    """True when an entry has text or a table before its first sub-entry."""
+    for it in doc.items[start:end]:
+        if it.kind == "table" or (it.kind == "line" and not it.data.get("toc") and clean_text(it.plain)):
+            return True
+    return False
+
+
+def subtree_end(entries: list[dict[str, Any]], n: int) -> int:
+    return next((k for k in range(n + 1, len(entries)) if entries[k]["level"] <= entries[n]["level"]), len(entries))
+
+
+def merge_lone_children(entries: list[dict[str, Any]], own_text: list[bool], max_page_level: int) -> None:
+    """A category without text of its own and with exactly one sub-category
+    ("Dane techniczne" › "Informacje o danych technicznych") is one page:
+    the sub-category is merged into it; its sub-entries stay headings."""
+    for n, e in enumerate(entries[:-1]):
+        if e["level"] >= max_page_level or own_text[n]:
+            continue
+        child = entries[n + 1]
+        end = subtree_end(entries, n)
+        if child["level"] != e["level"] + 1 or any(entries[k]["level"] == child["level"] for k in range(n + 2, end)):
+            continue
+        child["merged"] = True
+        child["same_title"] = normalize_title(child["title"]) == normalize_title(e["title"])
+
+
+def inline_leaf_children(entries: list[dict[str, Any]], max_page_level: int) -> None:
+    """A category whose sub-categories have no deeper entries is one page
+    with the sub-categories as headings, not a page per sub-category."""
+    for n, e in enumerate(entries):
+        if e.get("merged") or e["level"] >= max_page_level:
+            continue
+        end = subtree_end(entries, n)
+        children = [k for k in range(n + 1, end) if not entries[k].get("merged")]
+        if children and all(entries[k]["level"] == e["level"] + 1 for k in children):
+            for k in children:
+                entries[k]["inline"] = True
 
 
 def write_output(doc: Document, args: argparse.Namespace, out_dir: Path, tree: SectionTree) -> dict[str, Any]:

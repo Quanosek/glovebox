@@ -52,6 +52,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--min-figure", type=float, default=36.0)
     p.add_argument("--callout-max-chars", type=int, default=12)
     p.add_argument("--max-width", type=int, default=1200)
+    p.add_argument("--min-width", type=int, default=800, help="illustrations are rendered at least this many pixels wide (up to 3 × --dpi)")
     p.add_argument("--quality", type=int, default=78)
     p.add_argument("--no-images", action="store_true")
     p.add_argument("--no-vector", action="store_true", help="only extract raster images")

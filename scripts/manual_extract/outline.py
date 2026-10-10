@@ -69,10 +69,43 @@ def outline_from_headings(doc: Document) -> list[dict[str, Any]]:
     sizes = sorted({it.size for it in doc.items if it.kind == "line" and it.size >= doc.body_size * 1.3}, reverse=True)
     level_of = {s: (1 if i == 0 else 2) for i, s in enumerate(sizes)}
     entries = []
-    for it in doc.items:
+    for idx, it in enumerate(doc.items):
         if it.kind == "line" and it.size in level_of and len(clean_text(it.text)) < 90:
-            entries.append({"level": level_of[it.size], "title": clean_text(it.text.replace(REF_MARK, "")), "page": it.page, "y": it.y0})
+            entry = {
+                "level": level_of[it.size],
+                "title": clean_text(it.text.replace(REF_MARK, "")),
+                "page": it.page,
+                "y": it.y0,
+                "_index": idx,
+                "_item": it,
+            }
+            if entries and continues_wrapped_heading(entries[-1], entry, doc):
+                previous = entries[-1]
+                fixed, separator = join_line_texts(previous["title"], entry["title"])
+                previous["title"] = fixed + separator + entry["title"]
+                previous["_index"] = entry["_index"]
+                previous["_item"] = entry["_item"]
+                continue
+            entries.append(entry)
+    for entry in entries:
+        entry.pop("_index")
+        entry.pop("_item")
     return entries
+
+
+def continues_wrapped_heading(previous: dict[str, Any], current: dict[str, Any], doc: Document) -> bool:
+    previous_item = previous["_item"]
+    current_item = current["_item"]
+    return (
+        previous["level"] == current["level"]
+        and previous_item.page == current_item.page
+        and previous_item.col == current_item.col
+        and previous_item.band == current_item.band
+        and current["_index"] == previous["_index"] + 1
+        and clean_text(previous_item.text).endswith(("-", "\u2010"))
+        and current["title"][:1].islower()
+        and current_item.base - previous_item.base <= max(previous_item.size, current_item.size) * 2
+    )
 
 
 def title_at(doc: Document, idx: int, target: str) -> int:

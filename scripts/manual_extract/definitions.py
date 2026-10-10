@@ -81,7 +81,7 @@ def concat_lines(lines: list[Item]) -> list[Span]:
     """Spans of several lines read as one text (de-hyphenated)."""
     out: list[Span] = []
     for ln in sorted(lines, key=lambda i: (round(i.base), i.x0)):
-        spans = [Span(s.text, s.bold, s.italic, s.size, s.font, s.bbox, s.icon) for s in ln.spans]
+        spans = [Span(s.text, s.bold, s.italic, s.size, s.font, s.bbox, s.icon, s.color) for s in ln.spans]
         if out:
             text = "".join(s.text for s in out)
             fixed, sep = join_line_texts(text, "".join(s.text for s in spans))

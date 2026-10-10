@@ -1246,6 +1246,13 @@ body {
     background: var(--silver-gradient);
     font-weight: 600;
   }
+  .prose-manual a.external-link {
+    color: var(--color-red);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+    overflow-wrap: anywhere;
+  }
   .prose-manual a.page-ref {
     color: var(--color-red);
     text-decoration: underline;

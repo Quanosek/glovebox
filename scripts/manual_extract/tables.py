@@ -155,7 +155,7 @@ def split_at(ln: Item, breaks: list[float], within: float = float("inf")) -> lis
         for s in ln.spans:
             a, b = max(start, pos), min(end, pos + len(s.text))
             if a < b:
-                spans.append(Span(s.text[a - pos : b - pos], s.bold, s.italic, s.size, s.font, s.bbox, s.icon))
+                spans.append(Span(s.text[a - pos : b - pos], s.bold, s.italic, s.size, s.font, s.bbox, s.icon, s.color))
             pos += len(s.text)
         x1 = xs[end] - 1 if end < len(text) else ln.x1
         data = {**ln.data, "char_x": xs[start:end]}
@@ -288,12 +288,18 @@ def table_from_rules(doc: Document, pno: int, rules: list[dict[str, Any]], lines
             else:
                 band_rows.append(cells)
         table_rows.extend(band_rows)
-    rows = [[cell_text(cell) for cell in row] for row in table_rows]
-    rows = [r for r in rows if any(r)]
+    kept = [(row, [cell_text(cell) for cell in row]) for row in table_rows]
+    kept = [(row, texts) for row, texts in kept if any(texts)]
+    rows = [texts for _, texts in kept]
     used = [k for k in range(ncols) if any(r[k] for r in rows)]
     if len(used) < 2 or not rows:
         return None
     rows = [[r[k] for k in used] for r in rows]
+    cell_lines = [[row[k] for k in used] for row, _ in kept]
+    cell_boxes = []
+    for row, _ in kept:
+        ys = [ln.y0 for cell in row for ln in cell] + [ln.y1 for cell in row for ln in cell]
+        cell_boxes.append([(bounds[k], min(ys), bounds[k + 1], max(ys)) for k in used])
     top = min([first] + [ln.y0 for row in head for ln in row])
     if len(rules) == 1:
         # One rule under text: a one-row table ("AdBlue, ilość [l] | 7,5"),
@@ -304,7 +310,7 @@ def table_from_rules(doc: Document, pno: int, rules: list[dict[str, Any]], lines
     else:
         # A table continued from the previous page starts with values.
         header = bool(head) or (len(rows) > 1 and not any(is_value(c) for c in rows[0][1:]))
-    return Item("table", pno, (x0, top, x1, last), data={"rows": rows, "header": header})
+    return Item("table", pno, (x0, top, x1, last), data={"rows": rows, "header": header, "cell_lines": cell_lines, "cell_boxes": cell_boxes})
 
 
 def is_value(cell: str) -> bool:
@@ -322,21 +328,80 @@ def grid_tables(doc: Document, page: Any) -> list[Item]:
         return out
     for tab in found.tables:
         rows = tab.extract()
+        boxes: list[list[Any]] = [list(r.cells) for r in tab.rows]
         header_external = bool(getattr(tab.header, "external", False))
         if header_external:
             rows = [list(tab.header.names)] + rows
-        rows = [[clean_cell(c) for c in row] for row in rows]
-        rows = [r for r in rows if any(r)]
-        if not rows:
+            hb = tab.header.bbox
+            boxes = [[(c[0], hb[1], c[2], hb[3]) if c else None for c in (boxes[0] if boxes else [])]] + boxes
+        if len(boxes) != len(rows):
+            boxes = [[] for _ in rows]
+        pairs = [([clean_cell(c) for c in row], box) for row, box in zip(rows, boxes)]
+        # A row without text may still hold pictograms: keep it when it has cells.
+        pairs = [(r, b) for r, b in pairs if any(r)]
+        if not pairs:
             continue
-        ncols = max(len(r) for r in rows)
-        rows = [r + [""] * (ncols - len(r)) for r in rows]
+        ncols = max(len(r) for r, _ in pairs)
+        rows = [r + [""] * (ncols - len(r)) for r, _ in pairs]
+        boxes = [list(b) + [None] * (ncols - len(b)) for _, b in pairs]
+        # A column of pictograms has no text but a header ("Symbol").
         non_empty_cols = [i for i in range(ncols) if any(r[i] for r in rows)]
         rows = [[r[i] for i in non_empty_cols] for r in rows]
+        boxes = [[tuple(b[i]) if b[i] else None for i in non_empty_cols] for b in boxes]
         if len(non_empty_cols) < 2 or len(rows) < 2:
             continue
-        out.append(Item("table", page.number, tuple(tab.bbox), data={"rows": rows}))  # type: ignore[arg-type]
+        # Explanations printed in a last row across the whole table ("X: Nie
+        # można zamontować…") are notes under the table, not a row.
+        notes: list[tuple[float, float, float, float]] = []
+        width = tab.bbox[2] - tab.bbox[0]
+        while len(rows) > 2 and boxes[-1][0] and all(b is None for b in boxes[-1][1:]) and boxes[-1][0][2] - boxes[-1][0][0] >= width * 0.9:
+            notes.insert(0, boxes[-1][0])
+            rows.pop()
+            boxes.pop()
+        data: dict[str, Any] = {"rows": rows, "cell_boxes": boxes}
+        spans = cell_spans(boxes)
+        if spans is not None:
+            data["spans"] = spans
+            head = max((s[1] for s in spans[0] if s), default=1)
+            if head > 1:
+                data["header_rows"] = head
+            # Cells covered by a merged cell keep no text of their own.
+            for r, row in enumerate(spans):
+                for c, s in enumerate(row):
+                    if s is None:
+                        rows[r][c] = ""
+        if notes:
+            data["notes"] = notes
+        out.append(Item("table", page.number, tuple(tab.bbox), data=data))  # type: ignore[arg-type]
     return out
+
+
+def cell_spans(boxes: list[list[Any]]) -> list[list[list[int] | None]] | None:
+    """Column and row spans of merged cells (`[colspan, rowspan]`, `None` for
+    a position covered by a merged cell), or None when no cell is merged."""
+    nrows, ncols = len(boxes), max((len(b) for b in boxes), default=0)
+    col_x0 = [min((b[i][0] for b in boxes if i < len(b) and b[i]), default=None) for i in range(ncols)]
+    row_y0 = [min((c[1] for c in b if c), default=None) for b in boxes]
+    spans: list[list[list[int] | None]] = [[[1, 1] for _ in range(ncols)] for _ in range(nrows)]
+    covered: set[tuple[int, int]] = set()
+    merged = False
+    for r, row in enumerate(boxes):
+        for c, box in enumerate(row):
+            if box is None:
+                continue
+            cs = sum(1 for j in range(c, ncols) if col_x0[j] is not None and col_x0[j] < box[2] - 1)
+            rs = sum(1 for k in range(r, nrows) if row_y0[k] is not None and row_y0[k] < box[3] - 1)
+            cs, rs = max(cs, 1), max(rs, 1)
+            if cs > 1 or rs > 1:
+                merged = True
+                spans[r][c] = [cs, rs]
+                covered.update((k, j) for k in range(r, r + rs) for j in range(c, c + cs) if (k, j) != (r, c))
+    if not merged:
+        return None
+    for r, c in covered:
+        if r < nrows and c < ncols and boxes[r][c] is None:
+            spans[r][c] = None
+    return spans
 
 
 def cell_text(lines: list[Item]) -> str:
@@ -350,7 +415,7 @@ def cell_text(lines: list[Item]) -> str:
             out = prev + sep + text
         else:
             out = text
-    return clean_text(out.replace(REF_MARK, "⇒ ").replace("⇒  ", "⇒ "))
+    return clean_text(re.sub(REF_MARK + r"[\s" + REF_MARK + r"]*", "⇒ ", out))
 
 
 def clean_cell(c: Any) -> str:
@@ -362,4 +427,5 @@ def clean_cell(c: Any) -> str:
     for nxt in parts[1:]:
         prev, sep = join_line_texts(out, nxt)
         out = prev + sep + nxt.strip()
-    return clean_text(out.replace(REF_MARK, "⇒"))
+    # Private-use glyphs are pictograms drawn by a symbol font, not text.
+    return clean_text(re.sub("[\ue000-\uf8ff]", "", out).replace(REF_MARK, "⇒"))

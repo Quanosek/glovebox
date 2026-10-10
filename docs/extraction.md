@@ -39,8 +39,16 @@ implementation is the `scripts/manual_extract/` package, one module per topic:
    size (table cells, legend number and text). Fonts that only draw single glyphs are symbol
    fonts: a glyph followed by a number is a page reference (`{ page }`), any other glyph an
    inline pictogram (`{ icon, w, h }`, rendered from the page into
-   `assets/<book>/symbole/`). A lone bullet, step/legend number or pictogram is joined with
-   the text beside it, keeping the character coordinates aligned with the merged text.
+   `assets/<book>/symbole/`), except standard list-marker glyphs, which remain text. A lone
+   bullet, step/legend number or pictogram is joined with the text beside it, keeping the
+   character coordinates aligned with the merged text. Bullet glyphs and their source colours
+   are retained as optional list metadata so the reader can reproduce coloured markers without
+   turning them into icon images. Single Polish letters drawn by a fallback font ("ż", "ść"
+   inside a word) are text, not pictograms, and take the style of their word. Direction marks,
+   zero-width spaces and BOMs (common in outlines) are removed. Reference arrows include
+   "›››" ("››› strona 45", "››› ⚠ zob. Opis na stronie 45": the words before "strona" stay text,
+   the number becomes `{ page }`; "››› rys. 3" keeps only the figure label). A closing "»" that
+   marks a column or page continuation is dropped.
    Ordinary word spaces are measured separately for each font and size in the document;
    table-cell gaps are compared with those measurements rather than a fixed point width.
    Small raised / lowered digits become Unicode super- and subscripts
@@ -62,47 +70,93 @@ implementation is the `scripts/manual_extract/` package, one module per topic:
    page has no header. Rules separated by an empty strip or a caption across a boundary belong
    to different tables. Then `page.find_tables(strategy="lines_strict")` for gridded tables
    (≥ 2 columns; coloured word highlights are not grids); table text is not repeated in
-   paragraphs. `--no-tables` disables.
+   paragraphs. `--no-tables` disables. Each table keeps its cell rectangles; when a cell holds a
+   pictogram (font glyph, vector drawing or small raster, e.g. the "Symbol" column of warning
+   lamps), a page reference or a link, the block also gets `cells` (runs per cell, aligned with
+   the plain-text `rows` that search and data cards use). Cell pictograms are rendered from the
+   page; an even light row shading becomes white, and text drawn inside the pictogram (a circled
+   number) stays part of it. Merged cells of gridded tables become `spans` (`[colspan, rowspan]`,
+   `null` for covered positions) and a header of several rows `headerRows`; a gridded table has
+   a header only when its first row is set apart (bold or medium-weight text, or light text on a
+   dark fill) from the first data row. A last row spanning the whole table with explanations
+   ("X: Nie można zamontować…") becomes paragraphs under the table.
 4. **Figures** — raster images plus clustered vector drawings, merged, rendered with
    `get_pixmap(clip=…)` so callout numbers stay in the picture, saved as WebP
-   (`--max-width 1200`, `--quality 78`, deduplicated by hash). Small figures
+   (`--max-width 1200`, `--quality 78`, deduplicated by hash). Illustrations are rendered at
+   least `--min-width 800` pixels wide (up to 3 × `--dpi`) so their callout numbers and letters
+   stay legible. Every illustration records `share`, its width as a share of the page width; the
+   reader shows all illustrations of a book at one scale, consecutive ones side by side. A
+   caption printed under an illustration ("Rys. 45 Kluczyki samochodowe") becomes its
+   `caption` and description. Small figures
    (`--icon-size`) become inline icons. Callout labels inside figures are dropped from the text.
-   Warning boxes are not figures.
+   Warning boxes are not figures, and neither are boxes whose drawings are only lines along
+   their edges plus small pictograms (cross-reference boxes). Page decoration is left out
+   before clustering: drawings bleeding off the page (hatched borders), page-sized backgrounds
+   and bars inside the top/bottom margins — otherwise one "figure" covers the whole page and
+   its short lines would be dropped as callouts. A short last caption line aligned under a
+   longer kept line is not a callout.
 5. **Layout** — any number of columns per page: the horizontal projection of all items that
    fit in a column gives the column intervals (gaps = gutters). Items crossing a gutter are
    full-width bands; reading order is band by band, inside a band column by column (left to
    right), each column top to bottom. `--single-column` disables it. Column left edges snap to
    edges used on many pages (a column holding only indented text keeps its indentation).
    Narrow strips containing isolated legend markers are joined with their indented descriptions
-   when both belong to the same recurring column edge; genuine additional columns remain separate. The
-   line pitch (most common baseline distance) is measured; a paragraph starts when the baseline
-   distance, minus the extra space taken by sub- and superscripts, exceeds it by `--para-gap` ×
-   body size.
+   when both belong to the same recurring column edge; genuine additional columns remain separate.
+   A second pass uses the column edges recurring in the document: a cluster is split where at
+   least two lines start at such an edge and at most three lines (titles, captions) cross it, so
+   a short legend column under a full-width illustration stays a column.
+   Up to three lines much wider than the others (a footnote under two columns) do not join the
+   columns they cross when the remaining lines form clear columns; they become full-width bands.
+   A lone number with text right before it on its baseline ("nicy . . . 58") ends that line and
+   is not merged as a legend number. Footnotes in small print at the bottom of a column
+   ("1) COC = …") are read after the page and emitted after the block they interrupted. The
+   line pitch (most common baseline distance) is measured for the body text and for every text
+   style (font, size) that wraps; a paragraph starts when the baseline distance, minus the extra
+   space taken by sub- and superscripts, exceeds the pitch by `--para-gap` × body size (a style
+   with a looser leading may raise the pitch by at most 25 %, never lower it).
 6. **Sections** — the PDF outline (`get_toc`) defines the hierarchy; levels up to
    `--max-page-level` become pages, deeper entries become headings. A broken outline copy
    (no destinations) is replaced by a working copy nested under a "….pdf" bookmark; entries
    without a page are located by title. Titles are located in the text (joined lines
    of one column, preferring a line that starts a block), falling back to the outline
-   destination. Wrapped titles are not limited to five lines, and whitespace around a slash
-   is ignored when comparing titles. Unmatched outline entries are reported; their bookmark
+   destination. Wrapped titles are not limited to five lines; titles are compared without
+   whitespace around a slash or before punctuation, optional-equipment asterisks
+   ("Climatronic* sterowanie"), footnote marks ("Nawigacja¹⁾"), quotes and pictogram glyphs.
+   A category without text of its own and with exactly one sub-category is one page (the
+   sub-category title becomes a heading unless it repeats the category title; its sub-entries
+   stay headings). A category whose sub-categories have no deeper entries is one page with the
+   sub-categories as headings instead of a page per sub-category. Heading levels count from the
+   page an entry belongs to. With no PDF outline, adjacent hyphenated heading lines
+   in the same column are joined before sections are created. Unmatched outline entries are reported; their bookmark
    text is not inserted as a fabricated heading in the manual body.
    Chapter tables of contents (dot leaders) are skipped; other dot-leader lines
    (legends of illustrations) become page references. `--skip-title` skips "Spis treści",
    "Skorowidz", …
 7. **Blocks** — paragraphs (continued across columns and pages while the sentence is
    unfinished; a list item also when the next column continues it in lower case),
-   bullet/numbered lists (indented paragraphs below a bullet belong to the item; "2. bieg" in a
-   wrapped sentence and footnotes in smaller print are not steps), definition lists
+   legends under illustrations (a digit or capital letter in a drawn circle, "Ⓐ Kontrola
+   poziomu", is joined with the text beside it and becomes a list item whose marker is that
+   mark in its enclosed Unicode form, "①"–"㊿", "Ⓐ"–"Ⓩ", in the colour of the circle), bullet/numbered lists (indented paragraphs below a bullet belong to the item; in documents
+   whose bullets have no hanging indent — measured per document — the wrapped lines start under
+   the bullet and continue the item until a paragraph gap; "2. bieg" in a wrapped sentence and
+   footnotes in smaller print are not steps), definition lists
    ("W górę : podnoszenie siedziska", "HI = praca szybka", including a description column
-   aligned on its colon or equals sign), numbered tables (`legends.py`), warnings ("Niebezpieczeństwo", "Ostrzeżenie", "Przestroga", "Uwaga"):
+   aligned on its colon or equals sign), numbered tables (`legends.py`), warnings ("Niebezpieczeństwo", "Ostrzeżenie", "Przestroga",
+   "Ostrożnie", "Uwaga", "Informacja"; the label starts with a capital, so "…następująca /
+   informacja:" stays a sentence; a label on a bar just above a box adopts that box):
    framed boxes — rectangles or pairs of vertical lines joined by a horizontal one; a box
    broken across columns/pages continues in the next unlabeled box —, notes set off by
    indentation (they end where the text returns to the column edge; a note made of a list keeps
    its bullets) or until a gap of
-   `--warning-gap`. Headings come from the outline or font size/weight; a bold line of body
-   size is a heading only when it stands alone, a wrapped heading is joined.
+   `--warning-gap`. Headings come from the outline or font size/weight; a bold (or medium
+   weight) line of body size is a heading only when it stands alone, or when a short paragraph
+   set entirely in that style wraps over several lines that are not table cells; a wrapped
+   heading is joined. Medium-weight lead-in sentences ending in ":" or "!" are not headings.
 8. **Cleanup** — dehyphenation across line breaks (`-` and U+2010; keeps hyphens before
-   capitals, e.g. "Start-Stop"), whitespace normalisation.
+   capitals, e.g. "Start-Stop"; an internet address broken after "/", "." or "-" is joined
+   without a space), whitespace normalisation. Internet addresses (`http(s)://…`, `www.…`)
+   become link runs `{ t, href }`; the reader opens them in a new tab. Only `http(s)` targets
+   are produced.
 
 ## Testing
 

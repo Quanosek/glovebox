@@ -28,6 +28,13 @@ def belongs_to_warning(doc: Document, warning: dict[str, Any], prev: Item, it: I
             return True
         return False
     if frame is not None and frame != prev.data.get("frame"):
+        # The label sits on a bar just above the box it starts.
+        anchor = warning["anchor"]
+        if not warning["lines"] and prev is anchor and frame not in doc.labeled_frames and it.page == anchor.page and it.col == anchor.col:
+            box = doc.frames[frame[0]][frame[1]]
+            if -2 <= box.y0 - anchor.y1 <= anchor.size * 2 and box.x0 - 4 <= anchor.x0 <= box.x1:
+                warning["frame"] = frame
+                return True
         return False
     if is_heading(doc, it) is not None and warning["lines"] > 0:
         return False
@@ -55,18 +62,31 @@ def belongs_to_warning(doc: Document, warning: dict[str, Any], prev: Item, it: I
     return delta <= doc.pitch + doc.body_size * doc.args.warning_gap
 
 
-def continues(doc: Document, prev: Item | None, it: Item, list_x: float | None, in_warning: bool, list_mode: bool) -> bool:
+def continues(
+    doc: Document, prev: Item | None, it: Item, list_x: float | None, in_warning: bool, list_mode: bool, item_x: float | None = None, flush: bool = False
+) -> bool:
     """True when `it` continues the paragraph (or, with `list_mode`, the list
-    item whose text starts `list_x` points from the column edge) of `prev`."""
+    item whose text starts `list_x` points from the column edge) of `prev`.
+    `item_x` is the offset of the first line of the current list item; `flush`
+    marks a bulleted list without hanging indents (`Document.flush_bullets`)."""
     if prev is None:
         return False
     if not in_warning and it.data.get("frame") != prev.data.get("frame"):
         return False
     indented = list_x is not None and it.x0 - it.col_x0 > list_x + 2
+    if flush and indented:
+        # Without hanging indents only an indent the width of the bullet
+        # continues the item; a deeper one is a box beside the list.
+        start = item_x if item_x is not None else list_x
+        indented = it.x0 - it.col_x0 - start <= max(12.0, it.size * 2)
     if it.page == prev.page and it.col == prev.col and it.band == prev.band:
         if list_mode:
             # Indented paragraphs below a bullet belong to the same item.
-            return indented and it.base - prev.base < doc.pitch * 2.5
+            if indented and it.base - prev.base < doc.pitch * 2.5:
+                return True
+            # Without a hanging indent the wrapped lines start under the bullet.
+            aligned = abs(it.x0 - prev.x0) <= 2 if item_x is None else abs(it.x0 - it.col_x0 - item_x) <= 2
+            return flush and aligned and not doc.para_break(prev, it)
         return not doc.para_break(prev, it)
     # Column / page break: join when the sentence is clearly unfinished.
     prev_text = clean_text(prev.text)
@@ -86,7 +106,7 @@ def dash_is_punctuation(prev: Item | None) -> bool:
 
 def strip_marker(it: Item) -> Item:
     """Copy of a list line without its bullet or step number."""
-    spans = [Span(s.text, s.bold, s.italic, s.size, s.font, s.bbox, s.icon) for s in it.spans]
+    spans = [Span(s.text, s.bold, s.italic, s.size, s.font, s.bbox, s.icon, s.color) for s in it.spans]
     for s in spans:
         if not s.text.strip():
             continue
@@ -95,5 +115,32 @@ def strip_marker(it: Item) -> Item:
             s.text = s.text.lstrip()[m.end() :]
         elif s.text.strip() in "■●•▪◆○◦–—-" or re.fullmatch(r"\d{1,2}[.)]", s.text.strip()):
             s.text = ""
+        break
+    return Item("line", it.page, it.bbox, it.col, it.band, spans, dict(it.data), it.base)
+
+
+def list_marker(it: Item, glyph: str) -> dict[str, str]:
+    """Preserve a PDF list marker as text and retain its source colour."""
+    offset = len(it.text) - len(it.text.lstrip())
+    position = 0
+    for span in it.spans:
+        end = position + len(span.text)
+        if position <= offset < end:
+            marker: dict[str, str] = {"glyph": glyph}
+            if span.color is not None:
+                marker["color"] = f"#{span.color:06x}"
+            return marker
+        position = end
+    return {"glyph": glyph}
+
+
+def strip_label(it: Item, label: str) -> Item:
+    """Copy of a legend line without its mark ("A", "12")."""
+    spans = [Span(s.text, s.bold, s.italic, s.size, s.font, s.bbox, s.icon, s.color) for s in it.spans]
+    for s in spans:
+        if not s.text.strip():
+            continue
+        if s.text.lstrip().startswith(label):
+            s.text = s.text.lstrip()[len(label) :].lstrip()
         break
     return Item("line", it.page, it.bbox, it.col, it.band, spans, dict(it.data), it.base)

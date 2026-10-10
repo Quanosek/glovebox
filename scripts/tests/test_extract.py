@@ -158,9 +158,8 @@ class SampleExtractionTests(unittest.TestCase):
                 "kluczyki-drzwi-i-szyby/kluczyki-zamki",
                 "kluczyki-drzwi-i-szyby/dach",
                 "dane-techniczne",
-                "dane-techniczne/dane-silnika",
             ],
-        )  # "Skorowidz" is skipped
+        )  # "Skorowidz" is skipped; "Dane silnika", the only sub-category of an empty chapter, is merged
         self.assertEqual(self.index["sections"][1]["page"], 4)  # printed page number
 
     def test_paragraph_dehyphenated_without_running_header(self) -> None:
@@ -201,8 +200,9 @@ class SampleExtractionTests(unittest.TestCase):
     def test_table(self) -> None:
         tmp = Path(self.tmp.name)
         data = json.loads((tmp / "content" / "dane-techniczne.json").read_text("utf-8"))
-        table = data["sections"]["dane-techniczne/dane-silnika"][0]
-        self.assertEqual(table["type"], "table")
+        blocks = data["sections"]["dane-techniczne"]
+        self.assertEqual([runs.runs_to_text(b["runs"]) for b in blocks if b["type"] == "heading"], ["Dane silnika"])
+        table = next(b for b in blocks if b["type"] == "table")
         self.assertEqual(table["rows"][1], ["B16SHT", "125", "170"])
 
 
@@ -250,7 +250,8 @@ class ThreeColumnExtractionTests(unittest.TestCase):
         )
         cls.index = build(args)
         chapter = json.loads((tmp / "content" / "kluczyki-drzwi-i-szyby.json").read_text("utf-8"))
-        cls.blocks = chapter["sections"]["kluczyki-drzwi-i-szyby/szyby"]
+        # Chapters whose only sub-category has no deeper entries are one page.
+        cls.blocks = chapter["sections"]["kluczyki-drzwi-i-szyby"]
         cls.tech = json.loads((tmp / "content" / "dane-techniczne.json").read_text("utf-8"))
         cls.assets = tmp / "assets"
 
@@ -301,7 +302,7 @@ class ThreeColumnExtractionTests(unittest.TestCase):
         self.assertEqual([[runs.runs_to_text(i) for i in b["items"]] for b in lists], [["Pierwszy punkt", "Drugi punkt"]])
 
     def test_table_with_horizontal_rules_only(self) -> None:
-        table = next(b for b in self.tech["sections"]["dane-techniczne/pojemnosci"] if b["type"] == "table")
+        table = next(b for b in self.tech["sections"]["dane-techniczne"] if b["type"] == "table")
         self.assertTrue(table["header"])
         self.assertEqual(table["rows"], [["Silnik", "B14NEL", "A16XHT"], ["Olej [l]", "4,0", "5,5"], ["Płyn [l]", "6,1", "6,3"]])
 

@@ -73,6 +73,8 @@ def warning_label_of(it: Item) -> tuple[str, str, list[Span]] | None:
     """(kind, Polish title, remaining spans) when the line starts a warning."""
     spans = [s for s in it.spans if not s.icon]
     text = clean_text("".join(s.text for s in spans).replace(REF_MARK, ""))
+    if not text[:1].isupper():
+        return None  # "…wyświetla się następująca / informacja:" continues a sentence
     key = text.lower().rstrip(":").strip()
     if key in WARNING_LABELS:
         kind, title = WARNING_LABELS[key]

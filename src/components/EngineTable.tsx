@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { TableBlock } from "@/content/types";
 import type { CarSpec } from "@/lib/catalog";
 import { engineTableSelection } from "@/lib/engines";
@@ -13,12 +13,15 @@ export function EngineTable({
   block,
   engines,
   anchorId = block.id,
+  cellNodes,
 }: {
   carId: string;
   block: TableBlock;
   engines: CarSpec[];
   /** Technical cards link to source blocks and must not repeat their ids on one page. */
   anchorId?: string | null;
+  /** Rendered rich cells (pictograms, references), aligned with `block.rows`. */
+  cellNodes?: ReactNode[][];
 }) {
   const engine = useCarEngine(carId);
   const { settings } = useAppData();
@@ -27,20 +30,34 @@ export function EngineTable({
   const [expanded, setExpanded] = useState(false);
   const selected = engineTableSelection(block, engine, engines);
   const filtered =
-    selected.rows.length < block.rows.length ||
-    selected.columns.length <
-      Math.max(0, ...block.rows.map((row) => row.length));
+    !block.spans &&
+    (selected.rows.length < block.rows.length ||
+      selected.columns.length <
+        Math.max(0, ...block.rows.map((row) => row.length)));
   const showAll =
     expanded || (hydrated ? settings.showUnavailable : hint.showUnavailable);
-  const cell = (text: string, c: number, header: boolean) => {
-    const hidden = !showAll && !selected.columns.includes(c);
+  const spans = block.spans;
+  const headerRows = block.header
+    ? Math.min(block.headerRows ?? 1, block.rows.length)
+    : 0;
+  const cell = (text: string, r: number, c: number, header: boolean) => {
+    const span = spans?.[r]?.[c];
+    // A position covered by a merged cell renders nothing.
+    if (spans && span === null) return null;
+    const hidden = !spans && !showAll && !selected.columns.includes(c);
+    const content = cellNodes?.[r]?.[c] ?? polishTypography(text);
+    const props = {
+      hidden,
+      colSpan: span && span[0] > 1 ? span[0] : undefined,
+      rowSpan: span && span[1] > 1 ? span[1] : undefined,
+    };
     return header ? (
-      <th key={c} hidden={hidden} scope="col">
-        {polishTypography(text)}
+      <th key={c} scope="col" {...props}>
+        {content}
       </th>
     ) : (
-      <td key={c} hidden={hidden}>
-        {polishTypography(text)}
+      <td key={c} {...props}>
+        {content}
       </td>
     );
   };
@@ -72,19 +89,26 @@ export function EngineTable({
       <div
         id={anchorId ?? undefined}
         className="overflow-x-auto"
-        hidden={!showAll && selected.rows.length === 0}
+        hidden={!block.spans && !showAll && selected.rows.length === 0}
       >
         <table className="w-full text-sm">
-          {block.header && block.rows.length > 0 && (
+          {headerRows > 0 && (
             <thead>
-              <tr>{block.rows[0].map((text, c) => cell(text, c, true))}</tr>
+              {block.rows.slice(0, headerRows).map((row, r) => (
+                <tr key={r}>{row.map((text, c) => cell(text, r, c, true))}</tr>
+              ))}
             </thead>
           )}
           <tbody>
             {block.rows.map((row, r) =>
-              block.header && r === 0 ? null : (
-                <tr key={r} hidden={!showAll && !selected.rows.includes(r)}>
-                  {row.map((text, c) => cell(text, c, false))}
+              r < headerRows ? null : (
+                <tr
+                  key={r}
+                  hidden={
+                    !block.spans && !showAll && !selected.rows.includes(r)
+                  }
+                >
+                  {row.map((text, c) => cell(text, r, c, false))}
                 </tr>
               ),
             )}

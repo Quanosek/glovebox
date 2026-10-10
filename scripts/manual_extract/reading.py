@@ -12,28 +12,52 @@ from typing import Any
 from .document import Document
 from .model import Item, Span
 from .pdf import pymupdf
-from .text import MARKER_ONLY_RE, REF_MARK, TEXT_ARROWS, clean_text, normalize_title
+from .text import INVISIBLE, MARKER_ONLY_RE, POLISH_LETTERS, REF_MARK, TEXT_ARROWS, clean_text, normalize_title
 
 
 def read_pages(doc: Document) -> None:
     pages = [page_lines(doc, doc.pdf[pno]) for pno in range(doc.page_count)]
     classify_symbol_fonts(doc, [ln for lines in pages for ln in lines])
     raw_lines: list[Item] = []
-    for lines in pages:
-        raw_lines.extend(merge_markers(lines))
+    for pno, lines in enumerate(pages):
+        raw_lines.extend(merge_markers(strip_continuation_marks(lines), marker_circles(doc, pno)))
     strip_margins(doc, raw_lines)
     compute_body_size(doc)
     measure_word_spaces(doc)
 
 
-def stroked_glyphs(page: Any) -> dict[int, list[float]]:
+def strip_continuation_marks(lines: list[Item]) -> list[Item]:
+    """A closing "»" at the end of a column or page only says that the text
+    continues; it is not part of the sentence."""
+    out: list[Item] = []
+    for ln in lines:
+        text = ln.text.rstrip()
+        if text.endswith("»") and "«" not in text and (len(text) == 1 or text[-2].isspace()):
+            for s in reversed(ln.spans):
+                if s.text.strip():
+                    s.text = s.text.rstrip()[:-1].rstrip()
+                    break
+            ln.spans = [s for s in ln.spans if s.text or not s.icon]
+            if not ln.text.strip():
+                continue
+            xs = ln.data.get("char_x")
+            if xs is not None and len(xs) != len(ln.text):
+                ln.data["char_x"] = xs[: len(ln.text)]
+        out.append(ln)
+    return out
+
+
+def text_trace(page: Any) -> list[Any]:
+    try:
+        return page.get_texttrace()
+    except Exception:  # pragma: no cover - depends on PDF
+        return []
+
+
+def stroked_glyphs(trace: list[Any]) -> dict[int, list[float]]:
     """Origins of glyphs that are also stroked: the "fake bold" used by
     many publishing tools (text filled and then outlined)."""
     out: dict[int, list[float]] = {}
-    try:
-        trace = page.get_texttrace()
-    except Exception:  # pragma: no cover - depends on PDF
-        return out
     for span in trace:
         if span.get("type") != 1:  # 1 = stroked text
             continue
@@ -59,7 +83,8 @@ def is_stroked(stroked: dict[int, list[float]], x: float, y: float) -> bool:
 def page_lines(doc: Document, page: Any) -> list[Item]:
     flags = pymupdf.TEXTFLAGS_RAWDICT & ~pymupdf.TEXT_PRESERVE_IMAGES
     data = page.get_text("rawdict", flags=flags)
-    stroked = stroked_glyphs(page)
+    trace = text_trace(page)
+    stroked = stroked_glyphs(trace)
     lines: list[Item] = []
     for block in data["blocks"]:
         if block.get("type") != 0:
@@ -77,7 +102,7 @@ def page_lines(doc: Document, page: Any) -> list[Item]:
                 italic = bool(s["flags"] & 2) or bool(doc.italic_font_re.search(font))
                 for ch in s["chars"]:
                     c = ch["c"]
-                    if not c:
+                    if not c or c in INVISIBLE:
                         continue
                     cb = tuple(ch["bbox"])
                     ox, oy = ch["origin"]
@@ -105,7 +130,7 @@ def page_lines(doc: Document, page: Any) -> list[Item]:
                         assert last.bbox is not None
                         last.bbox = (min(last.bbox[0], cb[0]), min(last.bbox[1], cb[1]), max(last.bbox[2], cb[2]), max(last.bbox[3], cb[3]))
                     else:
-                        spans.append(Span(c, bold, italic, size, font, cb))  # type: ignore[arg-type]
+                        spans.append(Span(c, bold, italic, size, font, cb, color=s.get("color")))  # type: ignore[arg-type]
             for sg in segments:
                 if sg["bbox"] is None or not "".join(x.text for x in sg["spans"]).strip():
                     continue
@@ -120,18 +145,84 @@ def page_lines(doc: Document, page: Any) -> list[Item]:
     return lines
 
 
-def merge_markers(lines: list[Item]) -> list[Item]:
+def marker_circles(doc: Document, pno: int) -> list[tuple[float, float, float, float, Any]]:
+    """Small drawn circles that enclose legend marks ("①", "Ⓐ")."""
+    # A circle may be drawn in several pieces (halves, quarters): touching
+    # small curved pieces are joined first.
+    pieces = [
+        [d["rect"].x0, d["rect"].y0, d["rect"].x1, d["rect"].y1, d.get("fill") or d.get("color")]
+        for d in doc.drawings(doc.pdf[pno])
+        if d["rect"].width <= 20 and d["rect"].height <= 20 and any(op[0] == "c" for op in d["items"])
+    ]
+    merged: list[list[Any]] = []
+    for r in sorted(pieces, key=lambda p: p[:4]):
+        for m in merged:
+            if r[0] <= m[2] + 0.5 and m[0] <= r[2] + 0.5 and r[1] <= m[3] + 0.5 and m[1] <= r[3] + 0.5:
+                m[:4] = [min(m[0], r[0]), min(m[1], r[1]), max(m[2], r[2]), max(m[3], r[3])]
+                break
+        else:
+            merged.append(list(r))
+    return [
+        (m[0], m[1], m[2], m[3], m[4]) for m in merged
+        if 3 <= m[2] - m[0] <= 20 and abs((m[2] - m[0]) - (m[3] - m[1])) < 1.5
+    ]
+
+
+def circled(label: str) -> str:
+    """The enclosed Unicode form of a legend mark ("10" -> "⑩", "A" -> "Ⓐ")."""
+    if label.isdigit():
+        n = int(label)
+        if 1 <= n <= 20:
+            return chr(0x2460 + n - 1)
+        if 21 <= n <= 35:
+            return chr(0x3251 + n - 21)
+        if 36 <= n <= 50:
+            return chr(0x32B1 + n - 36)
+    elif len(label) == 1 and "A" <= label <= "Z":
+        return chr(0x24B6 + ord(label) - ord("A"))
+    return label
+
+
+def merge_markers(lines: list[Item], circles: list[tuple[float, float, float, float, Any]] | None = None) -> list[Item]:
     """Join a lone bullet / step number / legend number / pictogram with
-    the text line beside it."""
+    the text line beside it. A digit or capital letter in a drawn circle is
+    a legend mark: the joined line remembers it (`data["legend"]`)."""
     drop: set[int] = set()
     for marker in lines:
         if id(marker) in drop:
             continue
         label = clean_text(marker.text)
+        circle = None
+        if re.fullmatch(r"\d{1,2}|[A-Z]", label):
+            cx, cy = (marker.x0 + marker.x1) / 2, (marker.y0 + marker.y1) / 2
+            circle = next((c for c in circles or [] if c[0] <= cx <= c[2] and c[1] <= cy <= c[3] and c[2] - c[0] <= max(marker.size * 3, 8)), None)
+        if circle is not None:
+            best = None
+            for other in lines:
+                if other is marker or id(other) in drop or not clean_text(other.text):
+                    continue
+                gap = other.x0 - circle[2]
+                if -1 <= gap < 16 and abs((other.y0 + other.y1) / 2 - (circle[1] + circle[3]) / 2) < 3:
+                    if best is None or other.x0 < best.x0:
+                        best = other
+            if best is not None:
+                best.spans = [Span(label, True, False, best.size, best.spans[0].font, marker.bbox), Span(" ", False, False, best.size, "", None)] + best.spans
+                best.data.pop("char_x", None)
+                best.data["legend"] = label
+                best.data["legend_box"] = circle[:4]
+                if circle[4]:
+                    best.data["legend_color"] = "#" + "".join(f"{round(v * 255):02x}" for v in circle[4][:3])
+                best.bbox = (circle[0], min(circle[1], best.y0), best.x1, max(circle[3], best.y1))
+                drop.add(id(marker))
+            continue
         bare_number = bool(re.fullmatch(r"\d{1,2}", label))
         pictogram = all(sp.icon for sp in marker.spans if sp.text.strip())
         if not (MARKER_ONLY_RE.match(label) or bare_number or pictogram):
             continue
+        if bare_number and any(
+            o is not marker and abs(o.base - marker.base) < 2.5 and 0 <= marker.x0 - o.x1 < 16 for o in lines
+        ):
+            continue  # the page number ending a line ("nicy . . . 58"), not a legend number
         best = None
         for other in lines:
             if other is marker or id(other) in drop:
@@ -151,7 +242,7 @@ def merge_markers(lines: list[Item]) -> list[Item]:
             best.data["char_x"] = marker_xs + [marker.x1] + best_xs
         else:
             best.data.pop("char_x", None)
-        best.spans = [Span(s.text, s.bold, s.italic, s.size, s.font, s.bbox, s.icon) for s in marker.spans] + [Span(" ", False, False, best.size, "", None)] + best.spans
+        best.spans = [Span(s.text, s.bold, s.italic, s.size, s.font, s.bbox, s.icon, s.color) for s in marker.spans] + [Span(" ", False, False, best.size, "", None)] + best.spans
         best.bbox = (marker.x0, min(marker.y0, best.y0), best.x1, max(marker.y1, best.y1))
         drop.add(id(marker))
     return [ln for ln in lines if id(ln) not in drop]
@@ -182,6 +273,16 @@ def classify_symbol_fonts(doc: Document, lines: list[Item]) -> None:
         for k, s in enumerate(it.spans):
             visible = s.text.strip()
             if s.font not in symbol_fonts or not visible or len(visible) > 3:
+                continue
+            if len(visible) == 1 and visible in "■●•▪◆○◦":
+                continue
+            if all(ch in POLISH_LETTERS for ch in visible):
+                # A fallback font drawing single Polish letters ("ż", "ść")
+                # inside words: the letters take the style of their word.
+                near = [x for x in it.spans[k - 1 :: -1] if x.text.strip()] if k else []
+                near += [x for x in it.spans[k + 1 :] if x.text.strip()]
+                if near:
+                    s.bold, s.italic, s.font = near[0].bold, near[0].italic, near[0].font
                 continue
             after = "".join(x.text for x in it.spans[k + 1 :]).lstrip()
             if re.match(r"\d", after) and len(visible) == 1:

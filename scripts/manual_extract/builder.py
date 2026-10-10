@@ -3,19 +3,21 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
 from .document import Document
-from .flow import belongs_to_warning, continues, dash_is_punctuation, strip_marker
+from .flow import belongs_to_warning, continues, dash_is_punctuation, list_marker, strip_label, strip_marker
 from .frames import warning_label_of
 from .geometry import center, contains
-from .headings import is_heading
-from .images import render_icon, render_image
+from .headings import is_heading, strong
+from .images import cell_graphic, render_icon, render_image, render_region
 from .legends import numbered_tables
 from .model import Item
-from .runs import join_runs, lines_to_runs, without_bold
-from .text import BULLET_RE, DEFINITION_RE, ORDERED_RE, clean_text
+from .reading import circled
+from .runs import join_runs, lines_to_runs, runs_to_text, without_bold
+from .text import BULLET_RE, DEFINITION_RE, FOOTNOTE_RE, ORDERED_RE, SENTENCE_END, clean_text
 
 
 class SectionBuilder:
@@ -33,6 +35,7 @@ class SectionBuilder:
         self.warning: dict[str, Any] | None = None
         self.last_line: Item | None = None
         self.last_heading: Item | None = None
+        self.notes: list[list[Item]] = []
 
     def next_id(self) -> str:
         self.counter += 1
@@ -66,7 +69,20 @@ class SectionBuilder:
     def feed(self, it: Item) -> None:
         if it.kind == "table":
             self.flush_all()
-            self.blocks.append({"type": "table", "id": self.next_id(), "header": bool(it.data.get("header", True)), "rows": it.data["rows"], "page": self.page_of(it)})
+            header = it.data.get("header")
+            if header is None:
+                header = self._styled_first_row(it)
+            block = {"type": "table", "id": self.next_id(), "header": bool(header), "rows": it.data["rows"], "page": self.page_of(it)}
+            if header and it.data.get("header_rows"):
+                block["headerRows"] = it.data["header_rows"]
+            if it.data.get("spans"):
+                block["spans"] = it.data["spans"]
+            cells = self._table_cells(it)
+            if cells is not None:
+                block["cells"] = cells
+            self.blocks.append(block)
+            for box in it.data.get("notes", []):
+                self._table_notes(it, box)
             return
         if it.kind == "image":
             rect = self._warning_frame_rect()
@@ -82,6 +98,12 @@ class SectionBuilder:
 
     def _line(self, it: Item) -> None:
         text = clean_text(it.text)
+        if it.data.get("footnote"):
+            if self.notes and not FOOTNOTE_RE.match(text):
+                self.notes[-1].append(it)
+            else:
+                self.notes.append([it])
+            return
         label = warning_label_of(it)
         if label and self.warning is not None and self.warning["frame"] is not None and it.data.get("frame") == self.warning["frame"]:
             label = None  # the word inside the text of its own box
@@ -119,8 +141,24 @@ class SectionBuilder:
                 return
         if self.warning is not None:
             self.warning["lines"] += 1
+        legend = it.data.get("legend")
+        if legend:
+            # A legend entry under an illustration ("Ⓐ Kontrola poziomu").
+            self.flush_para()
+            if self.list is None or self.list["ordered"] or self.list.get("definitions"):
+                self.flush_list()
+                self.list = {"ordered": False, "items": [], "page": self.page_of(it), "x": it.x0 - it.col_x0, "markers": []}
+            marker = {"glyph": circled(legend)}
+            if it.data.get("legend_color"):
+                marker["color"] = it.data["legend_color"]
+            self.list["markers"].append(marker)
+            self.list["item_x"] = it.x0 - it.col_x0
+            self.list["items"].append([strip_label(it, legend)])
+            self.last_line = it
+            return
         definitions = self.list is not None and self.list.get("definitions")
-        if it.data.get("defitem") or (DEFINITION_RE.match(text) and (it.data.get("para_before", True) or definitions)):
+        footnote = it.size < self.doc.body_size * 0.95 and FOOTNOTE_RE.match(text)
+        if it.data.get("defitem") or (DEFINITION_RE.match(text) and not footnote and (it.data.get("para_before", True) or definitions)):
             self.flush_para()
             if self.list is None or not self.list.get("definitions"):
                 self.flush_list()
@@ -143,9 +181,14 @@ class SectionBuilder:
         if bullet or ordered:
             self.flush_para()
             is_ordered = bool(ordered and not bullet)
-            if self.list is None or self.list["ordered"] != is_ordered:
+            if self.list is None or self.list["ordered"] != is_ordered or self.list.get("definitions"):
                 self.flush_list()
                 self.list = {"ordered": is_ordered, "items": [], "page": self.page_of(it), "x": it.x0 - it.col_x0}
+                if not is_ordered:
+                    self.list["markers"] = []
+            if not is_ordered:
+                self.list["markers"].append(list_marker(it, bullet.group(1)) if bullet else None)
+            self.list["item_x"] = it.x0 - it.col_x0
             self.list["items"].append([strip_marker(it)])
             self.last_line = it
             return
@@ -163,7 +206,84 @@ class SectionBuilder:
 
     def _continues(self, it: Item, list_mode: bool) -> bool:
         list_x = self.list["x"] if self.list is not None else None
-        return continues(self.doc, self.last_line, it, list_x, self.warning is not None, list_mode)
+        item_x = self.list.get("item_x") if self.list is not None else None
+        flush = self.doc.flush_bullets and self.list is not None and not self.list["ordered"]
+        return continues(self.doc, self.last_line, it, list_x, self.warning is not None, list_mode, item_x, flush)
+
+    def _table_cells(self, table: Item) -> list[list[list[Any]]] | None:
+        """Runs of every cell when some cell holds a pictogram, a page
+        reference or a link (plain `rows` stay for search and data cards)."""
+        boxes = table.data.get("cell_boxes")
+        rows = table.data["rows"]
+        if not boxes or len(boxes) != len(rows) or any(len(b) != len(r) for b, r in zip(boxes, rows)):
+            return None
+        per_cell = table.data.get("cell_lines")
+        pool = table.data.get("lines", [])
+        out: list[list[list[Any]]] = []
+        rich = False
+        for r, row in enumerate(boxes):
+            out_row: list[list[Any]] = []
+            for c, box in enumerate(row):
+                lines = list(per_cell[r][c]) if per_cell else [ln for ln in pool if box and contains(box, center(ln.bbox))]
+                graphic = cell_graphic(self.doc, table.page, box) if box else None
+                if graphic is not None:
+                    # Text drawn inside the pictogram (a circled number) is part of it.
+                    lines = [ln for ln in lines if not contains(graphic, center(ln.bbox))]
+                lines = [self._without_foreign_legend(ln, box) for ln in lines]
+                runs = self._runs(sorted(lines, key=lambda ln: (round(ln.base), ln.x0))) if lines else []
+                if graphic is not None:
+                    icon = render_region(self.doc, self.assets_dir, self.assets_url, table.page, graphic, whiten=True)
+                    if icon is not None:
+                        runs = [icon] + ([" "] + runs if runs else [])
+                rich = rich or any(isinstance(x, dict) and ("icon" in x or "page" in x or "href" in x) for x in runs)
+                out_row.append(runs)
+            out.append(out_row)
+        return out if rich else None
+
+    def _styled_first_row(self, table: Item) -> bool:
+        """A gridded table has a header when its first row is set apart: bold
+        or medium-weight text, or light text on a dark fill, unlike row two."""
+        boxes = table.data.get("cell_boxes") or []
+        pool = table.data.get("lines", [])
+
+        def styled(row: list[Any]) -> bool | None:
+            lines = [ln for ln in pool if any(b and contains(b, center(ln.bbox)) for b in row) and clean_text(ln.plain)]
+            if not lines:
+                return None
+            return all(strong(ln) or light_text(ln) for ln in lines)
+
+        if not boxes:
+            return True
+        rows = table.data.get("header_rows", 1)
+        first = styled(boxes[0])
+        second = styled(boxes[rows]) if len(boxes) > rows else None
+        return bool(first) and not second
+
+    def _table_notes(self, table: Item, box: tuple[float, float, float, float]) -> None:
+        """Paragraphs of a notes row taken out of a table: a new note starts
+        at the left edge after a finished sentence."""
+        lines = sorted((ln for ln in table.data.get("lines", []) if contains(box, center(ln.bbox))), key=lambda ln: (round(ln.base), ln.x0))
+        if not lines:
+            return
+        left = min(ln.x0 for ln in lines)
+        group: list[Item] = []
+        for ln in lines + [None]:  # type: ignore[list-item]
+            if group and (ln is None or (abs(ln.x0 - left) < 2 and clean_text(group[-1].text).endswith(SENTENCE_END))):
+                runs = self._runs(group)
+                if runs:
+                    self.blocks.append({"type": "paragraph", "id": self.next_id(), "runs": runs, "page": self.page_of(table)})
+                group = []
+            if ln is not None:
+                group.append(ln)
+
+    @staticmethod
+    def _without_foreign_legend(ln: Item, box: tuple[float, float, float, float] | None) -> Item:
+        """A legend mark merged with the text of the next cell stays in its own cell."""
+        mark = ln.data.get("legend")
+        circle = ln.data.get("legend_box")
+        if mark and circle and box and not contains(box, center(circle)):
+            return strip_label(ln, mark)
+        return ln
 
     def _warning_frame_rect(self) -> tuple[float, float, float, float] | None:
         if self.warning is None or self.warning.get("frame") is None:
@@ -190,7 +310,10 @@ class SectionBuilder:
         items = [self._runs(lines) for lines in self.list["items"]]
         items = [i for i in items if i]
         if items:
-            self._append({"type": "list", "id": "", "ordered": self.list["ordered"], "items": items, "page": self.list["page"]})
+            block = {"type": "list", "id": "", "ordered": self.list["ordered"], "items": items, "page": self.list["page"]}
+            if self.list.get("markers"):
+                block["markers"] = self.list["markers"][: len(items)]
+            self._append(block)
         self.list = None
 
     def flush_para_list(self) -> None:
@@ -220,7 +343,47 @@ class SectionBuilder:
     def flush_all(self) -> None:
         self.flush_para_list()
         self.close_warning()
+        self.flush_notes()
+
+    def flush_notes(self) -> None:
+        """Footnotes read aside (`footnotes()` in layout) follow the block
+        they interrupted."""
+        notes, self.notes = self.notes, []
+        for lines in notes:
+            runs = self._runs(lines)
+            if runs:
+                self.blocks.append({"type": "paragraph", "id": self.next_id(), "runs": runs, "page": self.page_of(lines[0])})
 
     def finish(self) -> list[dict[str, Any]]:
         self.flush_all()
-        return numbered_tables(self.blocks)
+        return attach_captions(numbered_tables(self.blocks))
+
+
+def light_text(ln: Item) -> bool:
+    """White or very light text (a header printed on a dark fill)."""
+    colors = [s.color for s in ln.spans if s.text.strip() and s.color is not None]
+    return bool(colors) and all(sum((c >> k) & 255 for k in (16, 8, 0)) >= 3 * 210 for c in colors)
+
+
+CAPTION_RE = re.compile(r"^(?:Rys\.|Rysunek|Fig\.)\s*\d+")
+
+
+def attach_captions(blocks: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """A caption printed under an illustration ("Rys. 45 Kluczyki
+    samochodowe") becomes the caption (and the description) of its image."""
+    out: list[dict[str, Any]] = []
+    for block in blocks:
+        prev = out[-1] if out else None
+        if (
+            block["type"] == "paragraph"
+            and prev is not None
+            and prev["type"] == "image"
+            and not prev.get("icon")
+            and "caption" not in prev
+            and CAPTION_RE.match(runs_to_text(block["runs"]))
+        ):
+            prev["caption"] = block["runs"]
+            prev["alt"] = runs_to_text(block["runs"])
+            continue
+        out.append(block)
+    return out

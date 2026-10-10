@@ -17,6 +17,7 @@ class Span:
     font: str
     bbox: tuple[float, float, float, float] | None = None
     icon: bool = False  # glyphs of a pictogram font, rendered as an inline image
+    color: int | None = None
 
 
 @dataclass
@@ -41,13 +42,23 @@ class Item:
 
     @property
     def size(self) -> float:
-        sizes = [s.size for s in self.spans if s.text.strip() and not s.icon]
+        # Reference arrows ("›››") are often set larger than the text.
+        sizes = [s.size for s in self.spans if s.text.replace(REF_MARK, "").strip() and not s.icon]
+        if not sizes:
+            sizes = [s.size for s in self.spans if s.text.strip() and not s.icon]
         return max(sizes) if sizes else 0.0
 
     @property
     def bold(self) -> bool:
         visible = [s for s in self.spans if s.text.strip() and s.text.strip() != REF_MARK and not s.icon]
         return bool(visible) and all(s.bold for s in visible)
+
+    @property
+    def style(self) -> tuple[str, float]:
+        """Font of the longest text span and the size of the line."""
+        spans = [s for s in self.spans if s.text.replace(REF_MARK, "").strip() and not s.icon]
+        span = max(spans, key=lambda s: len(s.text.strip())) if spans else None
+        return (span.font if span else "", self.size)
 
     @property
     def x0(self) -> float:

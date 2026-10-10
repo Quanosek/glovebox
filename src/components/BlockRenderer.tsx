@@ -48,19 +48,58 @@ function Nodes({
   nodes: FeatureNode[];
   eager?: string;
 }) {
-  return nodes.map((n) =>
-    n.kind === "block" ? (
-      <BlockView key={n.block.id} ctx={ctx} block={n.block} eager={eager} />
+  // Consecutive illustrations share one row and wrap like in the PDF.
+  const groups: Array<FeatureNode | FeatureNode[]> = [];
+  for (const n of nodes) {
+    const figure = n.kind === "block" && isScaledFigure(n.block);
+    const last = groups[groups.length - 1];
+    if (figure && Array.isArray(last)) last.push(n);
+    else groups.push(figure ? [n] : n);
+  }
+  return groups.map((g) =>
+    Array.isArray(g) ? (
+      <div
+        key={g[0].kind === "block" ? g[0].block.id : undefined}
+        className="my-4 flex flex-wrap items-start justify-center gap-4"
+      >
+        {g.map(
+          (n) =>
+            n.kind === "block" && (
+              <BlockView
+                key={n.block.id}
+                ctx={ctx}
+                block={n.block}
+                eager={eager}
+              />
+            ),
+        )}
+      </div>
+    ) : g.kind === "block" ? (
+      <BlockView key={g.block.id} ctx={ctx} block={g.block} eager={eager} />
     ) : (
-      <div key={n.heading.id}>
-        <BlockView ctx={ctx} block={n.heading} />
-        <AvailabilityBadges features={n.features} />
-        <SectionGate features={n.features} compact>
-          <Nodes ctx={ctx} nodes={n.children} eager={eager} />
+      <div key={g.heading.id}>
+        <BlockView ctx={ctx} block={g.heading} />
+        <AvailabilityBadges features={g.features} />
+        <SectionGate features={g.features} compact>
+          <Nodes ctx={ctx} nodes={g.children} eager={eager} />
         </SectionGate>
       </div>
     ),
   );
+}
+
+/** Illustrations with a known page share are shown at one scale per book. */
+function isScaledFigure(block: Block): boolean {
+  return block.type === "image" && !block.icon && block.share != null;
+}
+
+/**
+ * Display width of an illustration: its share of the PDF page width times
+ * one factor for all books, so a column-wide picture takes a little less than
+ * half of the reading column and two fit side by side.
+ */
+function figureWidth(share: number): string {
+  return `${Math.min(100, Math.round(share * 160))}%`;
 }
 
 const WARNING_STYLE: Record<WarningKind, string> = {
@@ -97,10 +136,27 @@ function BlockView({
     case "list": {
       const Tag = block.ordered ? "ol" : "ul";
       return (
-        <Tag id={block.id}>
+        <Tag
+          id={block.id}
+          className={block.markers ? "list-none pl-0" : undefined}
+        >
           {block.items.map((item, i) => (
-            <li key={i}>
-              <Runs ctx={ctx} runs={item} paragraph />
+            <li
+              key={i}
+              className={block.markers ? "flex items-start gap-2" : undefined}
+            >
+              {block.markers && (
+                <span
+                  aria-hidden="true"
+                  className="inline-block min-w-3 shrink-0 text-center"
+                  style={{ color: block.markers[i]?.color }}
+                >
+                  {block.markers[i]?.glyph ?? "•"}
+                </span>
+              )}
+              <span>
+                <Runs ctx={ctx} runs={item} paragraph />
+              </span>
             </li>
           ))}
         </Tag>
@@ -134,6 +190,9 @@ function BlockView({
           carId={ctx.car.id}
           block={block}
           engines={getManualEngines(ctx.car)}
+          cellNodes={block.cells?.map((row) =>
+            row.map((runs, c) => <Runs key={c} ctx={ctx} runs={runs} />),
+          )}
         />
       );
     case "image":
@@ -150,19 +209,42 @@ function BlockView({
         );
       }
       return (
-        <figure id={block.id} className="my-4 border border-line bg-white p-2">
+        <figure
+          id={block.id}
+          className={`border border-line bg-white p-2 ${
+            block.share != null ? "w-full sm:w-(--figure-width)" : "my-4"
+          }`}
+          style={
+            block.share != null
+              ? ({
+                  "--figure-width": figureWidth(block.share),
+                } as React.CSSProperties)
+              : undefined
+          }
+        >
           <Image
             src={block.src}
             width={block.width}
             height={block.height}
             alt={block.alt}
             loading={block.id === eager ? "eager" : "lazy"}
-            className="mx-auto h-auto max-h-112 w-auto max-w-full"
+            className={
+              block.share != null
+                ? "h-auto w-full"
+                : "mx-auto h-auto max-h-112 w-auto max-w-full"
+            }
           />
-          {block.page != null && (
-            <figcaption className="mt-1 text-right text-xs text-steel">
-              str.{NBSP}
-              {block.page}
+          {(block.caption || block.page != null) && (
+            <figcaption className="mt-1 flex items-baseline justify-between gap-2 text-xs text-graphite">
+              <span>
+                {block.caption && <Runs ctx={ctx} runs={block.caption} />}
+              </span>
+              {block.page != null && (
+                <span className="shrink-0 text-steel">
+                  str.{NBSP}
+                  {block.page}
+                </span>
+              )}
             </figcaption>
           )}
         </figure>
@@ -231,7 +313,18 @@ function Runs({
             />
           );
         }
-        let node: React.ReactNode = typo(run.t, i);
+        let node: React.ReactNode = run.href ? (
+          <a
+            href={run.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="external-link"
+          >
+            {run.t}
+          </a>
+        ) : (
+          typo(run.t, i)
+        );
         if (run.i) node = <em>{node}</em>;
         if (run.b) node = <strong>{node}</strong>;
         return <span key={i}>{node}</span>;

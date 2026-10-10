@@ -40,7 +40,7 @@ export function blockToText(block: Block): string {
     case "table":
       return block.rows.map((r) => r.join(" | ")).join("\n");
     case "image":
-      return "";
+      return block.caption ? runsToText(block.caption) : "";
   }
 }
 

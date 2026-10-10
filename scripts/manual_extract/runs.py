@@ -9,7 +9,7 @@ from collections.abc import Callable
 from typing import Any
 
 from .model import Item, Span
-from .text import ICON_MARK, REF_MARK, REF_RE, join_line_texts
+from .text import ICON_MARK, REF_MARK, REF_RE, URL_RE, join_line_texts
 
 def build_runs(chars: list[tuple[Any, ...]]) -> list[Any]:
     """Convert styled characters into JSON runs; resolve page references.
@@ -68,7 +68,10 @@ def build_runs(chars: list[tuple[Any, ...]]) -> list[Any]:
     pos = 0
     for m in REF_RE.finditer(text):
         push(chars[pos : m.start()])
-        numbers = [int(m.group(1))] + [int(n) for n in re.findall(r"\d{1,3}", m.group(2) or "")]
+        if m.group("lead"):
+            # Words between the arrow and "strona" ("zob. Opis na") stay text.
+            push(chars[m.start("lead") : m.end("lead")])
+        numbers = [int(m.group("first"))] + [int(n) for n in re.findall(r"\d{1,3}", m.group("more") or "")]
         for idx, n in enumerate(numbers):
             if idx:
                 emit(", ", (False, False))
@@ -84,6 +87,7 @@ def build_runs(chars: list[tuple[Any, ...]]) -> list[Any]:
         elif "t" in r:
             r["t"] = re.sub(r"\s+", " ", r["t"])
         out.append(r)
+    out = linkify(out)
     # Spaces after a bold / italic phrase belong to the plain text.
     for k in range(len(out) - 1):
         r, nxt = out[k], out[k + 1]
@@ -97,6 +101,28 @@ def build_runs(chars: list[tuple[Any, ...]]) -> list[Any]:
     if out:
         out[0] = with_text(out[0], run_text(out[0]).lstrip())
         out[-1] = with_text(out[-1], run_text(out[-1]).rstrip())
+    return out
+
+
+def linkify(runs: list[Any]) -> list[Any]:
+    """Internet addresses in text runs become link runs (`{"t", "href"}`)."""
+    out: list[Any] = []
+    for r in runs:
+        text = r if isinstance(r, str) else r.get("t") if "t" in r and "href" not in r else None
+        if not text or not URL_RE.search(text):
+            out.append(r)
+            continue
+        style = {k: v for k, v in r.items() if k in ("b", "i")} if isinstance(r, dict) else {}
+        pos = 0
+        for m in URL_RE.finditer(text):
+            if m.start() > pos:
+                out.append({"t": text[pos : m.start()], **style} if style else text[pos : m.start()])
+            url = m.group(0)
+            href = url if re.match(r"https?://", url, re.I) else f"https://{url}"
+            out.append({"t": url, "href": href, **style})
+            pos = m.end()
+        if pos < len(text):
+            out.append({"t": text[pos:], **style} if style else text[pos:])
     return out
 
 
