@@ -9,6 +9,7 @@ import {
   engineId,
   engineLabel,
   fuelKind,
+  includeUpcomingModelYears,
   modelFamily,
   smartCase,
   stripDiacritics,
@@ -705,7 +706,11 @@ export async function getCatalogModels(
   brandId: string,
 ): Promise<CatalogModel[] | null> {
   if (!brandIdOk(brandId) || !(await getBrandEntry(brandId))) return null;
-  return (await getModelsFile(brandId)).models;
+  const currentYear = new Date().getFullYear();
+  return (await getModelsFile(brandId)).models.map((model) => ({
+    ...model,
+    years: includeUpcomingModelYears(model.years, currentYear),
+  }));
 }
 
 /* ------------------------------------------------------------- engines */
@@ -721,7 +726,13 @@ export async function getCatalogEngines(
   if (!brand) return null;
   const file = await getModelsFile(brandId);
   const model = file.models.find((m) => m.id === modelId);
-  if (!model || !model.years.includes(year)) return null;
+  if (
+    !model ||
+    !includeUpcomingModelYears(model.years, new Date().getFullYear()).includes(
+      year,
+    )
+  )
+    return null;
   if (brand.raw.length === 0) return [];
   const table = (await getTables()).find((t) => t.years.includes(year));
   if (!table) return [];

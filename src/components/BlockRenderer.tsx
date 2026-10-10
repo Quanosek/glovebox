@@ -145,13 +145,13 @@ function BlockView({
               key={i}
               className={block.markers ? "flex items-start gap-2" : undefined}
             >
-              {block.markers && (
+              {block.markers?.[i] && (
                 <span
                   aria-hidden="true"
                   className="inline-block min-w-3 shrink-0 text-center"
-                  style={{ color: block.markers[i]?.color }}
+                  style={{ color: block.markers[i].color }}
                 >
-                  {block.markers[i]?.glyph ?? "•"}
+                  {block.markers[i].glyph}
                 </span>
               )}
               <span>

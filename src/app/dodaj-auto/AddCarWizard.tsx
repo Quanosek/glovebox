@@ -14,17 +14,12 @@ import {
 import { EquipmentEditor } from "@/components/EquipmentEditor";
 import { CarHero } from "@/components/car/CarHero";
 import { Skeleton } from "@/components/Skeleton";
-import type {
-  CarSpec,
-  CatalogBrand,
-  CatalogEngine,
-  CatalogModel,
-} from "@/lib/catalog";
+import type { CarSpec, CatalogBrand, CatalogModel } from "@/lib/catalog";
 import { carHref, type CarFeatureSections, type CarSummary } from "@/lib/cars";
 import { useOnline } from "@/lib/offline";
 import { renderPdfPreview } from "@/lib/pdfPreview";
 import { slugify } from "@/lib/slug";
-import { addOwnedCar, setActiveCar, setCarEngine } from "@/lib/storage/hooks";
+import { addOwnedCar, setActiveCar } from "@/lib/storage/hooks";
 import { plural } from "@/lib/typography";
 
 /* ------------------------------------------------------------------ types */
@@ -163,13 +158,11 @@ export function AddCarWizard({
     state: "loading",
   });
   const [models, setModels] = useState<Loadable<CatalogModel> | null>(null);
-  const [engines, setEngines] = useState<Loadable<CatalogEngine> | null>(null);
   const [brandChoice, setBrandChoice] = useState("");
   const [brandOther, setBrandOther] = useState("");
   const [modelChoice, setModelChoice] = useState("");
   const [modelOther, setModelOther] = useState("");
   const [year, setYear] = useState("");
-  const [engineChoice, setEngineChoice] = useState("");
   const [variant, setVariant] = useState("");
   const request = useRef(0);
   const [docs, setDocs] = useState<PickedDoc[]>([]);
@@ -199,13 +192,11 @@ export function AddCarWizard({
   const brandIsOther = brandChoice === OTHER;
   const brandList = brands.state === "done" ? brands.items : [];
   const modelList = models?.state === "done" ? models.items : [];
-  const engineList = engines?.state === "done" ? engines.items : [];
   const catalogModel = modelList.find((m) => m.id === modelChoice);
   const brand = brandIsOther
     ? brandOther.trim()
     : (brandList.find((b) => b.id === brandChoice)?.name ?? "");
   const model = brandIsOther ? modelOther.trim() : (catalogModel?.name ?? "");
-  const engine = engineList.find((e) => e.id === engineChoice);
   const duplicate =
     brand && model && year
       ? cars.find(
@@ -259,8 +250,6 @@ export function AddCarWizard({
     setModelChoice("");
     setModelOther("");
     setYear("");
-    setEngineChoice("");
-    setEngines(null);
     setVariant("");
     if (!id || id === OTHER) {
       setModels(null);
@@ -283,30 +272,9 @@ export function AddCarWizard({
     ++request.current;
     setModelChoice(id);
     setYear("");
-    setEngineChoice("");
-    setEngines(null);
   };
 
-  const chooseYear = async (value: string) => {
-    const ticket = ++request.current;
-    setYear(value);
-    setEngineChoice("");
-    if (brandIsOther || !value || !modelChoice) {
-      setEngines(null);
-      return;
-    }
-    setEngines({ state: "loading" });
-    try {
-      const items = await fetchList<CatalogEngine>(
-        `/api/catalog/engines?brand=${encodeURIComponent(brandChoice)}&model=${encodeURIComponent(modelChoice)}&year=${value}`,
-        "engines",
-      );
-      if (ticket === request.current) setEngines({ state: "done", items });
-    } catch (err) {
-      if (ticket === request.current)
-        setEngines({ state: "error", error: (err as Error).message });
-    }
-  };
+  const chooseYear = (value: string) => setYear(value);
 
   /* ---- step 1: documents */
 
@@ -417,8 +385,6 @@ export function AddCarWizard({
   if (!brand) formErrors.push("Wybierz markę z listy albo „Inna” i wpisz ją.");
   if (!model) formErrors.push("Wybierz lub wpisz model.");
   if (!year) formErrors.push("Wybierz rocznik.");
-  if (!brandIsOther && engines?.state === "loading")
-    formErrors.push("Poczekaj na listę silników.");
   if (docs.length === 0) formErrors.push("Dodaj co najmniej jeden plik PDF.");
   if (docs.some((d) => !d.title.trim()))
     formErrors.push("Każda instrukcja musi mieć nazwę.");
@@ -450,17 +416,6 @@ export function AddCarWizard({
       setUpload(100);
       const body = xhr.response as { job?: Job; error?: string } | null;
       if (xhr.status === 202 && body?.job) {
-        setCarEngine(
-          body.job.carId,
-          !brandIsOther && engine
-            ? {
-                fuel: engine.fuel,
-                engineCm3: engine.engineCm3,
-                powerKw: engine.powerKw,
-                label: engine.label,
-              }
-            : null,
-        );
         setJob(body.job);
       } else
         setSubmitError(
@@ -690,7 +645,7 @@ export function AddCarWizard({
                       className="field"
                       value={year}
                       disabled={!model}
-                      onChange={(e) => void chooseYear(e.target.value)}
+                      onChange={(e) => chooseYear(e.target.value)}
                     >
                       <option value="">
                         {model ? "Wybierz rocznik" : "najpierw wybierz model"}
@@ -702,7 +657,7 @@ export function AddCarWizard({
                       ))}
                     </select>
                   </Field>
-                  {brandIsOther ? (
+                  {brandIsOther && (
                     <Field label="Wersja (opcjonalnie)" htmlFor="car-variant">
                       <input
                         id="car-variant"
@@ -712,33 +667,6 @@ export function AddCarWizard({
                         value={variant}
                         onChange={(e) => setVariant(e.target.value)}
                       />
-                    </Field>
-                  ) : (
-                    <Field label="Silnik (opcjonalnie)" htmlFor="car-engine">
-                      <select
-                        id="car-engine"
-                        className="field"
-                        value={engineChoice}
-                        disabled={engines?.state !== "done"}
-                        onChange={(e) => setEngineChoice(e.target.value)}
-                      >
-                        <option value="">
-                          {!year
-                            ? "najpierw wybierz rocznik"
-                            : engines?.state === "loading"
-                              ? "Wczytywanie silników…"
-                              : engines?.state === "error"
-                                ? "Nie udało się wczytać"
-                                : engineList.length === 0
-                                  ? "Brak danych – pomiń"
-                                  : "Nie wiem / pomiń"}
-                        </option>
-                        {engineList.map((e) => (
-                          <option key={e.id} value={e.id}>
-                            {e.label}
-                          </option>
-                        ))}
-                      </select>
                     </Field>
                   )}
                 </div>
@@ -954,12 +882,12 @@ export function AddCarWizard({
               <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 border-t border-line pt-3 text-sm">
                 <dt className="text-steel">Rocznik</dt>
                 <dd className="text-right font-semibold">{year || "–"}</dd>
-                <dt className="text-steel">
-                  {brandIsOther ? "Wersja" : "Silnik"}
-                </dt>
-                <dd className="text-right">
-                  {(brandIsOther ? variant.trim() : engine?.label) || "–"}
-                </dd>
+                {brandIsOther && (
+                  <>
+                    <dt className="text-steel">Wersja</dt>
+                    <dd className="text-right">{variant.trim() || "–"}</dd>
+                  </>
+                )}
                 <dt className="text-steel">Instrukcje</dt>
                 <dd className="text-right font-semibold">
                   {docs.length}

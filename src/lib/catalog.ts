@@ -22,6 +22,22 @@ export interface CatalogModel {
   years: number[];
 }
 
+/**
+ * Include current and upcoming model years for models with recent EU
+ * registrations, which can appear before their first registration data.
+ */
+export function includeUpcomingModelYears(
+  years: number[],
+  currentYear: number,
+): number[] {
+  const result = [...new Set(years)].sort((a, b) => a - b);
+  const latestYear = result.at(-1);
+  if (latestYear === undefined || latestYear < currentYear - 1) return result;
+  for (let year = latestYear + 1; year <= currentYear + 1; year++)
+    result.push(year);
+  return result;
+}
+
 export type FuelKind =
   | "petrol"
   | "diesel"

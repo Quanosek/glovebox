@@ -11,12 +11,12 @@ computers).
 Written for non-technical users: plain Polish, no paths, commands, file formats or install
 instructions in the UI (those live in `README.md`, section "Dodawanie aut"). Four steps:
 
-1. **Auto i instrukcje** — brand → model → year → engine selects, each disabled until the
+1. **Auto i instrukcje** — brand → model → year selects, each disabled until the
    previous one is set. Lists come from the official catalogue (`/api/catalog/*`,
    `docs/catalog.md`): brands grouped "Popularne" / "Pozostałe" / "Marki z rynku
-   amerykańskiego", models of the brand, the model's production years (descending), its EU
-   engines ("Nie wiem / pomiń" allowed). This choice is stored in the browser profile,
-   never sent in the multipart import or saved with the shared manuals.
+   amerykańskiego", models of the brand, and observed model years plus upcoming years for
+   recently registered models (descending). No engine is requested in this step; it is
+   selected later in the equipment editor and stored only in the browser profile.
    A stale answer is ignored (request ticket); a
    failed list shows "Spróbuj ponownie". The last brand option "Inna (wpiszę ręcznie)"
    switches to free-text brand + model (required), a year select from `maxYear()`

@@ -80,13 +80,19 @@ def continues(
         start = item_x if item_x is not None else list_x
         indented = it.x0 - it.col_x0 - start <= max(12.0, it.size * 2)
     if it.page == prev.page and it.col == prev.col and it.band == prev.band:
+        if abs(it.base - prev.base) < 1 and it.x0 >= prev.x1 - 1 and split_at_pictogram(prev, it):
+            return True  # the rest of one line split at a wide gap (a pictogram)
         if list_mode:
             # Indented paragraphs below a bullet belong to the same item.
             if indented and it.base - prev.base < doc.pitch * 2.5:
                 return True
             # Without a hanging indent the wrapped lines start under the bullet.
+            if not flush or doc.para_break(prev, it):
+                return False
             aligned = abs(it.x0 - prev.x0) <= 2 if item_x is None else abs(it.x0 - it.col_x0 - item_x) <= 2
-            return flush and aligned and not doc.para_break(prev, it)
+            # An unfinished sentence continues whatever the indent (a line
+            # starting with a pictogram, a column edge snapped differently).
+            return aligned or not clean_text(prev.text).endswith(SENTENCE_END)
         return not doc.para_break(prev, it)
     # Column / page break: join when the sentence is clearly unfinished.
     prev_text = clean_text(prev.text)
@@ -144,3 +150,11 @@ def strip_label(it: Item, label: str) -> Item:
             s.text = s.text.lstrip()[len(label) :].lstrip()
         break
     return Item("line", it.page, it.bbox, it.col, it.band, spans, dict(it.data), it.base)
+
+
+def split_at_pictogram(prev: Item, it: Item) -> bool:
+    """Two pieces of one printed line cut by the wide gap of a pictogram
+    ("Nacisnąć przycisk ⟨symbol⟩ jednokrotnie.")."""
+    first = next((s for s in it.spans if s.text.strip()), None)
+    last = next((s for s in reversed(prev.spans) if s.text.strip()), None)
+    return bool((first and first.icon) or (last and last.icon)) and it.x0 - prev.x1 < max(prev.size, it.size) * 4

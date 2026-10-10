@@ -8,6 +8,7 @@ import {
   engineLabel,
   fixMojibake,
   fuelKind,
+  includeUpcomingModelYears,
   isTypoOf,
   modelFamily,
 } from "@/lib/catalog";
@@ -156,6 +157,23 @@ describe("engines", () => {
     expect(fuelKind("PETROL", "H")).toBe("hybrid-petrol");
     expect(fuelKind("LPG", "B")).toBe("lpg");
     expect(fuelKind("ELECTRIC", "E")).toBe("electric");
+  });
+
+  describe("includeUpcomingModelYears", () => {
+    it("adds current and next model years for recently registered models", () => {
+      expect(includeUpcomingModelYears([2023, 2024, 2025], 2026)).toEqual([
+        2023, 2024, 2025, 2026, 2027,
+      ]);
+    });
+
+    it("does not extend discontinued models or duplicate existing years", () => {
+      expect(includeUpcomingModelYears([2019, 2020], 2026)).toEqual([
+        2019, 2020,
+      ]);
+      expect(includeUpcomingModelYears([2025, 2026, 2027], 2026)).toEqual([
+        2025, 2026, 2027,
+      ]);
+    });
   });
 
   it("builds Polish labels and stable ids", () => {

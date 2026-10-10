@@ -68,7 +68,8 @@ implementation is the `scripts/manual_extract/` package, one module per topic:
    outline stay outside the table; ordinary data labels are not excluded just because an unrelated
    bookmark has the same wording. A header-only table ("Nr Obwód") is dropped; a table continued from the previous
    page has no header. Rules separated by an empty strip or a caption across a boundary belong
-   to different tables. Then `page.find_tables(strategy="lines_strict")` for gridded tables
+   to different tables. Then `page.find_tables(strategy="lines_strict")` for gridded tables (one
+   replaces a rule-only reading of the same area that found fewer filled cells)
    (≥ 2 columns; coloured word highlights are not grids); table text is not repeated in
    paragraphs. `--no-tables` disables. Each table keeps its cell rectangles; when a cell holds a
    pictogram (font glyph, vector drawing or small raster, e.g. the "Symbol" column of warning
@@ -86,8 +87,10 @@ implementation is the `scripts/manual_extract/` package, one module per topic:
    least `--min-width 800` pixels wide (up to 3 × `--dpi`) so their callout numbers and letters
    stay legible. Every illustration records `share`, its width as a share of the page width; the
    reader shows all illustrations of a book at one scale, consecutive ones side by side. A
-   caption printed under an illustration ("Rys. 45 Kluczyki samochodowe") becomes its
-   `caption` and description. Small figures
+   caption ("Rys. 45 Kluczyki samochodowe") printed under an illustration or beside it (to its
+   right, level with it) becomes its `caption` and description, wherever the column reading
+   order would put it; a caption inside the rendered picture is shown by the picture and not
+   repeated as text. Small figures
    (`--icon-size`) become inline icons. Callout labels inside figures are dropped from the text.
    Warning boxes are not figures, and neither are boxes whose drawings are only lines along
    their edges plus small pictograms (cross-reference boxes). Page decoration is left out
@@ -139,7 +142,11 @@ implementation is the `scripts/manual_extract/` package, one module per topic:
    mark in its enclosed Unicode form, "①"–"㊿", "Ⓐ"–"Ⓩ", in the colour of the circle), bullet/numbered lists (indented paragraphs below a bullet belong to the item; in documents
    whose bullets have no hanging indent — measured per document — the wrapped lines start under
    the bullet and continue the item until a paragraph gap; "2. bieg" in a wrapped sentence and
-   footnotes in smaller print are not steps), definition lists
+   footnotes in smaller print are not steps; a dash starts an item when it starts a new block;
+   a bullet glyph wins over the "Term : description" form and a pictogram is never a bullet;
+   a line continuing an unfinished sentence, or the rest of a printed line cut by a pictogram,
+   stays in its item), definition lists (no marker is invented for them; a lower-case "term"
+   after a word broken at the line end continues that sentence)
    ("W górę : podnoszenie siedziska", "HI = praca szybka", including a description column
    aligned on its colon or equals sign), numbered tables (`legends.py`), warnings ("Niebezpieczeństwo", "Ostrzeżenie", "Przestroga",
    "Ostrożnie", "Uwaga", "Informacja"; the label starts with a capital, so "…następująca /

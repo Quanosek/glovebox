@@ -12,7 +12,7 @@ from .geometry import center, contains, merge_rects, overlap_ratio
 from .model import Item
 from .pdf import pymupdf
 from .tables import grid_tables, ruled_tables
-from .text import clean_text
+from .text import CAPTION_RE, clean_text
 
 
 def add_tables_and_figures(doc: Document) -> None:
@@ -29,10 +29,14 @@ def add_tables_and_figures(doc: Document) -> None:
         if not doc.args.no_tables:
             tables = ruled_tables(doc, pno, lines)
             for t in grid_tables(doc, page):
-                if not any(overlap_ratio(pymupdf.Rect(t.bbox), pymupdf.Rect(o.bbox)) > 0.2 for o in tables):
-                    tables.append(t)
+                overlapping = [o for o in tables if overlap_ratio(pymupdf.Rect(t.bbox), pymupdf.Rect(o.bbox)) > 0.2]
+                # A gridded table wins over a rule-only reading of the same
+                # area that found fewer cells (a fragment of its header).
+                if not overlapping or filled_cells(t) > sum(filled_cells(o) for o in overlapping):
+                    tables = [o for o in tables if o not in overlapping] + [t]
         figures = find_figures(doc, page, tables, lines) if not doc.args.no_images else []
         keep: list[Item] = []
+        in_picture = captions_inside(figures, lines)
         for ln in lines:
             c = center(ln.bbox)
             table = next((t for t in tables if contains(t.bbox, c)), None)
@@ -40,15 +44,75 @@ def add_tables_and_figures(doc: Document) -> None:
                 # Kept for the rich cells (pictograms, references) of the table.
                 table.data.setdefault("lines", []).append(ln)
                 continue
+            if id(ln) in in_picture:
+                continue  # a caption printed inside the rendered illustration
             inside_fig = [f for f in figures if contains(f.bbox, c)]
             if inside_fig and len(clean_text(ln.text)) <= doc.args.callout_max_chars and not continues_line(keep, ln, doc.args.callout_max_chars):
                 continue
             keep.append(ln)
+        keep = attach_figure_captions(figures, keep)
         assign_frames(doc, pno, keep)
         new_items.extend(keep)
         new_items.extend(tables)
         new_items.extend(figures)
     doc.items = new_items
+
+
+def attach_figure_captions(figures: list[Item], lines: list[Item]) -> list[Item]:
+    """A caption printed beside an illustration (to its right, level with
+    it) or right under it belongs to that illustration, wherever the column
+    reading order would put it. Its lines leave the text flow."""
+    if not figures:
+        return lines
+    ordered = sorted(lines, key=lambda ln: (ln.base, ln.x0))
+    taken: set[int] = set()
+    for ln in ordered:
+        if id(ln) in taken or not CAPTION_RE.match(clean_text(ln.text)):
+            continue
+        best = None
+        for f in figures:
+            if f.data.get("caption_lines"):
+                continue
+            x0, y0, x1, y1 = f.bbox
+            beside = 0 <= ln.x0 - x1 < 30 and y0 - 2 <= ln.y0 <= y1 + 2
+            below = 0 <= ln.y0 - y1 < max(ln.size * 2.5, 12) and x0 - 4 <= ln.x0 <= x1
+            if beside or below:
+                dist = abs(ln.x0 - x1) if beside else ln.y0 - y1
+                if best is None or dist < best[0]:
+                    best = (dist, f)
+        if best is None:
+            continue
+        caption = [ln]
+        for nxt in ordered:
+            if id(nxt) in taken or nxt is ln or nxt.base <= caption[-1].base:
+                continue
+            if abs(nxt.x0 - ln.x0) < 2 and nxt.base - caption[-1].base < max(caption[-1].size, nxt.size) * 1.6:
+                caption.append(nxt)
+        best[1].data["caption_lines"] = caption
+        taken.update(id(c) for c in caption)
+    return [ln for ln in lines if id(ln) not in taken]
+
+
+def captions_inside(figures: list[Item], lines: list[Item]) -> set[int]:
+    """Lines of figure captions ("Rys. 1 Otwieranie i za- / mykanie") that
+    lie inside a rendered illustration: the picture already shows them."""
+    out: set[int] = set()
+    for f in figures:
+        inside = sorted((ln for ln in lines if contains(f.bbox, center(ln.bbox))), key=lambda ln: (ln.base, ln.x0))
+        for k, ln in enumerate(inside):
+            if id(ln) in out or not CAPTION_RE.match(clean_text(ln.text)):
+                continue
+            out.add(id(ln))
+            last = ln
+            for nxt in inside[k + 1 :]:
+                if abs(nxt.x0 - ln.x0) < 2 and 0 < nxt.base - last.base < max(last.size, nxt.size) * 1.6:
+                    out.add(id(nxt))
+                    last = nxt
+    return out
+
+
+def filled_cells(table: Item) -> int:
+    return sum(1 for row in table.data["rows"] for cell in row if cell)
 
 
 def continues_line(kept: list[Item], ln: Item, limit: int) -> bool:

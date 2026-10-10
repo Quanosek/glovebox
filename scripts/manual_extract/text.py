@@ -27,6 +27,8 @@ INVISIBLE_RE = re.compile("[" + INVISIBLE + "]")
 BULLET_RE = re.compile(r"^([■●•▪◆○◦](?=\s*\S)|[\u2013\u2014\-](?=\s))\s*")
 MARKER_ONLY_RE = re.compile(r"^(?:[■●•▪◆○◦\u2013\u2014\-]|\d{1,2}[.)])$")
 ORDERED_RE = re.compile(r"^(\d{1,2})[.)]\s+")
+# Figure captions: "Rys. 45 Kluczyki samochodowe".
+CAPTION_RE = re.compile(r"^(?:Rys\.|Rysunek|Fig\.)\s*\d+")
 # Footnote marks: "1) COC = …", "¹⁾ Zastrzeżony znak…".
 FOOTNOTE_RE = re.compile(r"^(?:\d{1,2}\)|[¹²³⁴⁵⁶⁷⁸⁹]+⁾?)\s*\S")
 # "⇒ 45", "››› strona 45", "››› ⚠ zob. Opis na stronie 45" (the words before

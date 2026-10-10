@@ -17,7 +17,7 @@ from .legends import numbered_tables
 from .model import Item
 from .reading import circled
 from .runs import join_runs, lines_to_runs, runs_to_text, without_bold
-from .text import BULLET_RE, DEFINITION_RE, FOOTNOTE_RE, ORDERED_RE, SENTENCE_END, clean_text
+from .text import BULLET_RE, CAPTION_RE, DEFINITION_RE, FOOTNOTE_RE, ORDERED_RE, SENTENCE_END, clean_text
 
 
 class SectionBuilder:
@@ -91,6 +91,11 @@ class SectionBuilder:
                 return  # decorative pictogram inside a warning box
             self.flush_all()
             block = render_image(self.doc, self.assets_dir, self.assets_url, self.section, it, is_icon, self.page_of(it))
+            if block and it.data.get("caption_lines"):
+                caption = self._runs(it.data["caption_lines"])
+                if caption:
+                    block["caption"] = caption
+                    block["alt"] = runs_to_text(caption)
             if block:
                 self.blocks.append({"type": "image", "id": self.next_id(), **block})
             return
@@ -158,7 +163,25 @@ class SectionBuilder:
             return
         definitions = self.list is not None and self.list.get("definitions")
         footnote = it.size < self.doc.body_size * 0.95 and FOOTNOTE_RE.match(text)
-        if it.data.get("defitem") or (DEFINITION_RE.match(text) and not footnote and (it.data.get("para_before", True) or definitions)):
+        glyph = BULLET_RE.match(text)
+        first = next((s for s in it.spans if s.text.strip()), None)
+        if glyph and first is not None and first.icon:
+            glyph = None  # a pictogram drawn with a "-" glyph of a symbol font
+        # "●Strefa A : Nie dolewać oleju." is a bullet item; "kontrolna : …"
+        # continues a sentence and starts no definition.
+        # A lower-case "term" continues a word broken at the line end
+        # ("przeciwmgiel- / nego : …") or a sentence when nothing follows its colon.
+        prev_text = clean_text(self.last_line.text) if self.last_line is not None else ""
+        bare = re.sub(r"[\s\ue000-\uf8ff]", "", re.split(r"[:=]", it.plain, maxsplit=1)[-1]) == ""
+        continuation = (
+            text[:1].islower()
+            and not definitions
+            and self.last_line is not self.last_heading
+            and (prev_text.endswith(("-", "\u2010")) or (bare and dash_is_punctuation(self.last_line)))
+        )
+        term = DEFINITION_RE.match(text) and not footnote and not continuation
+        defitem = it.data.get("defitem") and not continuation
+        if (defitem or (term and (it.data.get("para_before", True) or definitions))) and not (glyph and glyph.group(1) not in "\u2013\u2014-"):
             self.flush_para()
             if self.list is None or not self.list.get("definitions"):
                 self.flush_list()
@@ -167,9 +190,16 @@ class SectionBuilder:
             self.list["items"].append([it])
             self.last_line = it
             return
-        bullet = BULLET_RE.match(text)
+        bullet = glyph
         ordered = ORDERED_RE.match(text)
-        if bullet and bullet.group(1) in "\u2013\u2014-" and self.list is None and dash_is_punctuation(self.last_line):
+        if (
+            bullet
+            and bullet.group(1) in "\u2013\u2014-"
+            and self.list is None
+            and dash_is_punctuation(self.last_line)
+            # A dash that starts a new block is a list marker.
+            and not it.data.get("para_before", True)
+        ):
             bullet = None
         if ordered and (
             # "2. bieg. Bieg ten…" continuing a sentence, not a step.
@@ -313,6 +343,9 @@ class SectionBuilder:
             block = {"type": "list", "id": "", "ordered": self.list["ordered"], "items": items, "page": self.list["page"]}
             if self.list.get("markers"):
                 block["markers"] = self.list["markers"][: len(items)]
+            elif self.list.get("definitions"):
+                # Definition lists have no marker in the manual: none is invented.
+                block["markers"] = [None] * len(items)
             self._append(block)
         self.list = None
 
@@ -364,8 +397,6 @@ def light_text(ln: Item) -> bool:
     colors = [s.color for s in ln.spans if s.text.strip() and s.color is not None]
     return bool(colors) and all(sum((c >> k) & 255 for k in (16, 8, 0)) >= 3 * 210 for c in colors)
 
-
-CAPTION_RE = re.compile(r"^(?:Rys\.|Rysunek|Fig\.)\s*\d+")
 
 
 def attach_captions(blocks: list[dict[str, Any]]) -> list[dict[str, Any]]:

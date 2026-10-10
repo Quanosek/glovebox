@@ -1,9 +1,12 @@
 # Car catalogue (wizard brand / model / year / engine)
 
-The "Dodaj auto" wizard offers only brands, models, model years and engines that exist in
-official registration data, so a non-existent car cannot be picked. "Inna (wpiszę ręcznie)"
-is the escape hatch: brand, model and year are then typed/selected by hand and still
-required.
+The "Dodaj auto" wizard offers brands and models from official registration data. It lists
+observed registration/model years and, for models with EU registrations in the latest or
+previous calendar year, also includes model years through next year. This lets owners add a
+new manual before registration data for that model year is published; the year is still
+validated against the same model catalogue. "Inna (wpiszę ręcznie)" is the escape hatch for
+vehicles absent from the catalogue: brand, model and year are then typed/selected by hand and
+still required.
 
 ## Sources
 
@@ -23,7 +26,7 @@ the browser), only when someone opens the wizard. No user data is sent.
 ## Server (`src/lib/server/catalog.ts`)
 
 - `getCatalogBrands()`, `getCatalogModels(brand)`, `getCatalogEngines(brand, model, year)`,
-  `resolveCatalogCar({ brand, model, year, engine? })` (used by the importer to validate a
+  `resolveCatalogCar({ brand, model, year })` (used by the importer to validate a
   `source=catalog` request), `CatalogUnavailableError` → 503.
 - Cache: JSON files in `database/.catalog/` (git-ignored with `database/`). TTL: tables and
   brands 7 days, models 14, engines 30, partial results 1 hour. When a source is down, a
@@ -48,14 +51,16 @@ Opel (`SAME_MODELS`).
 
 ## API
 
-| Route                                          | Response                       |
-| ---------------------------------------------- | ------------------------------ |
-| `GET /api/catalog/brands`                      | `{ brands: CatalogBrand[] }`   |
-| `GET /api/catalog/models?brand=`               | `{ models: CatalogModel[] }`   |
-| `GET /api/catalog/engines?brand=&model=&year=` | `{ engines: CatalogEngine[] }` |
+| Route                                          | Response                                                     |
+| ---------------------------------------------- | ------------------------------------------------------------ |
+| `GET /api/catalog/brands`                      | `{ brands: CatalogBrand[] }`                                 |
+| `GET /api/catalog/models?brand=`               | `{ models: CatalogModel[] }`                                 |
+| `GET /api/catalog/engines?brand=&model=&year=` | `{ engines: CatalogEngine[] }` (equipment selector fallback) |
 
 Errors: `{ error }` (Polish) with 404 (unknown brand/model) or 503 (catalogue unavailable).
-The chosen engine is stored in browser `settings.engines[carId]`
+The wizard does not ask for an engine. Engine variants are read from the manual and the
+owner selects one later in the equipment editor; if the manual has no complete variants,
+the official engine list is a fallback. The chosen engine is stored in browser `settings.engines[carId]`
 (`fuel`, `engineCm3`, `powerKw`, `label`, optional manual `code`) and drives
 `suggestFromSpec`. The importer validates only brand/model/year and never writes engine
 choices to `car.json`. Existing shared `spec` values remain read-only compatibility hints,
@@ -66,5 +71,7 @@ groups fuel types, sorts size/power ascending and displays KM first, with kW in 
 ## Limits
 
 EU data starts with 2010 registrations and US data with model year 2000; older cars, cars
-never sold new in the EU/USA and very rare models go through "Inna". The engine list shows
-EU variants only (US data has no engine details); it is optional ("Nie wiem / pomiń").
+never sold new in the EU/USA and very rare models go through "Inna". Upcoming years added for
+recent EU models are selectable even though engine details are not yet available for those
+years. The equipment editor's fallback engine list shows EU variants only (US data has no
+engine details).

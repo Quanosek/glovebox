@@ -4,8 +4,9 @@
 dokumenty auta: prywatna, lokalna aplikacja (Next.js) do czytania instrukcji samochodowych
 wszystkich marek z zakreślaczem, komentarzami i notatnikiem, a przy okazji menedżer Twoich aut
 (wyposażenie, przypomnienia o badaniu i OC) — wszystkie Twoje dane zostają lokalnie. Każda osoba dodaje **własne auta i instrukcje PDF** —
-markę, model, rocznik i silnik można wybrać z oficjalnych katalogów, a dane spoza katalogu
-wprowadzić ręcznie. Aplikacja nie zawiera domyślnego auta ani przykładowej instrukcji.
+markę, model i rocznik można wybrać z oficjalnych katalogów, a dane spoza katalogu
+wprowadzić ręcznie. Silnik wybierasz później w wyposażeniu konkretnego auta. Aplikacja nie
+zawiera domyślnego auta ani przykładowej instrukcji.
 
 Po dodaniu auta do profilu zaznaczasz jego **wyposażenie** (np. tempomat, kamera cofania, hak):
 aplikacja sama wyszukuje w jego instrukcjach opisy wyposażenia opcjonalnego. Sekcje o wyposażeniu,
@@ -126,11 +127,12 @@ dodać pierwsze auto z plików PDF. Pusta baza nie blokuje dodawania pierwszego 
 Przycisk „Dodaj auto” na profilu pozwala wybrać istniejące instrukcje z lokalnej biblioteki albo
 otworzyć kreator i dodać własne auto. Kreator przeprowadza przez cztery kroki, bez technicznych pytań:
 
-1. **Auto i instrukcje** — marka → model → rocznik → silnik, wybierane z list. Listy pochodzą
+1. **Auto i instrukcje** — marka → model → rocznik, wybierane z list. Listy pochodzą
    z oficjalnych danych rejestracyjnych (Europejska Agencja Środowiska — wszystkie nowe auta
    osobowe rejestrowane w UE od 2010 r.; NHTSA — modele sprzedawane w USA od 2000 r.), więc
-   nie da się wybrać modelu ani rocznika, który nie istniał. Silnik jest opcjonalny („Nie
-   wiem / pomiń”) i zapisuje się tylko w Twoim profilu. Dla aut spoza katalogu (np. starszych) wybierz markę **„Inna (wpiszę
+   nie da się wybrać modelu ani rocznika, który nie istniał. Dla modeli sprzedawanych w
+   ostatnim roku katalog obejmuje też bieżący i przyszły rocznik, zanim pojawią się dane o
+   rejestracjach. Dla aut spoza katalogu (np. starszych) wybierz markę **„Inna (wpiszę
    ręcznie)”** — wtedy wpisujesz markę i model, wybierasz rocznik (obowiązkowe) i opcjonalnie
    wersję. Niżej pole do przeciągania plików z siatką instrukcji: podgląd pierwszej strony,
    liczba stron, nazwa, kolejność. Limit: **10 plików PDF** na auto (do 250 MB każdy).

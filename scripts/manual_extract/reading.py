@@ -276,6 +276,8 @@ def classify_symbol_fonts(doc: Document, lines: list[Item]) -> None:
                 continue
             if len(visible) == 1 and visible in "■●•▪◆○◦":
                 continue
+            if len(visible) == 1 and visible in "\u2013\u2014-" and s.bbox is not None and s.bbox[2] - s.bbox[0] <= s.size * 0.8:
+                continue  # a list dash; a pictogram drawn with a dash glyph is wider
             if all(ch in POLISH_LETTERS for ch in visible):
                 # A fallback font drawing single Polish letters ("ż", "ść")
                 # inside words: the letters take the style of their word.

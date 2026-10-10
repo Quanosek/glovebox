@@ -285,6 +285,27 @@ class TableAndFigureTests(unittest.TestCase):
         self.assertEqual(out[0]["alt"], "Rys. 45 Kluczyki samochodowe")
 
 
+class CaptionAndListTests(unittest.TestCase):
+    def test_caption_beside_an_illustration_belongs_to_it(self) -> None:
+        from manual_extract.figures import attach_figure_captions
+
+        figure = Item("image", 0, (40, 90, 420, 240))
+        caption = line("Rys. 170 Regulacja ogrzewania na tablicy roz-", 430, 230, width=140, size=6.5)
+        wrapped = line("dzielczej", 430, 238, width=30, size=6.5)
+        text = line("Regulacja temperatury", 40, 260, width=90, size=6.5)
+        kept = attach_figure_captions([figure], [caption, wrapped, text])
+        self.assertEqual(kept, [text])
+        self.assertEqual(figure.data["caption_lines"], [caption, wrapped])
+
+    def test_line_cut_by_a_pictogram_stays_in_its_item(self) -> None:
+        from manual_extract.flow import split_at_pictogram
+
+        head = line("● Nacisnąć przycisk", 330, 317, width=60, size=6.5)
+        tail = Item("line", 0, (397, 310, 437, 318), spans=[Span("\uf0d8", False, False, 6.5, "Sym", icon=True), Span(" jednokrotnie.", False, False, 6.5, "Body")], base=317.2)
+        self.assertTrue(split_at_pictogram(head, tail))
+        self.assertFalse(split_at_pictogram(head, line("AUTO : tryb", 397, 317, size=6.5)))
+
+
 class OpenTableExtractionTests(unittest.TestCase):
     def extract(self, scale: float, unprinted: bool = False, single_group: bool = False, single_rule: bool = False, label_bookmark: bool = False) -> list[dict]:
         with tempfile.TemporaryDirectory() as directory:
