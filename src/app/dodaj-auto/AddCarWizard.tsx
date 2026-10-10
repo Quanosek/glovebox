@@ -58,6 +58,7 @@ export function AddCarWizard({
   const [modelChoice, setModelChoice] = useState("");
   const [modelOther, setModelOther] = useState("");
   const [year, setYear] = useState("");
+  const [yearIsOther, setYearIsOther] = useState(false);
   const [variant, setVariant] = useState("");
   const request = useRef(0);
   const [docs, setDocs] = useState<PickedDoc[]>([]);
@@ -145,6 +146,7 @@ export function AddCarWizard({
     setModelChoice("");
     setModelOther("");
     setYear("");
+    setYearIsOther(false);
     setVariant("");
     if (!id || id === OTHER) {
       setModels(null);
@@ -167,9 +169,13 @@ export function AddCarWizard({
     ++request.current;
     setModelChoice(id);
     setYear("");
+    setYearIsOther(false);
   };
 
-  const chooseYear = (value: string) => setYear(value);
+  const chooseYear = (value: string) => {
+    setYearIsOther(value === OTHER);
+    setYear(value === OTHER ? "" : value);
+  };
 
   /* ---- step 1: documents */
 
@@ -292,9 +298,10 @@ export function AddCarWizard({
     setUpload(0);
     setStep(2);
     const form = new FormData();
-    form.set("source", brandIsOther ? "other" : "catalog");
-    form.set("brand", brandIsOther ? brand : brandChoice);
-    form.set("model", brandIsOther ? model : modelChoice);
+    const manualEntry = brandIsOther || yearIsOther;
+    form.set("source", manualEntry ? "other" : "catalog");
+    form.set("brand", manualEntry ? brand : brandChoice);
+    form.set("model", manualEntry ? model : modelChoice);
     form.set("year", year);
     if (brandIsOther && variant.trim()) form.set("variant", variant.trim());
     for (const d of docs) {
@@ -428,6 +435,10 @@ export function AddCarWizard({
   const years: number[] = [];
   if (brandIsOther) for (let y = maxYear; y >= minYear; y--) years.push(y);
   else if (catalogModel) years.push(...[...catalogModel.years].reverse());
+  const otherYears = Array.from(
+    { length: maxYear - minYear + 1 },
+    (_, i) => maxYear - i,
+  ).filter((y) => !catalogModel?.years.includes(y));
 
   /* ---- render */
 
@@ -538,7 +549,7 @@ export function AddCarWizard({
                     <select
                       id="car-year"
                       className="field"
-                      value={year}
+                      value={yearIsOther ? OTHER : year}
                       disabled={!model}
                       onChange={(e) => chooseYear(e.target.value)}
                     >
@@ -550,7 +561,31 @@ export function AddCarWizard({
                           {y}
                         </option>
                       ))}
+                      {!brandIsOther && model && otherYears.length > 0 && (
+                        <option value={OTHER}>Inny rocznik</option>
+                      )}
                     </select>
+                    {yearIsOther && (
+                      <>
+                        <select
+                          className="field mt-1"
+                          aria-label="Rocznik spoza listy"
+                          value={year}
+                          onChange={(e) => setYear(e.target.value)}
+                        >
+                          <option value="">Wybierz rocznik swojego auta</option>
+                          {otherYears.map((y) => (
+                            <option key={y} value={y}>
+                              {y}
+                            </option>
+                          ))}
+                        </select>
+                        <p className="mt-2 text-xs text-graphite">
+                          Lista nie obejmuje wszystkich lat produkcji. Wybierz
+                          rocznik swojego auta i dodaj pasującą instrukcję.
+                        </p>
+                      </>
+                    )}
                   </Field>
                   {brandIsOther && (
                     <Field label="Wersja (opcjonalnie)" htmlFor="car-variant">
@@ -588,7 +623,7 @@ export function AddCarWizard({
                 <p className="mt-4 text-xs text-steel">
                   {brandIsOther
                     ? "Wpisz markę i model oraz wybierz rocznik – wszystkie trzy są wymagane."
-                    : "Marki, modele i roczniki pochodzą z oficjalnych rejestrów aut sprzedanych w Unii Europejskiej i w USA. Jeśli Twojego auta nie ma na liście, wybierz markę „Inna”."}
+                    : "Marki, modele i roczniki pochodzą z oficjalnych rejestrów aut sprzedanych w Unii Europejskiej i w USA. Jeśli brakuje roku Twojego auta, wybierz „Inny rocznik”. Jeśli brakuje marki lub modelu, wybierz markę „Inna”."}
                 </p>
                 {duplicate && (
                   <p className="mt-2 border-l-4 border-red bg-paper px-3 py-2 text-sm">

@@ -28,6 +28,10 @@ instructions in the UI (those live in `README.md`, section "Dodawanie aut"). Fou
    switches to free-text brand + model (required), a year select from `maxYear()`
    (current + 1) down to `MIN_YEAR` (1950) and an optional variant text. When the catalogue
    is unavailable, only "Inna" is offered.
+   For a known brand/model, "Inny rocznik" opens a second year select with unlisted
+   years in the same supported range. It preserves the selected display names and sends
+   `source=other`; no catalogue provenance is claimed for an unlisted year. Changing
+   brand/model resets the manual year; choosing a listed year restores catalogue validation.
    Below, a dashed dropzone (drag & drop or file picker) with a card grid: first-page preview
    (`src/lib/pdfPreview.ts`, pdfjs-dist with its worker, rendered sequentially to limit
    memory), editable name (becomes the book title), page count, size, reorder and remove.

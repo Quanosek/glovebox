@@ -186,9 +186,9 @@ class SectionBuilder:
         if not legend:
             return False
         self.flush_para()
-        if self.list is None or self.list["ordered"] or self.list.get("definitions"):
+        if self.list is None or not self.list.get("legend"):
             self.flush_list()
-            self.list = {"ordered": False, "items": [], "page": self.page_of(it), "x": it.x0 - it.col_x0, "markers": []}
+            self.list = {"ordered": False, "items": [], "page": self.page_of(it), "x": it.x0 - it.col_x0, "markers": [], "legend": True}
         marker = {"glyph": circled(legend)}
         if it.data.get("legend_color"):
             marker["color"] = it.data["legend_color"]
@@ -258,7 +258,7 @@ class SectionBuilder:
             return False
         self.flush_para()
         is_ordered = bool(ordered and not bullet)
-        if self.list is None or self.list["ordered"] != is_ordered or self.list.get("definitions"):
+        if self.list is None or self.list["ordered"] != is_ordered or self.list.get("definitions") or self.list.get("legend"):
             self.flush_list()
             self.list = {"ordered": is_ordered, "items": [], "page": self.page_of(it), "x": it.x0 - it.col_x0}
             if not is_ordered:
@@ -274,7 +274,7 @@ class SectionBuilder:
     def _continues(self, it: Item, list_mode: bool) -> bool:
         list_x = self.list["x"] if self.list is not None else None
         item_x = self.list.get("item_x") if self.list is not None else None
-        flush = self.doc.flush_bullets and self.list is not None and not self.list["ordered"]
+        flush = self.doc.flush_bullets and self.list is not None and not self.list["ordered"] and not self.list.get("legend")
         return continues(self.doc, self.last_line, it, list_x, self.warning is not None, list_mode, item_x, flush)
 
     def _table_cells(self, table: Item) -> list[list[list[Any]]] | None:

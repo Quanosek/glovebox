@@ -55,7 +55,21 @@ describe("import validation", () => {
       variant: "1.6 Turbo",
       docs: [{ title: "instrukcja cascada 2016" }],
     });
+
     expect(valid.catalog).toBeUndefined();
+  });
+
+  it("accepts a catalogue model with a manually selected older year", async () => {
+    const valid = await validateImport(
+      request({ source: "other", brand: "Seat", model: "Ibiza", year: 2008 }),
+    );
+    expect(valid).toMatchObject({
+      brand: "Seat",
+      model: "Ibiza",
+      year: 2008,
+    });
+    expect(valid.catalog).toBeUndefined();
+    expect(resolveCatalogCar).not.toHaveBeenCalled();
   });
 
   it.each([

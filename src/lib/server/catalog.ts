@@ -830,7 +830,7 @@ export async function resolveCatalogCar(input: {
   const model = models?.find((m) => m.id === catalogKey(input.model));
   if (!model) return "Wybierz model z listy.";
   if (!model.years.includes(input.year))
-    return "Ten model nie był produkowany w wybranym roczniku.";
+    return "Tego rocznika nie ma na liście. Wybierz „Inny rocznik” i podaj rok swojego auta.";
   const out: ResolvedCatalogCar = {
     brand: brand.name,
     model: model.name,

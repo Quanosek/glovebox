@@ -37,7 +37,11 @@ implementation is the `scripts/manual_extract/` package, one module per topic:
    the font flags/name or from "fake bold" (the same glyphs filled and then stroked, found
    with `get_texttrace()`). A PDF line is split at a horizontal gap wider than ~1.6 × font
    size (table cells, legend number and text). Fonts that only draw single glyphs are symbol
-   fonts: a glyph followed by a number is a page reference (`{ page }`), any other glyph an
+   fonts: known Unicode arrows and standard Adobe Symbol right-arrow encodings are page
+   references (`{ page }`). An unknown encoded glyph is treated as a reference only when
+   it precedes at least three distinct numbers and in at least 90 % of its occurrences in
+   the document (evidence is per font and glyph, never per manufacturer). Ambiguous symbols,
+   including display pictograms followed by mode numbers, remain an
    inline pictogram (`{ icon, w, h }`, rendered from the page into
    `assets/<book>/symbole/`), except standard list-marker glyphs, which remain text. A lone
    bullet, step/legend number or pictogram is joined with the text beside it, keeping the
@@ -117,6 +121,11 @@ implementation is the `scripts/manual_extract/` package, one module per topic:
    style (font, size) that wraps; a paragraph starts when the baseline distance, minus the extra
    space taken by sub- and superscripts, exceeds the pitch by `--para-gap` × body size (a style
    with a looser leading may raise the pitch by at most 25 %, never lower it).
+   Changes between ordinary and emphasised text start a new block even with tight spacing,
+   when either line starts in upper case; they do not split a hyphenated word, lower-case
+   sentence continuations or a bullet whose marker has a different weight.
+   For short documents without a measured style pitch, aligned, same-style emphasised
+   lines continuing in lower case allow up to 25 % extra leading.
 6. **Sections** — the PDF outline (`get_toc`) defines the hierarchy; levels up to
    `--max-page-level` become pages, deeper entries become headings. A broken outline copy
    (no destinations) is replaced by a working copy nested under a "….pdf" bookmark; entries
@@ -139,7 +148,10 @@ implementation is the `scripts/manual_extract/` package, one module per topic:
    unfinished; a list item also when the next column continues it in lower case),
    legends under illustrations (a digit or capital letter in a drawn circle, "Ⓐ Kontrola
    poziomu", is joined with the text beside it and becomes a list item whose marker is that
-   mark in its enclosed Unicode form, "①"–"㊿", "Ⓐ"–"Ⓩ", in the colour of the circle), bullet/numbered lists (indented paragraphs below a bullet belong to the item; in documents
+   mark in its enclosed Unicode form, "①"–"㊿", "Ⓐ"–"Ⓩ", in the colour of the circle).
+   Legends keep their hanging indentation: column-edge prose ends the legend, and
+   following ordinary bullets start a separate list. Flush bullet continuation rules do
+   not apply to legends. Bullet/numbered lists (indented paragraphs below a bullet belong to the item; in documents
    whose bullets have no hanging indent — measured per document — the wrapped lines start under
    the bullet and continue the item until a paragraph gap; "2. bieg" in a wrapped sentence and
    footnotes in smaller print are not steps; a dash starts an item when it starts a new block;

@@ -184,7 +184,7 @@ def build(path: str) -> None:
     w.line([("miejscu.", "reg")])
     w.gap()
     w.line([("System Start-", "reg")])
-    w.line([("Stop nie jest dostępny ", "reg"), ("3", "symb"), (" 45.", "reg")])
+    w.line([("Stop nie jest dostępny ", "reg"), ("Þ", "symb"), (" 45.", "reg")])
     w.gap()
     w.line([("• Naciśnąć przycisk ", "reg"), ("c", "bld"), (".", "reg")])
     w.line([("• Kluczyk złożyć do wnętrza obu-", "reg")])

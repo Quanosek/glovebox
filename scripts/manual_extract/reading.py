@@ -120,6 +120,8 @@ def page_lines(doc: Document, page: Any) -> list[Item]:
                     bold = font_bold or (bool(stroked) and is_stroked(stroked, ox, oy))
                     if c in TEXT_ARROWS:
                         c = REF_MARK
+                    elif font == "Symbol" and c in ("\u00ae", "\u00de"):
+                        c = REF_MARK  # Adobe Symbol's right-arrow encodings
                     seg["xs"].append(cb[0])
                     if c.strip():
                         seg["glyphs"].append((size, oy))
@@ -251,7 +253,8 @@ def merge_markers(lines: list[Item], circles: list[tuple[float, float, float, fl
 def classify_symbol_fonts(doc: Document, lines: list[Item]) -> None:
     """Fonts that only draw single glyphs (arrows, button pictograms,
     warning triangles) are symbol fonts. A symbol glyph followed by a
-    number is a page reference, every other one an inline pictogram."""
+    number is a page reference only with repeated, consistent evidence for
+    that glyph; ambiguous glyphs remain inline pictograms."""
     chars: Counter[str] = Counter()
     spans_total: Counter[str] = Counter()
     spans_short: Counter[str] = Counter()
@@ -269,10 +272,30 @@ def classify_symbol_fonts(doc: Document, lines: list[Item]) -> None:
         f for f, n in spans_total.items()
         if f != body_font and (spans_short[f] >= n * 0.9 or doc.ref_font_re.search(f))
     }
+    glyph_uses: Counter[tuple[str, str]] = Counter()
+    reference_uses: Counter[tuple[str, str]] = Counter()
+    reference_numbers: dict[tuple[str, str], set[int]] = {}
+    for it in lines:
+        for k, s in enumerate(it.spans):
+            visible = s.text.strip()
+            if s.font in symbol_fonts and len(visible) == 1:
+                key = (s.font, visible)
+                glyph_uses[key] += 1
+                after = "".join(x.text for x in it.spans[k + 1 :]).lstrip()
+                number = re.match(r"\d+", after)
+                if number:
+                    reference_uses[key] += 1
+                    reference_numbers.setdefault(key, set()).add(int(number.group()))
+    reference_glyphs = {
+        key for key, n in reference_uses.items()
+        if n >= 3 and n >= glyph_uses[key] * 0.9 and len(reference_numbers[key]) >= 3
+    }
     for it in lines:
         for k, s in enumerate(it.spans):
             visible = s.text.strip()
             if s.font not in symbol_fonts or not visible or len(visible) > 3:
+                continue
+            if visible == REF_MARK:
                 continue
             if len(visible) == 1 and visible in "■●•▪◆○◦":
                 continue
@@ -287,7 +310,7 @@ def classify_symbol_fonts(doc: Document, lines: list[Item]) -> None:
                     s.bold, s.italic, s.font = near[0].bold, near[0].italic, near[0].font
                 continue
             after = "".join(x.text for x in it.spans[k + 1 :]).lstrip()
-            if re.match(r"\d", after) and len(visible) == 1:
+            if re.match(r"\d", after) and (s.font, visible) in reference_glyphs:
                 s.text = s.text.replace(visible, REF_MARK)
             elif s.bbox is not None:
                 s.icon = True

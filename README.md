@@ -8,6 +8,10 @@ markę, model i rocznik można wybrać z oficjalnych katalogów, a dane spoza ka
 wprowadzić ręcznie. Silnik wybierasz później w wyposażeniu konkretnego auta. Aplikacja nie
 zawiera domyślnego auta ani przykładowej instrukcji.
 
+Jeśli marka i model są na liście, ale brakuje roku Twojego auta (np. Seat Ibiza 2008),
+wybierz „Inny rocznik”, ustaw właściwy rok i dodaj pasującą instrukcję. Nie musisz zmieniać
+marki na „Inna” — lista roczników nie obejmuje wszystkich lat produkcji.
+
 Po dodaniu auta do profilu zaznaczasz jego **wyposażenie** (np. tempomat, kamera cofania, hak):
 aplikacja sama wyszukuje w jego instrukcjach opisy wyposażenia opcjonalnego. Sekcje o wyposażeniu,
 którego auto nie ma, są zwijane i oznaczone „Brak w Twoim aucie”, a podpowiedzi wynikające z

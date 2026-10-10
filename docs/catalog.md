@@ -4,7 +4,12 @@ The "Dodaj auto" wizard offers brands and models from official registration data
 observed registration/model years and, for models with EU registrations in the latest or
 previous calendar year, also includes model years through next year. This lets owners add a
 new manual before registration data for that model year is published; the year is still
-validated against the same model catalogue. "Inna (wpiszę ręcznie)" is the escape hatch for
+validated against the same model catalogue. "Inny rocznik" lets owners keep a selected brand
+and model but choose an unlisted year within the importer's supported range (1950 through
+next year). This is an explicit manual entry: the wizard sends display names with
+`source=other`, not catalogue ids, and no catalogue provenance or engine data is inferred
+for that year. Changing brand or model resets this choice; selecting a listed year returns
+to catalogue validation. "Inna (wpiszę ręcznie)" is the escape hatch for
 vehicles absent from the catalogue: brand, model and year are then typed/selected by hand and
 still required.
 
@@ -70,8 +75,9 @@ groups fuel types, sorts size/power ascending and displays KM first, with kW in 
 
 ## Limits
 
-EU data starts with 2010 registrations and US data with model year 2000; older cars, cars
-never sold new in the EU/USA and very rare models go through "Inna". Upcoming years added for
+EU data starts with 2010 registrations and US data with model year 2000. Missing years
+do not prove that a model was not produced: owners of older cars can select "Inny rocznik"
+(e.g. Seat Ibiza 2008). Missing brands/models and very rare models go through "Inna". Upcoming years added for
 recent EU models are selectable even though engine details are not yet available for those
 years. The equipment editor's fallback engine list shows EU variants only (US data has no
 engine details).

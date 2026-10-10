@@ -8,7 +8,7 @@ from typing import Any
 
 from .model import Box, Item
 from .pdf import pymupdf
-from .text import normalize_title
+from .text import BULLET_RE, normalize_title
 
 
 class Document:
@@ -77,11 +77,20 @@ class Document:
 
     def para_break(self, prev: Item, it: Item) -> bool:
         """True when `it` starts a new block after `prev` in the same column."""
+        from .headings import strong
+
         # Sub- and superscripts push the next line down a little.
         delta = it.base - prev.base - prev.data.get("sub_drop", 0.0) - it.data.get("sup_rise", 0.0)
         if abs(it.base - prev.base) < 1:
             return False  # pieces of one line split at a wide gap
         if it.base < prev.base:
+            return True
+        if (
+            strong(prev) != strong(it)
+            and (prev.plain[:1].isupper() or it.plain[:1].isupper())
+            and not prev.plain.rstrip().endswith(("-", "\u2010"))
+            and not BULLET_RE.match(prev.plain)
+        ):
             return True
         size = max(prev.size, it.size, self.body_size)
         pitch = self.pitch * size / self.body_size
@@ -90,4 +99,7 @@ class Document:
             # Never more breaks than the body text pitch would give, and
             # never a leading far looser than the body text.
             pitch = max(pitch, min(self.style_pitch[style], pitch * 1.25))
+        elif style == prev.style and strong(it) and it.plain[:1].islower() and abs(it.x0 - prev.x0) <= self.body_size * 0.3:
+            # Short documents may not contain enough pairs to learn this style's leading.
+            pitch *= 1.25
         return delta > pitch + self.body_size * self.args.para_gap

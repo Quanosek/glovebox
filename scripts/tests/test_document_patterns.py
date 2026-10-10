@@ -258,6 +258,115 @@ class DocumentPatternTests(unittest.TestCase):
         self.assertEqual(merged[0].data["legend_color"], "#f26629")
         self.assertEqual([reading.circled(v) for v in ("1", "10", "21", "B", "99")], ["①", "⑩", "㉑", "Ⓑ", "99"])
 
+    def test_numbered_pictogram_is_not_a_page_reference(self) -> None:
+        doc = self.document()
+        body = line("Zwykły tekst instrukcji używa innej czcionki.", 30, 40)
+        uses = []
+        for glyph, after in [("Q", "wyświetla przebieg"), ("Q", "1 i"), ("Q", "2 po wybraniu"), ("R", "45."), ("R", "123."), ("R", "67.")]:
+            uses.append(Item("line", 0, (30, 50, 160, 62), spans=[
+                Span(glyph, False, False, 9, "EncodedFont", (30, 40, 40, 52)),
+                Span(after, False, False, 9, "regular", (40, 40, 160, 52)),
+            ], base=50))
+        reading.classify_symbol_fonts(doc, [body, *uses])
+        self.assertTrue(all(it.spans[0].icon for it in uses[:3]))
+        self.assertTrue(all(it.spans[0].text == text.REF_MARK and not it.spans[0].icon for it in uses[3:]))
+        self.assertEqual(uses[1].spans[1].text, "1 i")
+
+    def test_single_unknown_symbol_before_number_stays_an_icon(self) -> None:
+        doc = self.document()
+        item = Item("line", 0, (30, 40, 160, 52), spans=[
+            Span("Q", False, False, 9, "EncodedFont", (30, 40, 40, 52)),
+            Span("12", False, False, 9, "regular", (40, 40, 60, 52)),
+        ], base=50)
+        reading.classify_symbol_fonts(doc, [line("Zwykły tekst instrukcji.", 30, 70), item])
+        self.assertTrue(item.spans[0].icon)
+        self.assertEqual(item.spans[0].text, "Q")
+
+    def test_repeated_display_modes_do_not_establish_reference_glyph(self) -> None:
+        doc = self.document()
+        items = [Item("line", 0, (30, 40, 160, 52), spans=[
+            Span("Q", False, False, 9, "EncodedFont", (30, 40, 40, 52)),
+            Span(str(mode), False, False, 9, "regular", (40, 40, 60, 52)),
+        ], base=50) for mode in (1, 2, 1, 2, 1, 2)]
+        reading.classify_symbol_fonts(doc, [line("Zwykły tekst instrukcji.", 30, 70), *items])
+        self.assertTrue(all(it.spans[0].icon for it in items))
+
+    def test_short_manual_joins_wrapped_medium_heading_at_different_scales(self) -> None:
+        for scale in (0.7, 1.0, 1.6):
+            with self.subTest(scale=scale):
+                doc = self.document()
+                doc.body_size, doc.pitch = 6.5 * scale, 8.5 * scale
+                doc.items = [
+                    line("Poprzedni akapit.", 30 * scale, 50 * scale, size=6.5 * scale),
+                    line("Skróty stosowane w dokumentacji", 30 * scale, 68 * scale, size=6.5 * scale),
+                    line("technicznej", 30 * scale, 77.75 * scale, size=6.5 * scale),
+                    Item("table", 0, (30 * scale, 90 * scale, 160 * scale, 120 * scale), data={"rows": [["Symbol", "Opis"], ["kW", "Moc"]]}),
+                ]
+                for it in doc.items[:3]:
+                    it.data["col_x0"] = 30 * scale
+                for it in doc.items[1:3]:
+                    it.spans[0].font = "GenericMedium"
+                layout.mark_paragraph_edges(doc)
+                builder = SectionBuilder(doc, {"title": "Dane", "chapter_slug": "dane"}, None, "")
+                for it in doc.items:
+                    builder.feed(it)
+                blocks = builder.finish()
+                self.assertEqual([b["type"] for b in blocks], ["paragraph", "heading", "table"])
+                self.assertEqual(runs_to_text(blocks[1]["runs"]), "Skróty stosowane w dokumentacji technicznej")
+
+    def test_legend_ends_at_unindented_prose_and_bullets(self) -> None:
+        doc = self.document()
+        doc.body_size, doc.pitch, doc.flush_bullets = 9, 11, True
+        first = line("1 Opis elementu", 30, 50)
+        first.spans = [Span("1 ", True, False, 9, "regular", (30, 40, 40, 52)), Span("Opis elementu", False, False, 9, "regular", (44, 40, 160, 52))]
+        first.data["legend"] = "1"
+        lines = [
+            first, line("zawinięty w kolejnej linii.", 44, 61),
+            line("Dalszy opis zaczyna osobny akapit.", 30, 72),
+            line("● Wykonać pierwszą czynność.", 30, 90),
+        ]
+        for it in lines:
+            it.data.update({"col_x0": 30, "para_before": False})
+        builder = SectionBuilder(doc, {"title": "Obsługa", "chapter_slug": "obsluga"}, None, "")
+        for it in lines:
+            builder.feed(it)
+        blocks = builder.finish()
+        self.assertEqual([b["type"] for b in blocks], ["list", "paragraph", "list"])
+        self.assertEqual(runs_to_text(blocks[0]["items"][0]), "Opis elementu zawinięty w kolejnej linii.")
+        self.assertEqual(blocks[0]["markers"], [{"glyph": "①"}])
+        self.assertEqual(runs_to_text(blocks[1]["runs"]), "Dalszy opis zaczyna osobny akapit.")
+
+    def test_emphasised_heading_after_legend_is_not_its_last_item(self) -> None:
+        doc = self.document()
+        doc.body_size, doc.pitch, doc.flush_bullets = 6.5, 8.5, True
+        last = line("3 Rozruch silnika.", 30, 50, size=6.5)
+        last.data["legend"] = "3"
+        heading = line("Blokowanie i odblokowanie kierownicy", 30, 59.125, size=6.5)
+        heading.spans[0].font = "GenericMedium"
+        bullet = line("● Wyjąć kluczyk ze stacyjki.", 30, 71, size=6.5)
+        doc.items = [last, heading, bullet]
+        for it in doc.items:
+            it.data["col_x0"] = 30
+        layout.mark_paragraph_edges(doc)
+        builder = SectionBuilder(doc, {"title": "Obsługa", "chapter_slug": "obsluga"}, None, "")
+        for it in doc.items:
+            builder.feed(it)
+        blocks = builder.finish()
+        self.assertEqual([b["type"] for b in blocks], ["list", "heading", "list"])
+        self.assertEqual(runs_to_text(blocks[1]["runs"]), "Blokowanie i odblokowanie kierownicy")
+
+    def test_style_transition_preserves_hyphenated_words_and_bold_bullet_continuation(self) -> None:
+        doc = self.document()
+        doc.body_size, doc.pitch = 9, 11
+        for first, second in [("W trakcie podróży na-", "leży zachować ostrożność."), ("● Zachować bezpieczny odstęp", "od poprzedzającego pojazdu.")]:
+            with self.subTest(first=first):
+                prev, nxt = line(first, 30, 50), line(second, 30, 61)
+                nxt.spans[0].bold = True
+                self.assertFalse(doc.para_break(prev, nxt))
+        prev, nxt = line("cowych droga hamowania awaryjnego jest", 30, 50), line("dłuższa niż po ich dotarciu.", 30, 61)
+        prev.spans[0].bold = True
+        self.assertFalse(doc.para_break(prev, nxt))
+
 
 class TableAndFigureTests(unittest.TestCase):
     def test_merged_cells_get_spans(self) -> None:
