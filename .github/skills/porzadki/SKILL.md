@@ -1,8 +1,8 @@
 ---
-name: "porzadki"
-description: "Use when: an approved pull request was merged into master, or a series of large commits was pushed directly to master. Maintenance pass: remove unused code, improve readability and layout, extract shared helpers, update docs/AGENTS/README, extend critical-path tests, run every check."
+name: porzadki
+description: Use when: an approved pull request was merged into master, or a series of large commits was pushed directly to master. Maintenance pass: remove unused code, improve readability and layout, extract shared helpers, update docs/AGENTS/README, extend critical-path tests, run every check.
+disable-model-invocation: true
 argument-hint: "Optional: area or commit range to focus on"
-agent: "agent"
 ---
 
 Run the repository maintenance pass on the current `master` (optionally focused on: ${input:focus:whole repository}). Follow [AGENTS.md](../../AGENTS.md); keep its language rules (code, docs and commit messages in English, UI and README in Polish).

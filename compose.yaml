@@ -6,7 +6,9 @@ services:
     restart: unless-stopped
     read_only: true
     ports:
-      - "127.0.0.1:${GLOVEBOX_PORT:-3000}:3000"
+      - "${GLOVEBOX_BIND_ADDRESS:-0.0.0.0}:${GLOVEBOX_PORT:-3000}:3000"
+    environment:
+      MANUALS_ALLOW_REMOTE_IMPORT: "${MANUALS_ALLOW_REMOTE_IMPORT:-1}"
     volumes:
       - ./database:/app/database
       - ./.runtime/tmp:/app/tmp

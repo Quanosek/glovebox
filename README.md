@@ -40,7 +40,10 @@ Pierwszy build wymaga internetu i może potrwać kilka minut.
 
 Otwórz **http://localhost:3000**. Jeśli aplikacja jeszcze się uruchamia,
 odczekaj chwilę i odśwież stronę.
-Domyślnie port jest dostępny tylko na komputerze, na którym działa aplikacja.
+Domyślnie aplikacja jest dostępna także z innych urządzeń pod adresem
+**http://ADRES-IP-KOMPUTERA:3000**, również do dodawania i usuwania aut.
+Nie ma logowania — udostępniaj ją tylko w zaufanej sieci albo przez
+proxy z kontrolą dostępu. Nie wystawiaj jej bez zabezpieczenia do internetu.
 
 ### Zmiana portu
 
@@ -55,6 +58,24 @@ To zmienia wyłącznie port udostępniany przez Dockera. Wewnątrz kontenera
 oraz przy lokalnym `pnpm dev` aplikacja nadal używa portu 3000.
 Zmiana adresu lub portu oznacza dla przeglądarki osobny profil — wcześniej
 pobierz kopię notatek w Ustawieniach, a potem wczytaj ją pod nowym adresem.
+
+### Dostęp przez domenę i Nginx Proxy Manager
+
+Dla serwera o adresie `192.168.1.200` i portu `10011` ustaw w `.env`
+`GLOVEBOX_PORT=10011`, a potem uruchom `docker compose up -d`.
+W Nginx Proxy Manager ustaw domenę `glovebox.klalo.pl`, schemat **http**,
+adres docelowy **192.168.1.200** i port **10011**. HTTPS włącz po stronie
+proxy, zachowując oryginalny nagłówek `Host` i zabezpieczając dostęp.
+
+Jeśli oba kontenery należą do wspólnej sieci Docker, proxy może zamiast
+adresu serwera używać nazwy usługi `app` i portu **3000**.
+Nie ustawiaj stałego adresu IP kontenera — przydziela go Docker.
+Czytanie offline i instalacja aplikacji wymagają HTTPS albo localhost;
+zwykły HTTP pod adresem sieciowym pozwala korzystać z aplikacji online.
+
+Aby ograniczyć dostęp do samego komputera, ustaw w `.env`
+`GLOVEBOX_BIND_ADDRESS=127.0.0.1` oraz `MANUALS_ALLOW_REMOTE_IMPORT=0`
+i uruchom ponownie `docker compose up -d`.
 
 ## Pierwsze auto
 

@@ -5,10 +5,6 @@ const nextConfig: NextConfig = {
   outputFileTracingExcludes: {
     "/*": ["./database/**/*", "./.venv/**/*", "./.runtime/**/*"],
   },
-  experimental: {
-    cpus: 1,
-    preloadEntriesOnStart: false,
-  },
   images: { unoptimized: true },
   turbopack: {
     rules: {

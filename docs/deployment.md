@@ -24,8 +24,11 @@ user-namespace remapping may require adjusted host ownership.
   which host directories are writable inside the otherwise read-only container.
   Setup must run first to prevent Docker creating root-owned mount directories.
 - `.env`: `GLOVEBOX_PORT` changes the host port, not the server's internal
-  `PORT=3000`. UID/GID are maintained by setup, not manually selected during
-  normal installation. `.env` is not passed wholesale to the application.
+  `PORT=3000`. `GLOVEBOX_BIND_ADDRESS` defaults to `0.0.0.0` and
+  `MANUALS_ALLOW_REMOTE_IMPORT` defaults to `1`, including for existing
+  installations whose `.env` lacks these settings. Compose explicitly passes
+  the remote-import setting to the application; `.env` is not passed wholesale.
+  UID/GID are maintained by setup, not manually selected during normal installation.
 - `.dockerignore`: an allowlist of build inputs. User data, host dependencies,
   PDFs, environment settings and local runtime files never enter the context.
 
@@ -49,9 +52,8 @@ staging. Inspect specific leftovers while stopped before deleting them.
 
 Next.js standalone output is enabled by `GLOVEBOX_STANDALONE=1` only during
 Docker builds. Ordinary `pnpm build` / `pnpm start` remain supported.
-`experimental.cpus: 1` reduces page-generation workers, not all Turbopack
-threads. `preloadEntriesOnStart: false` reduces initial route loading, but
-does not unload modules after use. Type checking remains enabled.
+Next.js uses its default worker and entry-loading behavior, without experimental
+configuration options. Type checking remains enabled.
 
 Docker caches the dependency-installation layer; changing source alone does
 not reinstall dependencies. There is no additional pnpm cache mount.
@@ -121,16 +123,37 @@ Ruff keeps its Python 3.10 target and built-in/Git ignores.
 
 ## Access and operation
 
-The host port binds to `127.0.0.1` for access from the computer running
-the application. There is no authentication. Localhost also preserves
-the secure context required by service workers/PWA features.
+The host port binds to all IPv4 interfaces (`0.0.0.0`) by default, using
+Compose's standard bridge network and port publishing. No static container IP,
+host networking or experimental Compose feature is required. Container addresses
+come from Docker's network IPAM and need not start with `172.`.
 
-For an intentionally trusted LAN, use a local `compose.override.yaml` to
-override the port mapping and set `MANUALS_ALLOW_REMOTE_IMPORT=1` if importing
-remotely. This is advanced configuration: HTTP on a LAN IP does not support
-service workers; a private HTTPS proxy needs access control and correct
-Host/Origin forwarding. Same-origin checks are not authentication.
+Compose enables remote imports/deletions with `MANUALS_ALLOW_REMOTE_IMPORT=1`.
+The same-origin guard remains enforced: a browser's Origin must match Host and
+cross-site requests are rejected. Non-Docker execution retains its local-only
+import default unless this environment variable is explicitly set.
+There is no authentication; protect access with a trusted network, VPN or
+authenticated proxy. Do not expose an unprotected instance to the internet.
 Docker-published ports may bypass ufw rules.
+
+For Nginx Proxy Manager forwarding to host `192.168.1.200:10011`, set
+`GLOVEBOX_PORT=10011` in `.env`, recreate with `docker compose up -d`, and configure
+the proxy host with scheme `http`, forward hostname `192.168.1.200`, and forward
+port `10011`. Terminate HTTPS at the proxy and preserve the original Host header.
+The container serves HTTP on port `3000`; forwarding HTTPS to it fails.
+If both containers share a Docker network, use the application's unique service
+name/network alias and internal port `3000` instead. Avoid hard-coded container IPs
+and ambiguous `app` aliases when multiple projects share the proxy network.
+
+To restrict access again, set `GLOVEBOX_BIND_ADDRESS=127.0.0.1` and
+`MANUALS_ALLOW_REMOTE_IMPORT=0` in `.env`, then recreate the container.
+HTTP on a LAN IP supports online access but not service workers/PWA features;
+use HTTPS through the proxy for those features. Localhost is also a secure context.
+
+To diagnose a proxy 502, test `/api/health` on the published host address and port
+from the proxy's network. A working loopback endpoint alone does not prove
+reachability from the proxy. Check container logs, port publishing and firewall
+rules if the endpoint cannot be reached.
 
 ```sh
 docker compose ps

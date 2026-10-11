@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import nextConfig from "../../../next.config";
 
 let root: string;
 let project: string;
@@ -54,7 +55,7 @@ describe("Docker setup", () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("docker compose up -d --build");
     expect(fs.readFileSync(path.join(project, ".env"), "utf8")).toContain(
-      "GLOVEBOX_PORT=3000\n\n",
+      "GLOVEBOX_PORT=3000\n",
     );
     expect(fs.readFileSync(path.join(project, ".env"), "utf8")).toContain(
       "GLOVEBOX_UID=1500\nGLOVEBOX_GID=1600",
@@ -65,6 +66,28 @@ describe("Docker setup", () => {
       );
     expect(fs.existsSync(path.join(root, ".env"))).toBe(false);
     expect(fs.statSync(path.join(project, ".env")).mode & 0o777).toBe(0o600);
+  });
+
+  describe("Docker deployment defaults", () => {
+    it("publishes the internal HTTP port on all IPv4 interfaces and enables remote imports", () => {
+      const compose = fs.readFileSync(
+        path.join(project, "compose.yaml"),
+        "utf8",
+      );
+      expect(compose).toContain(
+        '"${GLOVEBOX_BIND_ADDRESS:-0.0.0.0}:${GLOVEBOX_PORT:-3000}:3000"',
+      );
+      expect(compose).toContain(
+        'MANUALS_ALLOW_REMOTE_IMPORT: "${MANUALS_ALLOW_REMOTE_IMPORT:-1}"',
+      );
+      const env = fs.readFileSync(path.join(project, ".env.example"), "utf8");
+      expect(env).toContain("GLOVEBOX_BIND_ADDRESS=0.0.0.0\n");
+      expect(env).toContain("MANUALS_ALLOW_REMOTE_IMPORT=1\n");
+    });
+
+    it("uses no experimental Next.js configuration", () => {
+      expect(nextConfig).not.toHaveProperty("experimental");
+    });
   });
 
   it("preserves port and custom settings when adapting a moved installation", () => {

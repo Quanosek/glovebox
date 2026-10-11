@@ -56,6 +56,43 @@ describe("rejectCrossSite", () => {
     process.env.MANUALS_ALLOW_REMOTE_IMPORT = "1";
     expect(rejectCrossSite(lan)).toBeNull();
   });
+
+  it.each([
+    ["192.168.1.200:10011", "http"],
+    ["glovebox.klalo.pl", "https"],
+    ["[fd00::1]:10011", "http"],
+  ])(
+    "accepts remote same-origin requests to %s when enabled",
+    (host, scheme) => {
+      process.env.MANUALS_ALLOW_REMOTE_IMPORT = "1";
+      expect(
+        rejectCrossSite(
+          req({
+            host,
+            origin: `${scheme}://${host}`,
+            "sec-fetch-site": "same-origin",
+          }),
+        ),
+      ).toBeNull();
+    },
+  );
+
+  it("still rejects cross-site and mismatched origins when remote import is enabled", () => {
+    process.env.MANUALS_ALLOW_REMOTE_IMPORT = "1";
+    const requests: Record<string, string>[] = [
+      { host: "glovebox.klalo.pl", origin: "https://evil.example" },
+      {
+        host: "glovebox.klalo.pl",
+        origin: "https://glovebox.klalo.pl",
+        "sec-fetch-site": "cross-site",
+      },
+      { host: "192.168.1.200:10011", origin: "http://192.168.1.200:3000" },
+      { host: "glovebox.klalo.pl" },
+    ];
+    for (const headers of requests) {
+      expect(rejectCrossSite(req(headers))?.status).toBe(403);
+    }
+  });
 });
 
 describe("isLoopbackHost", () => {

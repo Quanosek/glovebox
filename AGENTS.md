@@ -94,7 +94,10 @@ UID/GID in `.env`, preserving the selected host port. Only `database/`, `.runtim
 and `.runtime/cache/` are writable project-local bind mounts. Never mount host
 `node_modules` or the project root over `/app`. `GLOVEBOX_STANDALONE=1` selects
 standalone output; normal `pnpm build` / `pnpm start` stay unchanged. The default
-published port is loopback-only because the app has no authentication.
+published port binds to all IPv4 interfaces and Compose enables same-origin remote
+imports/deletions by default. The app has no authentication: require a trusted
+network or access-controlled proxy. `.env` can restore loopback-only access
+(`GLOVEBOX_BIND_ADDRESS=127.0.0.1`, `MANUALS_ALLOW_REMOTE_IMPORT=0`).
 Docker daemon image/layer storage is separate and must not be changed implicitly.
 Compose uses folder-derived project/image names; `docker compose down --rmi local`
 removes the app image but not shared base layers/build caches.
