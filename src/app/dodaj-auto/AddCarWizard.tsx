@@ -285,7 +285,9 @@ export function AddCarWizard({
   const formErrors: string[] = [];
   if (!brand) formErrors.push("Wybierz markę z listy albo „Inna” i wpisz ją.");
   if (!model) formErrors.push("Wybierz lub wpisz model.");
-  if (!year) formErrors.push("Wybierz rocznik.");
+  if (!year) formErrors.push("Wybierz lub wpisz rocznik.");
+  else if (!Number.isInteger(Number(year)) || Number(year) < minYear || Number(year) > maxYear)
+    formErrors.push(`Wpisz rocznik od ${minYear} do ${maxYear}.`);
   if (docs.length === 0) formErrors.push("Dodaj co najmniej jeden plik PDF.");
   if (docs.some((d) => !d.title.trim()))
     formErrors.push("Każda instrukcja musi mieć nazwę.");
@@ -298,7 +300,8 @@ export function AddCarWizard({
     setUpload(0);
     setStep(2);
     const form = new FormData();
-    const manualEntry = brandIsOther || yearIsOther;
+    const manualEntry = brandIsOther || !catalogModel?.years.includes(Number(year));
+    if (yearIsOther && !manualEntry) setYearIsOther(false);
     form.set("source", manualEntry ? "other" : "catalog");
     form.set("brand", manualEntry ? brand : brandChoice);
     form.set("model", manualEntry ? model : modelChoice);
@@ -392,9 +395,7 @@ export function AddCarWizard({
     setStep(3);
     addOwnedCar(jobCar);
     void loadEquipment(jobCar);
-    // Reload server components so the new car appears in the header and lists.
-    router.refresh();
-  }, [jobState, jobCar, router, loadEquipment]);
+  }, [jobState, jobCar, loadEquipment]);
 
   const resume = (id: string) => {
     setJob({
@@ -468,7 +469,7 @@ export function AddCarWizard({
                 hint="Marka, model i rocznik"
               />
               <div className="p-4 sm:p-5">
-                <div className="grid gap-x-5 gap-y-4 sm:grid-cols-2">
+                <div className="grid gap-x-5 gap-y-4 sm:grid-cols-3">
                   <Field label="Marka" htmlFor="car-brand">
                     <select
                       id="car-brand"
@@ -546,7 +547,37 @@ export function AddCarWizard({
                     )}
                   </Field>
                   <Field label="Rocznik" htmlFor="car-year">
-                    <select
+                    {yearIsOther ? (
+                      <div className="flex gap-1">
+                        <input
+                          id="car-year"
+                          className="field min-w-0"
+                          type="number"
+                          inputMode="numeric"
+                          min={minYear}
+                          max={maxYear}
+                          step={1}
+                          placeholder="Wpisz rocznik"
+                          value={year}
+                          onChange={(e) => setYear(e.target.value)}
+                          onBlur={() => {
+                            if (catalogModel?.years.includes(Number(year))) {
+                              setYear(String(Number(year)));
+                              setYearIsOther(false);
+                            }
+                          }}
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-ghost shrink-0 px-2"
+                          aria-label="Wybierz rocznik z listy"
+                          onClick={() => chooseYear("")}
+                        >
+                          ↶
+                        </button>
+                      </div>
+                    ) : <select
                       id="car-year"
                       className="field"
                       value={yearIsOther ? OTHER : year}
@@ -564,28 +595,7 @@ export function AddCarWizard({
                       {!brandIsOther && model && otherYears.length > 0 && (
                         <option value={OTHER}>Inny rocznik</option>
                       )}
-                    </select>
-                    {yearIsOther && (
-                      <>
-                        <select
-                          className="field mt-1"
-                          aria-label="Rocznik spoza listy"
-                          value={year}
-                          onChange={(e) => setYear(e.target.value)}
-                        >
-                          <option value="">Wybierz rocznik swojego auta</option>
-                          {otherYears.map((y) => (
-                            <option key={y} value={y}>
-                              {y}
-                            </option>
-                          ))}
-                        </select>
-                        <p className="mt-2 text-xs text-graphite">
-                          Lista nie obejmuje wszystkich lat produkcji. Wybierz
-                          rocznik swojego auta i dodaj pasującą instrukcję.
-                        </p>
-                      </>
-                    )}
+                    </select>}
                   </Field>
                   {brandIsOther && (
                     <Field label="Wersja (opcjonalnie)" htmlFor="car-variant">

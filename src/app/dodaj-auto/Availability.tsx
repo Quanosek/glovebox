@@ -73,12 +73,7 @@ export function Availability({
       </>
     );
   } else {
-    return system.manuals.count === 0 ? (
-      <p className="mt-4 border-l-4 border-graphite bg-paper px-4 py-3 text-sm text-graphite">
-        Nie ma tu jeszcze instrukcji. Dodaj pierwsze auto, aby rozpocząć
-        korzystanie z biblioteki.
-      </p>
-    ) : null;
+    return null;
   }
   return (
     <div
