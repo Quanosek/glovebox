@@ -28,10 +28,16 @@ instructions in the UI (those live in `README.md`, section "Dodawanie aut"). Fou
    switches to free-text brand + model (required), a year select from `maxYear()`
    (current + 1) down to `MIN_YEAR` (1950) and an optional variant text. When the catalogue
    is unavailable, only "Inna" is offered.
-   For a known brand/model, "Inny rocznik" opens a second year select with unlisted
-   years in the same supported range. It preserves the selected display names and sends
-   `source=other`; no catalogue provenance is claimed for an unlisted year. Changing
-   brand/model resets the manual year; choosing a listed year restores catalogue validation.
+   Brand, model and year share one row on wider screens. For a known brand/model,
+   "Inny rocznik" replaces the year select with a numeric input in the same supported
+   range, not a second list. A listed year entered manually is treated as a catalogue
+   selection on blur/submission. Unlisted years preserve display names and send
+   `source=other`; no catalogue provenance is claimed. Changing brand/model resets the year.
+   There is no separate library-car picker: every addition starts with this step.
+   Matching brand/model/year reveals the saved manuals instead of the dropzone.
+   The owner can reorder them and continue without PDFs, or reveal the file picker
+   to append new manuals to the same car. Existing car/book ids remain unchanged,
+   preserving annotations and bookmarks. Saved books precede new uploads.
    Below, a dashed dropzone (drag & drop or file picker) with a card grid: first-page preview
    (`src/lib/pdfPreview.ts`, pdfjs-dist with its worker, rendered sequentially to limit
    memory), editable name (becomes the book title), page count, size, reorder and remove.
@@ -42,7 +48,8 @@ instructions in the UI (those live in `README.md`, section "Dodawanie aut"). Fou
    offline / server unreachable → "Brak połączenia"; running job → "Trwa dodawanie innego
    auta" + "Pokaż postęp" (resumes polling); `localAccess === false` → "Dodawanie tylko na
    komputerze z aplikacją"; missing Python/PyMuPDF/Pillow, extractor or writable `database/`
-   → "Ten komputer nie jest jeszcze gotowy" (points to the README). Technical details from
+   → "Ten komputer nie jest jeszcze gotowy" (points to the README). Reusing saved manuals
+   does not require Python or the extractor. Technical details from
    `/api/system` are never rendered.
 2. **Odczytywanie** — `XMLHttpRequest` multipart POST to `/api/cars` (for upload progress),
    then `GET /api/jobs/<id>` is polled every second; per-document state and counts are shown.
@@ -53,27 +60,34 @@ instructions in the UI (those live in `README.md`, section "Dodawanie aut"). Fou
    suggestions. Can be skipped and edited later at `/auto/<car>/wyposazenie`
    (`docs/vehicle-profile.md`).
 4. **Gotowe** — summary, "Otwórz instrukcje auta" (sets `settings.activeCar`, which also
-   starts the automatic offline copy), "Dodaj kolejne auto". `router.refresh()` reloads
-   server components so the header and lists include the new car.
+   starts the automatic offline copy), "Dodaj kolejne auto". The wizard fetches the
+   updated car summary directly; no mid-wizard `router.refresh()` exposes other views.
+   Dynamic height is measured with `ResizeObserver` and transitioned in CSS;
+   expandable controls use grid-row/opacity transitions and `inert` while closed.
+   Step changes fade in; reduced-motion preferences disable these animations.
 
 Moving cars to another computer is a developer task (copy `database/<car>/`), documented
 in `README.md`, not in the UI.
 
 ## API
 
-| Route                      | Method | Notes                                                                                           |
-| -------------------------- | ------ | ----------------------------------------------------------------------------------------------- |
-| `/api/system`              | GET    | environment check (forces Python re-detection)                                                  |
-| `/api/cars`                | GET    | `{ cars: CarSummary[] }`                                                                        |
-| `/api/cars`                | POST   | multipart `source`, `brand`, `model`, `year`, `variant?`, `files[]`, `titles[]` → 202 `{ job }` |
-| `/api/cars/<car>`          | GET    | `{ car: CarSummary }`                                                                           |
-| `/api/cars/<car>`          | DELETE | removes `database/<car>/`; refused for the car being imported                                   |
-| `/api/cars/<car>/features` | GET    | `{ sections: CarFeatureSections, engines: CarSpec[], catalog?, year }` (equipment step)         |
-| `/api/jobs/<id>`           | GET    | `{ job: ImportJob }`; 404 after a server restart                                                |
-| `/api/catalog/*`           | GET    | brand / model / engine lists, see `docs/catalog.md`                                             |
+| Route                      | Method | Notes                                                                                                                           |
+| -------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `/api/system`              | GET    | environment check (forces Python re-detection)                                                                                  |
+| `/api/cars`                | GET    | `{ cars: CarSummary[] }`                                                                                                        |
+| `/api/cars`                | POST   | multipart `source`, `brand`, `model`, `year`, `variant?`, `files[]`, `titles[]`, `existingCar?`, `bookOrder[]?` → 202 `{ job }` |
+| `/api/cars/<car>`          | GET    | `{ car: CarSummary }`                                                                                                           |
+| `/api/cars/<car>`          | DELETE | removes `database/<car>/`; refused for the car being imported                                                                   |
+| `/api/cars/<car>/features` | GET    | `{ sections: CarFeatureSections, engines: CarSpec[], catalog?, year }` (equipment step)                                         |
+| `/api/jobs/<id>`           | GET    | `{ job: ImportJob }`; 404 after a server restart                                                                                |
+| `/api/catalog/*`           | GET    | brand / model / engine lists, see `docs/catalog.md`                                                                             |
 
 `source=catalog`: `brand` / `model` are catalogue ids; engine is an independent browser choice.
 `source=other`: `brand` / `model` are free text, `variant` optional free text.
+`existingCar`: reuse that car after checking its identity. `bookOrder` must be an exact
+permutation of its saved book ids. With no uploads, only order is saved and a completed
+job is returned. With uploads, extraction completes before new books/assets are moved
+into place and the manifest is replaced; failures preserve existing manuals.
 
 POST and DELETE call `rejectCrossSite()` (`src/lib/server/guard.ts`), because the local
 server has no authentication. A request gets 403 unless:
@@ -93,15 +107,17 @@ are Polish.
    model and year exist in the catalogue → 400 with a Polish message
    otherwise, 503 when the catalogue cannot be read; display names and `catalog` ids
    come from the catalogue. No engine or engine-derived variant is persisted. `source=other`: brand/model
-   required (must slugify), integer year in range. For both: 1–10
+   required (must slugify), integer year in range. For new cars: 1–10
    documents (`MAX_DOCUMENTS`), each non-empty, `.pdf`/`application/pdf`, ≤ 250 MB
-   (`MAX_FILE_BYTES`). Titles default to the file name.
+   (`MAX_FILE_BYTES`). Reuse accepts zero uploads; saved and new books together must
+   not exceed the document limit. Titles default to the file name.
 2. Only one job at a time (`runningJob()`; a reservation flag covers the async setup) → 409.
-3. A Python with PyMuPDF and Pillow is required (`findPython`) → 503 otherwise (plain
+3. When PDFs are uploaded, Python with PyMuPDF and Pillow is required (`findPython`) → 503 otherwise (plain
    Polish message pointing to the README).
-4. Car id = `uniqueSlug(slugify("<brand> <model> <year>"))` against existing folders
+4. New car id = `uniqueSlug(slugify("<brand> <model> <year>"))` against existing folders
    (`-2`, `-3`, … on collision). Book ids = unique slugs of the titles (`assets` and `RESERVED_BOOK_ROUTES`, i.e.
-   `wyposazenie`, reserved).
+   `wyposazenie`, reserved). Reused cars keep their id; new book ids also avoid all existing
+   ids, routes and asset folders.
 5. Each upload must start with `%PDF-` (within the first KB); it is written to
    `os.tmpdir()/manual-import-*/<n>/<slug>.pdf` — never inside the repository.
 6. The job runs in the background: `extract.py --pdf … --book <bookId> --out
@@ -110,7 +126,9 @@ database/.import-<job>/<bookId> --assets database/.import-<job>/assets/<bookId>
    (pages, sections, images) is parsed from stdout; the last log lines are kept.
 7. `car.json` (`formatVersion: 1`, brand, model, year, optional free-text variant, `catalog?`,
    `createdAt`, books) is written
-   and the staging folder is renamed to `database/<car>/`.
+   and the staging folder is renamed to `database/<car>/` for new cars. Reused cars retain
+   metadata and existing books; new book/asset folders are installed before an atomic
+   manifest replacement. A failed replacement rolls back the new folders.
 8. `finally`: the temp folder with the PDFs is removed (`pdfsDeleted: true`); on error the
    staging folder is removed too, so a failed import leaves nothing behind.
 
@@ -130,5 +148,5 @@ assets folder. Responses are cacheable (`max-age=3600, stale-while-revalidate=86
   page footers). Scanned PDFs without a text layer produce only images.
 - Equipment detection relies on Polish section and heading titles (`featureRules.ts`);
   manuals in other languages show all content without equipment labels.
-- Re-importing the same car creates a new folder; delete the old one on its car page
-  ("Usuń to auto", confirmed in an in-app dialog).
+- The wizard reuses a matching car and appends new books rather than duplicating it.
+  Other API clients that omit `existingCar` retain the separate-car import behavior.

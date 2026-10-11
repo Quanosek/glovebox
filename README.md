@@ -22,8 +22,9 @@ wybranego silnika — „prawdopodobnie”.
 Po wejściu do aplikacji widzisz **swój profil** — bez logowania i bez bazy danych. Z profilu
 wybierasz:
 
-- **Twoje auta** — listę aut dodanych do profilu. Z folderu `database/` możesz wybrać dostępne
-  instrukcje albo dodać własne auto z plików PDF; usunięcie auta z listy nie kasuje instrukcji,
+- **Twoje auta** — listę aut dodanych do profilu. Nowe auto dodajesz krok po kroku;
+  po wybraniu marki, modelu i rocznika możesz skorzystać z zapisanych instrukcji albo
+  dołączyć własne pliki PDF. Usunięcie auta z listy nie kasuje instrukcji,
 - **własny notatnik** — puste kartki z podstawowym formatowaniem Markdown.
 
 Wybrane auto, zaznaczenia, komentarze, zakładki i notatki zapisują się w tej przeglądarce
@@ -109,6 +110,7 @@ repozytorium (są w `.gitignore` i są usuwane po imporcie).
 git clone <adres-repozytorium> glovebox
 cd glovebox
 pnpm install
+pnpm initial       # przygotowanie katalogu europejskich aut i informacji o logotypach
 
 # tryb deweloperski: http://localhost:3000
 pnpm dev
@@ -118,6 +120,15 @@ pnpm build
 pnpm start         # http://localhost:3000
 ```
 
+`pnpm initial` tworzy brakujące foldery `database/.catalog/` i `database/.logos/`,
+pobiera listę marek oraz modele i roczniki z oficjalnych danych europejskich, a także
+informacje o logotypach z Wikidanych. Nie dodaje aut ani instrukcji i nie pobiera obrazów
+logotypów. Pierwsze przygotowanie wymaga internetu i może potrwać kilka minut; kolejne
+uruchomienia korzystają z aktualnych zapisanych danych. Polecenie respektuje
+`MANUALS_DATABASE_DIR`. Aplikacja później odświeża nieaktualne dane w tle podczas używania
+katalogu i logotypów, zachowując ostatnią dobrą kopię przy braku połączenia.
+Nie trzeba uruchamiać przygotowania przy każdym starcie aplikacji.
+
 Aplikacja działa jako lokalny serwer Next.js (potrzebny do czytania folderu `database/` i do
 kreatora „Dodaj auto”). Tryb offline (service worker i automatyczne zapisywanie instrukcji) działa
 tylko w wersji produkcyjnej otwartej pod `http://localhost` (albo przez HTTPS).
@@ -126,13 +137,13 @@ tylko w wersji produkcyjnej otwartej pod `http://localhost` (albo przez HTTPS).
 
 Nowa kopia aplikacji nie ma żadnego domyślnego auta ani instrukcji. Kreator sprawdza, czy
 środowisko spełnia wymagania opisane niżej (Node.js, Python, biblioteki, skrypt odczytu i zapis
-do bazy). Jeśli `database/` nie zawiera jeszcze czytelnej instrukcji, nie ma aut do wybrania, ale można
-dodać pierwsze auto z plików PDF. Pusta baza nie blokuje dodawania pierwszego auta.
+do bazy). Jeśli `database/` nie zawiera jeszcze czytelnej instrukcji, dodajesz pierwsze auto
+z plików PDF. Pusta baza nie blokuje dodawania pierwszego auta.
 
 ### Dla użytkownika — kreator „Dodaj auto”
 
-Przycisk „Dodaj auto” na profilu pozwala wybrać istniejące instrukcje z lokalnej biblioteki albo
-otworzyć kreator i dodać własne auto. Kreator przeprowadza przez cztery kroki, bez technicznych pytań:
+Przycisk „Dodaj auto” na profilu zawsze otwiera kreator. Przeprowadza on przez cztery kroki,
+bez technicznych pytań:
 
 1. **Auto i instrukcje** — marka → model → rocznik, wybierane z list. Listy pochodzą
    z oficjalnych danych rejestracyjnych (Europejska Agencja Środowiska — wszystkie nowe auta
@@ -141,16 +152,21 @@ otworzyć kreator i dodać własne auto. Kreator przeprowadza przez cztery kroki
    ostatnim roku katalog obejmuje też bieżący i przyszły rocznik, zanim pojawią się dane o
    rejestracjach. Dla aut spoza katalogu (np. starszych) wybierz markę **„Inna (wpiszę
    ręcznie)”** — wtedy wpisujesz markę i model, wybierasz rocznik (obowiązkowe) i opcjonalnie
-   wersję. Niżej pole do przeciągania plików z siatką instrukcji: podgląd pierwszej strony,
+   wersję. „Inny rocznik” pozwala wpisać rok zamiast wybierać go z dodatkowej listy;
+   rok obecny w katalogu zostanie rozpoznany jako pozycja z listy.
+   Jeśli instrukcje wybranego auta są już zapisane, zobaczysz je najpierw i możesz zmienić
+   ich kolejność lub dołączyć nowe pliki — bez tworzenia drugiego wpisu tego samego auta.
+   Dla nowego auta pojawia się pole do przeciągania plików z siatką instrukcji: podgląd pierwszej strony,
    liczba stron, nazwa, kolejność. Limit: **10 plików PDF** na auto (do 250 MB każdy).
 2. **Odczytywanie** — aplikacja odczytuje tekst, rozdziały, ostrzeżenia, tabele i ilustracje.
 3. **Wyposażenie** — silniki i lista wyposażenia opcjonalnego znalezione w instrukcjach; zaznacz, co
    ma Twoje auto (można pominąć i uzupełnić później na stronie „Wyposażenie” auta).
 4. **Gotowe** — auto zostaje dodane do profilu. **Pliki PDF są zawsze usuwane** (także po błędzie).
 
-Katalog aut jest pobierany przy pierwszym otwarciu kreatora (wymaga internetu) i
-zapamiętywany w `database/.catalog/` na kilka dni. Gdy katalog jest niedostępny, kreator
-pozwala dodać auto tylko przez „Inna”.
+Po `pnpm initial` europejskie marki, modele i roczniki są już zapisane w `database/.catalog/`.
+Nieaktualne listy aplikacja odświeża w tle, a przy braku połączenia zachowuje ostatnie
+dostępne dane. Bez wcześniejszego przygotowania katalog pobierany jest przy pierwszym
+otwarciu kreatora. Gdy nie ma ani zapisanej listy, ani połączenia, wybierz „Inna”.
 
 Jeśli dodawanie nie jest możliwe (brak połączenia, trwa dodawanie innego auta, komputer nie
 jest przygotowany), kreator pokazuje jeden prosty komunikat zamiast formularza wymagań.
@@ -186,8 +202,8 @@ usunąć na jego stronie („Usuń to auto”).
 Nie ma wbudowanej instrukcji ani gotowego zestawu plików dla żadnego auta. Instrukcje każdej
 marki dodaje się w kreatorze „Dodaj auto”; podane pliki PDF są przetwarzane na tym komputerze,
 a następnie usuwane. Wygenerowane pliki trafiają do ignorowanego przez Git folderu
-`database/<marka-model-rocznik>/`. Nie edytuj ich ręcznie — ponowne dodanie instrukcji
-tworzy osobny wpis auta i jego ksiąg.
+`database/<marka-model-rocznik>/`. Nie edytuj ich ręcznie — kreator pozwala dołączyć kolejne
+instrukcje do tego samego auta i zmienić ich kolejność bez utraty zaznaczeń.
 
 Rozpoznawanie wyposażenia w treści (tytuły sekcji i nagłówki, np. „Tempomat”) jest w
 `src/config/featureRules.ts` i działa dla wszystkich aut — można je poprawiać bez ponownej

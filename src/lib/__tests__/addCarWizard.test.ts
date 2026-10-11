@@ -33,6 +33,20 @@ async function select(selector: string, value: string) {
   });
 }
 
+async function typeYear(value: string, blur = false) {
+  const element = container.querySelector<HTMLInputElement>("#car-year")!;
+  expect(element.tagName).toBe("INPUT");
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value",
+    )!.set!.call(element, value);
+    element.dispatchEvent(new Event("input", { bubbles: true }));
+    if (blur)
+      element.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+  });
+}
+
 beforeEach(async () => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal(
@@ -41,6 +55,7 @@ beforeEach(async () => {
       const body =
         url === "/api/system"
           ? {
+              nodeReady: true,
               pythonReady: true,
               extractor: true,
               database: { writable: true },
@@ -87,7 +102,7 @@ describe("manual model year", () => {
     async (year, source, brand, model) => {
       if (source === "other") {
         await select("#car-year", "__other__");
-        await select('[aria-label="Rocznik spoza listy"]', year);
+        await typeYear(year);
       } else {
         await select("#car-year", year);
       }
@@ -131,16 +146,11 @@ describe("manual model year", () => {
 
   it("offers 2008 without losing the selected Seat Ibiza", async () => {
     await select("#car-year", "__other__");
-    const selector = '[aria-label="Rocznik spoza listy"]';
-    const years = Array.from(
-      container.querySelectorAll<HTMLOptionElement>(`${selector} option`),
-      (option) => option.value,
-    );
-    expect(years).toContain("2008");
-    expect(years).toContain("1950");
-    expect(years).toContain("2027");
-    expect(years).not.toContain("2016");
-    await select(selector, "2008");
+    const input = container.querySelector<HTMLInputElement>("#car-year")!;
+    expect(input.type).toBe("number");
+    expect(input.min).toBe("1950");
+    expect(input.max).toBe("2027");
+    await typeYear("2008");
     expect(container.querySelector("aside")?.textContent).toContain("Ibiza");
     expect(container.querySelector("aside")?.textContent).toContain("2008");
     expect(
@@ -153,26 +163,20 @@ describe("manual model year", () => {
 
   it("restores the listed year and resets a manual year on model or brand changes", async () => {
     await select("#car-year", "__other__");
-    await select('[aria-label="Rocznik spoza listy"]', "2008");
-    await select("#car-year", "2016");
-    expect(
-      container.querySelector('[aria-label="Rocznik spoza listy"]'),
-    ).toBeNull();
+    await typeYear("2008");
+    await typeYear("2016", true);
+    expect(container.querySelector("input#car-year")).toBeNull();
     await select("#car-year", "__other__");
-    await select('[aria-label="Rocznik spoza listy"]', "2008");
+    await typeYear("2008");
     await select("#car-model", "ARONA");
-    expect(
-      container.querySelector('[aria-label="Rocznik spoza listy"]'),
-    ).toBeNull();
+    expect(container.querySelector("input#car-year")).toBeNull();
     expect(container.querySelector<HTMLSelectElement>("#car-year")?.value).toBe(
       "",
     );
     await select("#car-year", "__other__");
-    await select('[aria-label="Rocznik spoza listy"]', "2008");
+    await typeYear("2008");
     await select("#car-brand", "__other__");
-    expect(
-      container.querySelector('[aria-label="Rocznik spoza listy"]'),
-    ).toBeNull();
+    expect(container.querySelector("input#car-year")).toBeNull();
     expect(container.querySelector<HTMLSelectElement>("#car-year")?.value).toBe(
       "",
     );

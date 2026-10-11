@@ -9,6 +9,7 @@ export function Availability({
   checking,
   onCheck,
   onResume,
+  needsPdf = true,
 }: {
   online: boolean;
   system: SystemStatus | null;
@@ -16,6 +17,7 @@ export function Availability({
   checking: boolean;
   onCheck: () => void;
   onResume: (id: string) => void;
+  needsPdf?: boolean;
 }) {
   let title: string;
   let text: ReactNode;
@@ -60,8 +62,7 @@ export function Availability({
       "Ze względów bezpieczeństwa nowe auta można dodawać wyłącznie na komputerze, na którym działa aplikacja. Czytanie instrukcji działa na wszystkich urządzeniach.";
   } else if (
     !system.nodeReady ||
-    !system.pythonReady ||
-    !system.extractor ||
+    (needsPdf && (!system.pythonReady || !system.extractor)) ||
     !system.database.writable
   ) {
     title = "Ten komputer nie jest jeszcze gotowy";

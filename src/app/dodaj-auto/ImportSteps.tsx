@@ -1,12 +1,11 @@
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { EquipmentEditor } from "@/components/EquipmentEditor";
 import { CarHero } from "@/components/car/CarHero";
 import { Skeleton } from "@/components/Skeleton";
 import type { CarSpec } from "@/lib/catalog";
 import type { CarFeatureSections, CarSummary } from "@/lib/cars";
 import { plural } from "@/lib/typography";
-import { Progress } from "./WizardChrome";
+import { Progress, WizardMotion } from "./WizardChrome";
 import type { Job, JobDoc } from "./wizardModel";
 
 export const DOC_STATE: Record<JobDoc["state"], string> = {
@@ -26,7 +25,7 @@ export function StepProcessing({
   upload: number | null;
   job: Job | null;
   /** Files chosen in step 1, in upload order (empty after reopening). */
-  picked: { title: string; preview: string | null }[];
+  picked: { title: string; name: string; preview: string | null }[];
   error: string | null;
   onBack: () => void;
 }) {
@@ -79,7 +78,15 @@ export function StepProcessing({
       {(job?.docs.length || picked.length) > 0 && (
         <ol className="film-strip" aria-label="Instrukcje">
           {(job?.docs.length
-            ? job.docs.map((d, i) => ({ doc: d, preview: picked[i]?.preview }))
+            ? job.docs.map((d) => ({
+                doc: d,
+                preview:
+                  d.size > 0
+                    ? picked.find(
+                        (p) => p.name === d.name && p.title.trim() === d.title,
+                      )?.preview
+                    : null,
+              }))
             : picked.map((p) => ({
                 doc: null,
                 preview: p.preview,
@@ -232,42 +239,44 @@ export function StepEquipment({
           </p>
         </div>
       </div>
-      {(!equipment || equipment.state === "loading") && (
-        <div className="panel" aria-busy="true">
-          <div className="panel-title">
-            <Skeleton className="h-3 w-40" />
-          </div>
-          {[0, 1, 2].map((row) => (
-            <div
-              key={row}
-              className="flex min-h-16 items-center gap-3 border-b border-line px-4 py-3"
-            >
-              <Skeleton className="h-4 flex-1" />
-              <Skeleton className="h-8 w-40 shrink-0" />
+      <WizardMotion>
+        {(!equipment || equipment.state === "loading") && (
+          <div className="panel" aria-busy="true">
+            <div className="panel-title">
+              <Skeleton className="h-3 w-40" />
             </div>
-          ))}
-        </div>
-      )}
-      {equipment?.state === "error" && (
-        <div className="flex flex-col gap-2 border-l-4 border-red bg-paper px-4 py-3 text-sm sm:flex-row sm:items-center">
-          <p className="flex-1">
-            Nie udało się wczytać listy wyposażenia. Możesz spróbować ponownie
-            albo uzupełnić ją później.
-          </p>
-          <button type="button" className="btn shrink-0" onClick={onRetry}>
-            Spróbuj ponownie
-          </button>
-        </div>
-      )}
-      {equipment?.state === "done" && (
-        <EquipmentEditor
-          carId={job.carId}
-          engines={equipment.engines}
-          catalog={equipment.catalog}
-          year={equipment.year}
-          sections={equipment.sections}
-        />
-      )}
+            {[0, 1, 2].map((row) => (
+              <div
+                key={row}
+                className="flex min-h-16 items-center gap-3 border-b border-line px-4 py-3"
+              >
+                <Skeleton className="h-4 flex-1" />
+                <Skeleton className="h-8 w-40 shrink-0" />
+              </div>
+            ))}
+          </div>
+        )}
+        {equipment?.state === "error" && (
+          <div className="flex flex-col gap-2 border-l-4 border-red bg-paper px-4 py-3 text-sm sm:flex-row sm:items-center">
+            <p className="flex-1">
+              Nie udało się wczytać listy wyposażenia. Możesz spróbować ponownie
+              albo uzupełnić ją później.
+            </p>
+            <button type="button" className="btn shrink-0" onClick={onRetry}>
+              Spróbuj ponownie
+            </button>
+          </div>
+        )}
+        {equipment?.state === "done" && (
+          <EquipmentEditor
+            carId={job.carId}
+            engines={equipment.engines}
+            catalog={equipment.catalog}
+            year={equipment.year}
+            sections={equipment.sections}
+          />
+        )}
+      </WizardMotion>
       <div className="flex flex-wrap justify-end gap-2">
         <button type="button" className="btn btn-primary" onClick={onNext}>
           Dalej →
@@ -279,29 +288,15 @@ export function StepEquipment({
 
 export function StepDone({
   job,
+  car,
   onOpen,
   onAgain,
 }: {
   job: Job;
+  car: CarSummary | null;
   onOpen: () => void;
   onAgain: () => void;
 }) {
-  const [car, setCar] = useState<CarSummary | null>(null);
-  useEffect(() => {
-    let alive = true;
-    fetch(`/api/cars/${encodeURIComponent(job.carId)}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((body: { car?: CarSummary } | null) => {
-        if (alive && body?.car) setCar(body.car);
-      })
-      .catch(() => {
-        // The card falls back to the job label.
-      });
-    return () => {
-      alive = false;
-    };
-  }, [job.carId]);
-
   const sum = (key: "pages" | "sections" | "images") =>
     job.docs.reduce((n, d) => n + (d[key] ?? 0), 0);
   const numbers = [
@@ -366,9 +361,10 @@ export function StepDone({
           </ul>
           <p className="mt-3">
             Instrukcje są gotowe do czytania.{" "}
-            {job.pdfsDeleted
-              ? "Przesłane pliki PDF zostały usunięte – nie są już potrzebne."
-              : "Uwaga: nie udało się potwierdzić usunięcia przesłanych plików PDF."}
+            {job.docs.some((d) => d.size > 0) &&
+              (job.pdfsDeleted
+                ? "Przesłane pliki PDF zostały usunięte – nie są już potrzebne."
+                : "Uwaga: nie udało się potwierdzić usunięcia przesłanych plików PDF.")}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <button type="button" className="btn btn-primary" onClick={onOpen}>

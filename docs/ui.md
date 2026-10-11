@@ -164,7 +164,14 @@ placeholder?, defaultValue?, maxLength?, ... })` asks for one line of text (e.g.
   visible, the pane scrolls fully to its end, including any warnings and final padding.
   Resizing recalculates both
   progress and side-pane positioning. All motion respects `prefers-reduced-motion`.
-- Add-car wizard (`/dodaj-auto`): the step strip (`.wizard-track`) shows square keys on one
+- Add-car wizard (`/dodaj-auto`) is the only car-addition flow; no ready-car picker precedes
+  it. Brand/model/year form three columns on wider screens. A manual year replaces the
+  select with an input. Matching saved manuals appear before any upload control, with
+  reordering and an optional expandable file picker. `WizardMotion` measures dynamic
+  content with `ResizeObserver` and transitions its height; `WizardReveal` transitions
+  grid rows and opacity and makes closed controls inert. Step content fades in without
+  refreshing the route; all these animations are disabled for reduced motion.
+  The step strip (`.wizard-track`) shows square keys on one
   line with a red track growing with progress (`--wizard-progress`); phones show the keys plus
   one "Etap n z 4" line. Step 1 is split into lettered panels ("A Twoje auto", "B Instrukcje",
   `.wizard-mark`) and a sticky "Podsumowanie" card with the chosen car, missing items and the

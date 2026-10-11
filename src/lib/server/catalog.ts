@@ -1,5 +1,5 @@
-import fs from "node:fs/promises";
 import path from "node:path";
+import { catalogCache } from "@/lib/server/catalogCache";
 import {
   brandKey,
   brandName,
@@ -25,7 +25,7 @@ import { getDatabaseDir } from "@/lib/content";
  * Official car catalogue used by the "Dodaj auto" wizard (docs/catalog.md).
  *
  * Sources (public, no API keys, queried only by this server — never by the
- * browser — and only when someone adds a car):
+ * browser — during initialization and when someone adds a car):
  *
  * - EEA "Monitoring of CO2 emissions from passenger cars" (Regulation (EU)
  *   2019/631): every new passenger car registered in the EU since 2010 with
@@ -125,20 +125,53 @@ function makeLists(names: string[], maxLength = 1200): string[] {
 
 async function eea<T>(query: string): Promise<T[]> {
   const url = `${EEA_SQL}?${new URLSearchParams({ query, p: "1", nrOfHits: "200000" })}`;
-  const res = await fetch(url, {
-    cache: "no-store",
-    signal: AbortSignal.timeout(60_000),
-  });
+  const res = await limitedEea(() =>
+    fetch(url, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(60_000),
+    }),
+  );
   if (!res.ok) throw new Error(`EEA HTTP ${res.status}`);
   const body = (await res.json()) as {
     results?: T[];
     errors?: { error: string; errorcode?: number }[];
   };
   if (body.errors?.length) throw new EeaQueryError(body.errors[0].error);
-  return body.results ?? [];
+  if (!Array.isArray(body.results)) throw new Error("Invalid EEA response");
+  for (const row of body.results) {
+    if (
+      !record(row) ||
+      ("Year" in row && !year(row.Year)) ||
+      ("n" in row &&
+        (typeof row.n !== "number" || !Number.isFinite(row.n) || row.n < 0)) ||
+      (query.includes("GROUP BY Mk") && !(row.Mk === null || text(row.Mk))) ||
+      (query.includes("GROUP BY Cn") && !(row.Cn === null || text(row.Cn)))
+    )
+      throw new Error("Invalid EEA row");
+  }
+  return body.results;
 }
 
 class EeaQueryError extends Error {}
+
+function requestLimiter(limit: number) {
+  let active = 0;
+  const queue: (() => void)[] = [];
+  return async <T>(load: () => Promise<T>): Promise<T> => {
+    if (active >= limit)
+      await new Promise<void>((resolve) => queue.push(resolve));
+    else active++;
+    try {
+      return await load();
+    } finally {
+      const next = queue.shift();
+      if (next) next();
+      else active--;
+    }
+  };
+}
+const limitedEea = requestLimiter(3);
+const limitedVpic = requestLimiter(VPIC_CONCURRENCY);
 
 /** After a refusal (rate limit) vPIC is left alone for a while. */
 let vpicPausedUntil = 0;
@@ -148,16 +181,22 @@ async function vpic<T>(pathname: string): Promise<T[]> {
   for (let attempt = 0; attempt < 2; attempt++) {
     if (Date.now() < vpicPausedUntil) throw new Error("vPIC paused");
     try {
-      const res = await fetch(`${VPIC}${pathname}?format=json`, {
-        cache: "no-store",
-        signal: AbortSignal.timeout(30_000),
+      const res = await limitedVpic(() => {
+        if (Date.now() < vpicPausedUntil) throw new Error("vPIC paused");
+        return fetch(`${VPIC}${pathname}?format=json`, {
+          cache: "no-store",
+          signal: AbortSignal.timeout(30_000),
+        });
       });
       if (res.status === 403 || res.status === 429) {
         vpicPausedUntil = Date.now() + TTL.partial;
         throw new Error(`vPIC HTTP ${res.status}`);
       }
       if (!res.ok) throw new Error(`vPIC HTTP ${res.status}`);
-      return ((await res.json()) as { Results?: T[] }).Results ?? [];
+      const body = (await res.json()) as { Results?: T[] };
+      if (!Array.isArray(body.Results))
+        throw new Error("Invalid vPIC response");
+      return body.Results;
     } catch (err) {
       lastError = err;
     }
@@ -186,55 +225,32 @@ async function mapLimit<T, R>(
 
 /* --------------------------------------------------------------- cache */
 
-interface CacheFile<T> {
-  version: number;
-  savedAt: number;
-  ttl: number;
-  value: T;
-}
-
-const inflight = new Map<string, Promise<unknown>>();
-
 const cacheDir = () => path.join(getDatabaseDir(), ".catalog");
 
 async function cached<T>(
   name: string,
   ttl: number,
   load: () => Promise<{ value: T; partial?: boolean }>,
+  validate: (value: unknown) => value is T,
+  options: { waitForRefresh?: boolean; fallback?: string } = {},
 ): Promise<T> {
-  const file = path.join(cacheDir(), `${name}.json`);
-  let stale: CacheFile<T> | null = null;
   try {
-    stale = JSON.parse(await fs.readFile(file, "utf8")) as CacheFile<T>;
-    if (stale.version !== CACHE_VERSION) stale = null;
-    else if (Date.now() - stale.savedAt < stale.ttl) return stale.value;
-  } catch {
-    stale = null;
+    return await catalogCache({
+      file: path.join(cacheDir(), `${name}.json`),
+      fallbackFile: options.fallback
+        ? path.join(cacheDir(), `${options.fallback}.json`)
+        : undefined,
+      version: CACHE_VERSION,
+      ttl,
+      partialTtl: TTL.partial,
+      validate,
+      load,
+      waitForRefresh: options.waitForRefresh,
+    });
+  } catch (err) {
+    console.error(`Car catalogue (${name}) unavailable:`, err);
+    throw new CatalogUnavailableError();
   }
-  const running = inflight.get(name) as Promise<T> | undefined;
-  if (running) return running;
-  const job = (async () => {
-    try {
-      const { value, partial } = await load();
-      const entry: CacheFile<T> = {
-        version: CACHE_VERSION,
-        savedAt: Date.now(),
-        ttl: partial ? TTL.partial : ttl,
-        value,
-      };
-      await fs.mkdir(cacheDir(), { recursive: true });
-      await fs.writeFile(file, JSON.stringify(entry), "utf8");
-      return value;
-    } catch (err) {
-      if (stale) return stale.value;
-      console.error(`Car catalogue (${name}) unavailable:`, err);
-      throw new CatalogUnavailableError();
-    } finally {
-      inflight.delete(name);
-    }
-  })();
-  inflight.set(name, job);
-  return job;
 }
 
 /* -------------------------------------------------------------- tables */
@@ -249,8 +265,8 @@ interface EeaTable {
  * versioned table (`co2cars_2024Fv30`: F = final, P = provisional). The
  * newest final version of each year wins, otherwise the newest provisional.
  */
-function getTables(): Promise<EeaTable[]> {
-  return cached("tables", TTL.tables, async () => {
+function getTables(waitForRefresh = false): Promise<EeaTable[]> {
+  const load = async () => {
     const main = await eea<{ Year: number }>(
       `SELECT DISTINCT Year FROM ${EEA_MAIN_TABLE}`,
     );
@@ -265,7 +281,8 @@ function getTables(): Promise<EeaTable[]> {
       if (name) tables.push({ name, years: [year] });
     }
     return { value: tables };
-  });
+  };
+  return cached("tables", TTL.tables, load, isTables, { waitForRefresh });
 }
 
 async function findYearTable(year: number): Promise<string | null> {
@@ -309,9 +326,9 @@ interface BrandEntry extends CatalogBrand {
   vpicIds: number[];
 }
 
-function getBrandEntries(): Promise<BrandEntry[]> {
-  return cached("brands", TTL.brands, async () => {
-    const tables = await getTables();
+function getBrandEntries(waitForRefresh = false): Promise<BrandEntry[]> {
+  const load = async () => {
+    const tables = await getTables(true);
     const eeaRows = (
       await Promise.all(
         tables.map((t) =>
@@ -421,16 +438,41 @@ function getBrandEntries(): Promise<BrandEntry[]> {
       .forEach((b) => (b.popular = b.registrations > 0));
     brands.sort((a, b) => a.name.localeCompare(b.name, "pl"));
     return { value: brands, partial };
-  });
+  };
+  return cached("brands", TTL.brands, load, isBrands, { waitForRefresh });
 }
 
 export async function getCatalogBrands(): Promise<CatalogBrand[]> {
-  return (await getBrandEntries()).map(({ id, name, popular, usOnly }) => ({
+  const brands = await getBrandEntries();
+  void prewarmCatalogInBackground();
+  return brands.map(({ id, name, popular, usOnly }) => ({
     id,
     name,
     popular,
     usOnly,
   }));
+}
+
+let prewarmAfter = 0;
+let prewarmJob: Promise<void> | undefined;
+
+/** Refresh prepared lists on wizard use, never on every startup or API await. */
+export function prewarmCatalogInBackground(): Promise<void> {
+  if (prewarmJob) return prewarmJob;
+  if (Date.now() < prewarmAfter) return Promise.resolve();
+  prewarmAfter = Date.now() + TTL.partial;
+  prewarmJob = (async () => {
+    try {
+      const { brands } = await prewarmEuropeanCatalog();
+      const { prewarmLogoMetadata } = await import("@/lib/server/logos");
+      await prewarmLogoMetadata(brands);
+    } catch (error) {
+      console.warn("Car catalogue background preparation unavailable:", error);
+    } finally {
+      prewarmJob = undefined;
+    }
+  })();
+  return prewarmJob;
 }
 
 async function getBrandEntry(id: string): Promise<BrandEntry | undefined> {
@@ -490,11 +532,15 @@ async function getUsModels(makeId: number): Promise<Map<string, number[]>> {
   return out;
 }
 
-function getModelsFile(brandId: string): Promise<ModelsFile> {
-  return cached(`models-${brandId}`, TTL.models, async () => {
-    const brand = await getBrandEntry(brandId);
+function getModelsFile(
+  brandId: string,
+  europeOnly = false,
+): Promise<ModelsFile> {
+  const load = async () => {
+    const entries = await getBrandEntries(true);
+    const brand = entries.find((entry) => entry.id === brandId);
     if (!brand) return { value: { models: [], aliases: {} } };
-    const allBrands = new Set((await getBrandEntries()).map((b) => b.id));
+    const allBrands = new Set(entries.map((b) => b.id));
     const families = new Map<string, FamilyAcc>();
     const acc = (key: string) => {
       let f = families.get(key);
@@ -514,7 +560,7 @@ function getModelsFile(brandId: string): Promise<ModelsFile> {
     const words = [...brand.raw, brand.name];
 
     if (brand.raw.length > 0) {
-      const tables = await getTables();
+      const tables = await getTables(true);
       const rows = (
         await Promise.all(
           tables.flatMap((t) =>
@@ -540,7 +586,7 @@ function getModelsFile(brandId: string): Promise<ModelsFile> {
 
     let partial = false;
     const vpicId = brand.vpicIds[0];
-    if (vpicId !== undefined) {
+    if (!europeOnly && vpicId !== undefined) {
       try {
         const us = await getUsModels(vpicId);
         for (const [name, years] of us) {
@@ -667,7 +713,17 @@ function getModelsFile(brandId: string): Promise<ModelsFile> {
       a.name.localeCompare(b.name, "pl", { numeric: true }),
     );
     return { value: { models, aliases }, partial };
-  });
+  };
+  return cached(
+    `${europeOnly ? "models-eu" : "models"}-${brandId}`,
+    TTL.models,
+    load,
+    isModels,
+    {
+      waitForRefresh: europeOnly,
+      fallback: europeOnly ? `models-${brandId}` : `models-eu-${brandId}`,
+    },
+  );
 }
 
 /**
@@ -799,7 +855,118 @@ export async function getCatalogEngines(
         );
       return { value: engines };
     },
+    isEngines,
   );
+}
+
+const record = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+const text = (value: unknown): value is string =>
+  typeof value === "string" && value.trim().length > 0;
+const year = (value: unknown): value is number =>
+  Number.isInteger(value) &&
+  Number(value) >= 1950 &&
+  Number(value) <= new Date().getFullYear() + 1;
+
+function isTables(value: unknown): value is EeaTable[] {
+  return (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.every(
+      (t) =>
+        record(t) &&
+        typeof t.name === "string" &&
+        /^\[CO2Emission\]\.\[latest\]\.\[co2cars(?:_\d{4}[FP]v\d+)?\]$/.test(
+          t.name,
+        ) &&
+        Array.isArray(t.years) &&
+        t.years.length > 0 &&
+        t.years.every(year),
+    )
+  );
+}
+
+function isBrands(value: unknown): value is BrandEntry[] {
+  return (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.every(
+      (b) =>
+        record(b) &&
+        typeof b.id === "string" &&
+        brandIdOk(b.id) &&
+        text(b.name) &&
+        typeof b.popular === "boolean" &&
+        typeof b.usOnly === "boolean" &&
+        Array.isArray(b.raw) &&
+        b.raw.every(text) &&
+        typeof b.registrations === "number" &&
+        Number.isFinite(b.registrations) &&
+        b.registrations >= 0 &&
+        Array.isArray(b.vpicIds) &&
+        b.vpicIds.every((id) => Number.isInteger(id) && id > 0),
+    )
+  );
+}
+
+function isModels(value: unknown): value is ModelsFile {
+  return (
+    record(value) &&
+    record(value.aliases) &&
+    Object.values(value.aliases).every(text) &&
+    Array.isArray(value.models) &&
+    value.models.length > 0 &&
+    value.models.every(
+      (m) =>
+        record(m) &&
+        typeof m.id === "string" &&
+        brandIdOk(m.id) &&
+        text(m.name) &&
+        Array.isArray(m.years) &&
+        m.years.length > 0 &&
+        m.years.every(year),
+    )
+  );
+}
+
+function isEngines(value: unknown): value is CatalogEngine[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (e) =>
+        record(e) &&
+        text(e.id) &&
+        text(e.label) &&
+        text(e.fuel) &&
+        typeof e.powerKw === "number" &&
+        Number.isFinite(e.powerKw) &&
+        e.powerKw > 0 &&
+        (e.engineCm3 === null ||
+          (typeof e.engineCm3 === "number" &&
+            Number.isFinite(e.engineCm3) &&
+            e.engineCm3 > 0)) &&
+        typeof e.share === "number" &&
+        e.share >= 0 &&
+        e.share <= 1,
+    )
+  );
+}
+
+/** Prewarm every EEA brand's models/years, without bulk US year scans. */
+export async function prewarmEuropeanCatalog(): Promise<{
+  brands: CatalogBrand[];
+  failed: string[];
+}> {
+  const brands = (await getBrandEntries(true)).filter((brand) => !brand.usOnly);
+  const failed: string[] = [];
+  await mapLimit(brands, 2, async (brand) => {
+    try {
+      await getModelsFile(brand.id, true);
+    } catch {
+      failed.push(brand.name);
+    }
+  });
+  return { brands, failed };
 }
 
 /* -------------------------------------------------------------- lookup */

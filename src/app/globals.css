@@ -855,6 +855,7 @@ body {
       ),
       var(--color-white);
     transition:
+      padding 240ms var(--ease-ui),
       border-color 160ms var(--ease-ui),
       background-color 160ms var(--ease-ui);
   }
@@ -866,6 +867,44 @@ body {
     border-style: solid;
     border-color: var(--color-red);
     background: var(--color-paper);
+  }
+  .wizard-motion {
+    overflow: clip;
+    transition: height 280ms var(--ease-ui);
+  }
+  .wizard-reveal {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      grid-template-rows 240ms var(--ease-ui),
+      opacity 200ms var(--ease-ui),
+      visibility 240ms;
+  }
+  .wizard-reveal[data-open="true"] {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    visibility: visible;
+  }
+  .wizard-content {
+    animation: wizard-appear 240ms var(--ease-ui);
+  }
+  @keyframes wizard-appear {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .wizard-motion,
+    .wizard-reveal,
+    .wizard-content {
+      transition: none;
+      animation: none;
+    }
   }
 
   /*

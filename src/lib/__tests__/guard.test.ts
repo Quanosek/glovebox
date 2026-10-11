@@ -101,4 +101,22 @@ describe("mutating API routes", () => {
     }
     expect(checked).toBeGreaterThan(0);
   });
+
+  it("rejects cross-site saved-manual reuse and reorder without reading the body", async () => {
+    const { POST } = await import("@/app/api/cars/route");
+    const form = new FormData();
+    form.set("existingCar", "saved");
+    form.append("bookOrder", "manual");
+    const request = new Request("http://localhost:3000/api/cars", {
+      method: "POST",
+      headers: {
+        host: "localhost:3000",
+        origin: "https://example.com",
+        "sec-fetch-site": "cross-site",
+      },
+      body: form,
+    });
+    expect((await POST(request)).status).toBe(403);
+    expect(request.bodyUsed).toBe(false);
+  });
 });
