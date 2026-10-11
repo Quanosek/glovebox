@@ -6,7 +6,39 @@ from __future__ import annotations
 import re
 
 from .document import Document
+from .model import Item, Span
 from .text import LEADER_DOTS, LEADER_RE, REF_MARK, clean_text
+
+LEADER_TAIL_RE = re.compile(r"(?<=\S)\s+" + LEADER_DOTS + r"\s*$")
+
+
+def merge_leader_numbers(lines: list[Item]) -> list[Item]:
+    """Join separately drawn page numbers before column detection."""
+    dropped: set[int] = set()
+    for line in lines:
+        if not LEADER_TAIL_RE.search(line.text):
+            continue
+        candidates = [
+            other for other in lines
+            if other is not line and id(other) not in dropped
+            and other.page == line.page
+            and re.fullmatch(r"\d{1,3}", other.text.strip())
+            and abs(other.base - line.base) < max(1.0, line.size * 0.2)
+            and 0 <= other.x0 - line.x1 <= line.size * 5
+        ]
+        if not candidates:
+            continue
+        number = min(candidates, key=lambda other: other.x0)
+        left_xs, right_xs = line.data.get("char_x"), number.data.get("char_x")
+        if left_xs is not None and right_xs is not None and len(left_xs) == len(line.text) and len(right_xs) == len(number.text):
+            line.data["char_x"] = left_xs + [line.x1] + right_xs
+        else:
+            line.data.pop("char_x", None)
+        line.spans += [Span(" ", False, False, line.size, "", None)] + [span.copy() for span in number.spans]
+        line.bbox = (line.x0, min(line.y0, number.y0), number.x1, max(line.y1, number.y1))
+        line.data["line_x"] = (line.x0, line.x1)
+        dropped.add(id(number))
+    return [line for line in lines if id(line) not in dropped]
 
 
 def mark_toc_lines(doc: Document, start: int, end: int) -> None:
@@ -14,7 +46,8 @@ def mark_toc_lines(doc: Document, start: int, end: int) -> None:
     the items of one outline entry, including the first lines of
     multi-line entries. Numbered legends of illustrations ("23 Sygnał
     dźwiękowy .... 85") are content and stay."""
-    lines = [k for k in range(start, end) if doc.items[k].kind == "line"]
+    legend_pages = {it.page for it in doc.items if it.data.get("legend")}
+    lines = [k for k in range(start, end) if doc.items[k].kind == "line" and doc.items[k].page not in legend_pages]
     leaders = [k for k in lines if doc.items[k].data.get("leader") and not re.match(r"\d", clean_text(doc.items[k].text))]
     if len(leaders) < 3 or len(leaders) < len(lines) * 0.4:
         return

@@ -12,12 +12,19 @@ export function CarLogo({
   carId,
   brand,
   size,
+  logo,
   fill = false,
   className,
 }: {
   carId: string;
   brand: string;
   size: number;
+  /**
+   * Pixel size of the cached logo (`CarSummary.logo`): the image gets its
+   * final width before it loads. Unknown logos reserve the square of the app
+   * icon that replaces a missing one.
+   */
+  logo?: { width: number; height: number };
   /** Fill the parent box (object-contain), e.g. the padded car page frame. */
   fill?: boolean;
   className?: string;
@@ -30,6 +37,10 @@ export function CarLogo({
     if (el?.complete && el.naturalWidth === 0) setFailed(carId);
   }, [carId]);
   if (failed === carId) return <Logo size={size} className={className} />;
+  // Wordmarks may be up to 3.5 times as wide as they are tall.
+  const width = logo
+    ? Math.round(Math.min((size * logo.width) / logo.height, size * 3.5))
+    : size;
   return (
     // eslint-disable-next-line @next/next/no-img-element -- local route, no optimisation needed
     <img
@@ -37,13 +48,10 @@ export function CarLogo({
       ref={img}
       src={logoHref(carId)}
       alt={`Logo ${brand}`}
+      width={fill ? undefined : width}
       height={size}
-      style={
-        fill
-          ? { width: "100%", height: "100%" }
-          : { height: size, maxWidth: size * 3.5 }
-      }
-      className={`object-contain ${fill ? "" : "w-auto"} ${className ?? ""}`}
+      style={fill ? { width: "100%", height: "100%" } : { width, height: size }}
+      className={`object-contain ${className ?? ""}`}
       onError={() => setFailed(carId)}
     />
   );

@@ -125,7 +125,9 @@ placeholder?, defaultValue?, maxLength?, ... })` asks for one line of text (e.g.
   calendar key sits inside the field on the right, and the calendar flips above the field when
   the viewport has too little space below.
 - Header: the navigation row ends with the local weekday, date and time (`Clock` in
-  `Header.tsx`, desktop only, filled after hydration and refreshed every 15 s; no requests)
+  `Header.tsx`, desktop only, filled after hydration and refreshed every 15 s; no requests;
+  until then `Skeleton` lines hold the final boxes: the date sits right-aligned in a
+  `min-w-[11.75rem]` box that fits the longest Polish date, the time in a `5ch` box)
   and a red "Bez internetu" badge when offline. "Przypomnienia" carries a `.nav-count` badge
   with reminders that passed or are due within 30 days. There is no separate status bar.
 - No layout jumps on load: client parts that depend on browser data render their final
@@ -136,8 +138,21 @@ placeholder?, defaultValue?, maxLength?, ... })` asks for one line of text (e.g.
   generic skeleton block of a different size, and never gate a whole section on
   `useHydrated()` when the hint can say whether it exists. Static UI text that is rendered
   before hydration may be passed through `polishTypography()` so the client typography pass
-  does not reflow it.
-- Car overview screens (car page, "Lampki kontrolne", "Dane techniczne") and the reader side
+  does not reflow it. Further rules, each verified with the browser's `layout-shift` entries
+  on every page (phone and desktop, empty and filled profile, production build):
+  - Prefer the real markup with disabled controls over skeleton blocks when the layout
+    does not depend on data (settings, the search form in its Suspense fallback, the
+    engine field: "Wczytuję silniki…" is shown inside the field, not as an extra line).
+  - Status that comes and goes (preparing search, results count) lives in one fixed-height
+    line; a check whose usual result is "nothing to show" (the add-car readiness check)
+    has no placeholder at all.
+  - Content known only in the browser (notification permission) renders its usual box and
+    sits after the main content, so hiding it in the rare case moves nothing.
+  - Buttons whose label changes keep the width of the longer label (both labels share
+    one grid cell, `BookmarkButton`).
+  - Images get their final size before loading: brand logos use the pixel size of the
+    cached logo (`CarSummary.logo`, `docs/logos.md`).
+- Car overview screens (car page with "Niezbędnik", "Dane techniczne") and the reader side
   column are described in `docs/car-overview.md`; their classes are `.car-hero`,
   `.car-hero-logo`, `.car-hero-spec`, `.stat-strip`/`.stat-cell`, `.nav-key`, `.section-label`
   (red dash + uppercase label), `.fav-bar`/`.fav-key`/`.fav-num` and `.thumb` (framed

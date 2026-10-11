@@ -11,6 +11,7 @@ import { useLayoutHint } from "@/lib/storage/hintContext";
 import { useActiveCar, useAppData, useHydrated } from "@/lib/storage/hooks";
 import { CarLogo } from "./CarLogo";
 import { Logo } from "./Logo";
+import { Skeleton } from "./Skeleton";
 
 /** Current time, refreshed every 15 s; null until hydrated. */
 function useClock(): Date | null {
@@ -24,7 +25,12 @@ function useClock(): Date | null {
   return now;
 }
 
-/** Date and time at the right end of the navigation row, like on Navi 950. */
+/**
+ * Date and time at the right end of the navigation row, like on Navi 950.
+ * The device time is only known after hydration: until then skeletons hold
+ * the boxes the text gets (the date box fits the longest Polish date, the
+ * text is right-aligned in it), so nothing moves when the time appears.
+ */
 function Clock() {
   const now = useClock();
   const online = useOnline();
@@ -38,26 +44,30 @@ function Clock() {
           Bez internetu
         </span>
       )}
-      <span className={now ? "" : "invisible"} aria-hidden={!now}>
-        {now
-          ? now.toLocaleDateString("pl-PL", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-            })
-          : "poniedziałek, 30 października"}
+      <span className="block min-w-[11.75rem] text-right">
+        {now ? (
+          now.toLocaleDateString("pl-PL", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+          })
+        ) : (
+          <Skeleton className="ml-auto w-40" />
+        )}
       </span>
       <time
         dateTime={now?.toISOString()}
-        aria-hidden={!now}
-        className="min-w-[5ch] text-right text-base font-semibold text-ink"
+        aria-busy={!now}
+        className="block min-w-[5ch] text-right text-base font-semibold text-ink"
       >
-        {now
-          ? now.toLocaleTimeString("pl-PL", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : "00:00"}
+        {now ? (
+          now.toLocaleTimeString("pl-PL", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        ) : (
+          <Skeleton className="w-[5ch]" />
+        )}
       </time>
     </span>
   );
@@ -130,7 +140,12 @@ export function Header({ cars }: { cars: CarSummary[] }) {
           aria-label="Strona główna"
         >
           {car ? (
-            <CarLogo carId={car.id} brand={car.brand} size={34} />
+            <CarLogo
+              carId={car.id}
+              brand={car.brand}
+              logo={car.logo}
+              size={34}
+            />
           ) : (
             <Logo size={34} />
           )}

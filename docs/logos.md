@@ -7,11 +7,23 @@ still used without a car and as the fallback).
 ## Source
 
 Wikidata property P154 ("logo image") of the brand, with the qualifiers P580 / P582 (start /
-end time). Many brands list their former logos with years, e.g. Opel: 2009–2017, 2017–2021,
+end time). A logo dated only with P585 (point in time, e.g. Opel's 1970 and 1987 logos) is
+treated as known for that single year. Many brands list their former logos with years, e.g. Opel: 2009–2017, 2017–2021,
 2021–2023, 2023–. Images are Wikimedia Commons files, downloaded as a raster render
 (`Special:FilePath/<file>?width=400`, SVGs come back as PNG). Like the car catalogue
 (`docs/catalog.md`), only the local server talks to Wikimedia (with a descriptive
 `User-Agent`); the browser loads `/logo/<car>`.
+
+The result is only as good as the brand's Wikidata entry. Some entries list a single
+undated logo (SEAT, Q188217, only has the current "SEAT S.A." company logo), which is then
+shown for every model year; adding dated P154 values on Wikidata fixes this for all users.
+
+## Rate limits
+
+Wikidata answers bursts of anonymous requests with HTTP 429. Metadata requests are spaced
+(`WIKIDATA_PACING`, 250 ms; at most two lookups in flight); an HTTP 429 or 503 pauses all
+lookups for its `Retry-After` (else 1 s, 2 s, …; max 15 s) and the request is retried up to
+three times before the brand counts as failed.
 
 ## Selection (`src/lib/logos.ts`, unit-tested)
 
@@ -35,9 +47,13 @@ end time). Many brands list their former logos with years, e.g. Opel: 2009–201
 - `getCarLogo(car)` → `{ data, type } | null` for `car.brand` + `car.year`.
 - Cache in `database/.logos/` (git-ignored with `database/`): `brand-<key>.json` (entity +
   logo list; TTL 30 days when found, 7 days when not found, 1 hour after an error; a stale
-  copy is returned immediately while a background request refreshes it; `CACHE_VERSION`) and `<sha1(file)>.<ext>`
+  copy is returned immediately while a background request refreshes it; a cached entry
+  without any logo is never served stale — the request waits for the lookup instead; `CACHE_VERSION`,
+  older-version entries are refreshed at once but served meanwhile, also offline) and `<sha1(file)>.<ext>`
   images (kept forever). Failed downloads are retried after an hour (in memory). Only PNG,
   JPEG, GIF and WebP are stored and served, checked by magic bytes, max 2 MB — never SVG.
+- A failure recorded by another process (typically a rate-limited `pnpm initial`) does not
+  block `/logo/<car>`: the server retries once and then keeps its own hourly back-off.
 - `pnpm initial` prewarms metadata for European brands from the official EEA catalogue,
   with at most two concurrent brand lookups. It respects `MANUALS_DATABASE_DIR`, reuses
   fresh metadata and waits for expired lookups to refresh; it does not download images.
@@ -56,14 +72,18 @@ end time). Many brands list their former logos with years, e.g. Opel: 2009–201
   malformed cached entries are ignored. Atomic writes prevent truncated snapshots.
   Failed, malformed or empty refreshes never erase a last-good logo list or renew its
   timestamp; retries are paused for an hour. Other brands keep their independent TTLs.
-- `GET /logo/<car>` → the image (`Cache-Control: max-age=86400`) or 404.
+- `GET /logo/<car>` → the image (`Cache-Control: max-age=86400`) or 404 (`no-store`, so a
+  temporary miss is never cached by the browser).
 - `/api/cars/<car>/offline` resolves the logo first and lists `/logo/<car>` only when it
   exists, so a brand without a logo does not count as a failed offline item.
 
 ## UI (`src/components/CarLogo.tsx`)
 
 `<img src="/logo/<car>">` at a fixed height in the header (34 px, width up to 3.5× the
-height for wordmarks); on the car page it fills (`fill`, `object-contain`) the square
+height for wordmarks). The width is known before the image loads: `getCarSummary` adds
+`logo: { width, height }` read from the header of the cached image (`cachedLogoSize` in
+`src/lib/server/logoSize.ts`, disk only, PNG/JPEG/GIF/WebP), so the brand name next to it
+never moves; an unknown logo reserves the app icon's square; on the car page it fills (`fill`, `object-contain`) the square
 `.car-hero-logo` frame (6.5rem) inside a fixed 0.875rem safe margin, so wide wordmarks and
 square badges never touch the frame; on error — including an error before hydration —
 it falls back to the app icon. Logos keep their original colours: like manual

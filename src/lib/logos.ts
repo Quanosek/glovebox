@@ -10,7 +10,10 @@ export type LogoRank = "preferred" | "normal" | "deprecated";
 export interface BrandLogo {
   /** Wikimedia Commons file name, e.g. "Opel logo.svg". */
   file: string;
-  /** First / last year of use (Wikidata qualifiers P580 / P582). */
+  /**
+   * First / last year of use (Wikidata qualifiers P580 / P582). A logo
+   * dated only with a point in time (P585) is known for that one year.
+   */
   start?: number;
   end?: number;
   rank: LogoRank;
@@ -48,7 +51,14 @@ export function parseLogoClaims(json: unknown): BrandLogo[] {
       c.rank === "preferred" || c.rank === "deprecated" ? c.rank : "normal";
     const q = (p: string) =>
       yearOf(c.qualifiers?.[p]?.[0]?.datavalue?.value?.time);
-    out.push({ file: file.trim(), start: q("P580"), end: q("P582"), rank });
+    const from = q("P580");
+    const point = q("P585");
+    out.push({
+      file: file.trim(),
+      start: from ?? point,
+      end: q("P582") ?? (from === undefined ? point : undefined),
+      rank,
+    });
   }
   return out;
 }

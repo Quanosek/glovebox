@@ -109,7 +109,6 @@ src/
     auto/[car]/                 car "home screen" (docs/car-overview.md): car card, numbers,
                                 favourites, quick tiles, books, tools, technical-data preview,
                                 service reminders, offline status; layout tracks active car
-    auto/[car]/lampki-kontrolne/  symbols glossary (icons + explanation from the manuals)
     auto/[car]/dane-techniczne/   technical data cards (tables of technical chapters)
     auto/[car]/wyposazenie/     per-car equipment editor (EquipmentEditor)
     auto/[car]/[book]/          book index + sidebar layout; [...slug]/ section pages
@@ -134,15 +133,15 @@ src/
   components/CarLogo.tsx        brand logo of the active car (header, car page), falls back to Logo
   components/Header.tsx         header, main navigation (due reminders badge) and Navi-like clock
   components/reminders/         /przypomnienia: inspection, OC insurance, own reminders per car
-  components/car/               car overview parts (CarHero, CarStatsStrip, QuickTiles,
+  components/car/               car overview parts (CarHero, CarStatsStrip, EssentialTiles,
                                 CarCardTitle shared by the car lists, ...)
   components/profile/, reader/  profile activity/tips, reader side column highlights
-  config/quickTopics.ts         title rules for "Najczęściej potrzebne", glossary, technical data
+  config/essentials.ts          "Niezbędnik" topic rules (section/heading titles), technical data
   config/vehicle.ts             generic optional features (no defaults) + suggestFromSpec
   config/featureRules.ts        title rules tagging sections/headings of every car
   content/types.ts              content format contract
   lib/content.ts                server-only database reader (Node fs, mtime-checked cache)
-  lib/carOverview.ts            server-only car overview/glossary/tech/tips collection
+  lib/carOverview.ts            server-only car overview/Niezbędnik/tech/tips collection
   lib/overview.ts               client-safe overview helpers and types (tested)
   lib/server/                   importer (jobs), official catalogue, python, cross-site guard
   lib/catalog.ts                client-safe catalogue types + name normalisation
@@ -170,7 +169,7 @@ route)`, `getBook`, `getSection`, `sectionHref`, `getTocTree`, `getPrevNext`,
   `getCarUrls(car)`, `getCarVersion(car)`. Override the folder with `MANUALS_DATABASE_DIR`.
 - Ids: car and book ids match `ID_PATTERN` (`/^[a-z0-9][a-z0-9-]{0,79}$/`, `src/lib/slug.ts`);
   this is also what keeps `/media` and imports path-safe. Imported book ids and routes are
-  slugs of their titles (`assets`, `wyposazenie`, `lampki-kontrolne` and `dane-techniczne`
+  slugs of their titles (`assets`, `wyposazenie` and `dane-techniczne`
   reserved, `RESERVED_BOOK_ROUTES`).
 - Mutating API routes call `rejectCrossSite()` (loopback `Host` + same-origin `Origin` /
   `Sec-Fetch-Site`; `MANUALS_ALLOW_REMOTE_IMPORT=1` allows LAN hosts) because the server is

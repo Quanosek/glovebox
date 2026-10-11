@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import { matchFeatures } from "@/config/featureRules";
 import {
   FEATURES,
+  EXCLUSIVE_FEATURES,
+  chooseFeature,
   suggestFromSpec,
+  withExclusiveFeatures,
   type VehicleProfile,
 } from "@/config/vehicle";
 import { getAvailability } from "@/lib/availability";
@@ -84,6 +87,8 @@ describe("feature rules", () => {
 
   it("tags typical section titles of any brand", () => {
     expect(tags("System Start/Stop")).toContain("drive.startStop");
+    expect(tags("Climatronic")).toEqual(["climate.electronic"]);
+    expect(tags("Klimatyzacja automatyczna")).toEqual(["climate.electronic"]);
     expect(tags("Adaptacyjny tempomat")).toEqual(["drive.adaptiveCruise"]);
     expect(tags("Tempomat")).toEqual(["drive.cruiseControl"]);
     expect(tags("Ostrzeganie o niezamierzonej zmianie pasa ruchu")).toContain(
@@ -105,10 +110,93 @@ describe("feature rules", () => {
     );
   });
 
-  it("does not confuse roof racks or sunroofs with a folding roof", () => {
-    expect(tags("Składany dach")).toContain("roof.electric");
-    expect(tags("Bagażnik dachowy")).not.toContain("roof.electric");
+  it("does not offer body construction or error messages as optional equipment", () => {
+    for (const title of [
+      "Składany dach",
+      "Dach",
+      "Komunikaty o błędach",
+      "Bagażnik dachowy",
+    ])
+      expect(tags(title)).not.toContain("roof.electric");
+    expect(
+      FEATURES.some((feature) => String(feature.id) === "roof.electric"),
+    ).toBe(false);
     expect(tags("Szyberdach")).toEqual(["comfort.sunroof"]);
+    expect(tags("Komfortowe otwieranie szyb")).not.toContain("roof.remote");
+    expect(tags("Otwieranie dachu za pomocą pilota")).toContain("roof.remote");
+  });
+
+  describe("exclusive equipment", () => {
+    it("suggests and hides the alternative in either direction for every exclusive group", () => {
+      for (const group of EXCLUSIVE_FEATURES) {
+        for (const id of group) {
+          const profile: VehicleProfile = {
+            [id]: { status: "has", certainty: "confirmed" },
+          };
+          const effective = withExclusiveFeatures(profile);
+          for (const other of group.filter((feature) => feature !== id)) {
+            expect(effective[other]).toEqual({
+              status: "no",
+              certainty: "probable",
+            });
+            expect(getAvailability([other], profile).kind).toBe("missing");
+            expect(profile[other]).toBeUndefined();
+          }
+          expect(withExclusiveFeatures(effective)).toEqual(effective);
+        }
+      }
+    });
+
+    it("withdraws inferred negatives when the source choice is cleared or changed to no", () => {
+      const profile = chooseFeature({}, "transmission.automatic", {
+        status: "has",
+        certainty: "confirmed",
+      });
+      expect(
+        withExclusiveFeatures(profile)["transmission.manual"]?.status,
+      ).toBe("no");
+      for (const state of [
+        null,
+        { status: "no", certainty: "confirmed" },
+      ] as const)
+        expect(
+          withExclusiveFeatures(
+            chooseFeature(profile, "transmission.automatic", state),
+          )["transmission.manual"],
+        ).toBeUndefined();
+    });
+
+    it("lets the latest has choice replace a conflicting has and keeps explicit no confirmations", () => {
+      const automatic: VehicleProfile = {
+        "transmission.automatic": { status: "has", certainty: "confirmed" },
+      };
+      const manual = chooseFeature(automatic, "transmission.manual", {
+        status: "has",
+        certainty: "confirmed",
+      });
+      expect(withExclusiveFeatures(manual)["transmission.automatic"]).toEqual({
+        status: "no",
+        certainty: "probable",
+      });
+      const confirmed = chooseFeature(manual, "transmission.automatic", {
+        status: "no",
+        certainty: "confirmed",
+      });
+      expect(
+        withExclusiveFeatures(confirmed)["transmission.automatic"]?.certainty,
+      ).toBe("confirmed");
+      expect(automatic["transmission.automatic"].status).toBe("has");
+    });
+
+    it("does not invent exclusions for equipment that can coexist", () => {
+      const profile: VehicleProfile = {
+        "seats.heated": { status: "has", certainty: "confirmed" },
+        "wheels.spare": { status: "has", certainty: "confirmed" },
+        "assist.rearCamera": { status: "has", certainty: "confirmed" },
+        "lights.afl": { status: "has", certainty: "confirmed" },
+      };
+      expect(withExclusiveFeatures(profile)).toEqual(profile);
+    });
   });
 
   it("only uses known feature ids", () => {

@@ -4,6 +4,9 @@ Owner's manuals describe optional equipment that only some versions have. The ap
 content with generic features and lets the owner mark, **per car**, what their car has. No
 car ships with presets: a feature without a stored state is neutral and its content is shown
 normally.
+Body construction is not optional equipment: a convertible's folding roof is not offered
+as a checkbox or gated. The retired `roof.electric` choice is ignored and removed by the
+existing sanitizer; optional remote roof operation remains independently selectable.
 
 ## Definitions
 
@@ -39,6 +42,16 @@ normally.
 
 - `getAvailability(features, profile)` (`src/lib/availability.ts`) → `neutral | yours |
 verify | probable | missing`; unset features are skipped, any `no` → `missing`.
+- `EXCLUSIVE_FEATURES` and `withExclusiveFeatures` (`src/config/vehicle.ts`) derive
+  probable `no` alternatives for manual/automatic transmissions and manual/automatic
+  climate control. Their content collapses immediately,
+  while the editor keeps the alternatives visible with a confirmation badge. The newest
+  "Mam" choice clears a conflicting "Mam"; explicit "Nie mam" confirmations are retained.
+  Derived exclusions are not persisted as owner choices, so clearing the source choice
+  removes them automatically. Read hooks and availability evaluation use the same helper,
+  including the warnings index, which reads raw stored profiles. Equipment that can coexist
+  (heated/ventilated seats, camera/sensors, spare wheel/repair kit, adaptive/halogen lights)
+  is not excluded: mixed lighting systems may use both technologies.
 - `BlockRenderer` renders the feature tree: gated headings get `AvailabilityBadges` and a
   `SectionGate compact`; whole sections use `SectionGate` ("Pokaż tę sekcję" / "Pokaż
   wszystko"). Hidden content stays in the DOM so anchoring and in-page links keep working.
@@ -64,6 +77,8 @@ replaces probable suggestions, preserves explicit choices and updates all existi
 equipment gates, lists, search and warnings. Choosing "Nie wiem" for a feature clears its
 suggestion until the engine is changed or suggestions are explicitly applied again.
 Clearing all equipment also clears the engine selection.
+Engine changes do not erase owner-derived exclusions: they are recomputed from the retained
+owner choices. Applying engine suggestions writes only stored choices, never derived ones.
 
 Hooks:
 `useVehicleProfile(carId?)` (falls back to the car in the `/auto/<id>` URL),

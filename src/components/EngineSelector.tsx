@@ -5,7 +5,6 @@ import type { CarSpec } from "@/lib/catalog";
 import { FUEL_LABEL } from "@/lib/catalog";
 import { engineChoices, engineChoiceKey, sanitizeEngine } from "@/lib/engines";
 import { setCarEngine, useCarEngine, useHydrated } from "@/lib/storage/hooks";
-import { Skeleton } from "./Skeleton";
 
 type CatalogOptions =
   | { key: string; state: "loading" }
@@ -98,6 +97,8 @@ export function EngineSelector({
             id={`engine-${carId}`}
             className="field w-full"
             value={engine ? engineChoiceKey(engine) : ""}
+            disabled={loading}
+            aria-busy={loading}
             onChange={(e) =>
               setCarEngine(
                 carId,
@@ -107,7 +108,12 @@ export function EngineSelector({
               )
             }
           >
-            <option value="">Nie wiem / pokaż wszystkie silniki</option>
+            {/* Loading is shown in the field itself, so the panel keeps its height. */}
+            <option value="">
+              {loading
+                ? "Wczytuję silniki…"
+                : "Nie wiem / pokaż wszystkie silniki"}
+            </option>
             {fuels.map((fuel) => (
               <optgroup
                 key={fuel}
@@ -127,12 +133,20 @@ export function EngineSelector({
             ))}
           </select>
         ) : (
-          <Skeleton className="h-10 w-full" />
-        )}
-        {loading && (
-          <p role="status" className="text-graphite">
-            Wczytuję silniki…
-          </p>
+          <select
+            className="field w-full"
+            disabled
+            aria-busy="true"
+            aria-label="Wersja silnika"
+          >
+            <option>
+              {engine
+                ? engine.label
+                : needsCatalog
+                  ? "Wczytuję silniki…"
+                  : "Nie wiem / pokaż wszystkie silniki"}
+            </option>
+          </select>
         )}
         {error && (
           <div role="alert" className="space-y-2 text-red">

@@ -203,11 +203,6 @@ export const FEATURES = [
     label: "Dostęp bezkluczykowy i uruchamianie przyciskiem",
   },
   {
-    id: "roof.electric",
-    group: "access",
-    label: "Składany dach (kabriolet)",
-  },
-  {
     id: "roof.remote",
     group: "access",
     label: "Składanie dachu pilotem",
@@ -319,6 +314,44 @@ export const FEATURE_BY_ID: Record<string, FeatureDefinition> =
 
 /** Stored states of one car, keyed by feature id (unset = unknown). */
 export type VehicleProfile = Record<string, FeatureState>;
+
+export const EXCLUSIVE_FEATURES: readonly (readonly FeatureId[])[] = [
+  ["transmission.automatic", "transmission.manual"],
+  ["climate.electronic", "climate.manual"],
+];
+
+/** Infer absent alternatives without storing them as the owner's choices. */
+export function withExclusiveFeatures(profile: VehicleProfile): VehicleProfile {
+  const result = { ...profile };
+  for (const group of EXCLUSIVE_FEATURES) {
+    const present = group.filter((id) => profile[id]?.status === "has");
+    if (present.length !== 1) continue;
+    for (const id of group) {
+      if (id !== present[0] && profile[id]?.certainty !== "confirmed")
+        result[id] = { status: "no", certainty: "probable" };
+    }
+  }
+  return result;
+}
+
+export function chooseFeature(
+  profile: VehicleProfile,
+  id: string,
+  state: FeatureState | null,
+): VehicleProfile {
+  const result = { ...profile };
+  if (state) result[id] = state;
+  else delete result[id];
+  if (state?.status === "has") {
+    for (const group of EXCLUSIVE_FEATURES) {
+      if (!group.some((feature) => feature === id)) continue;
+      for (const other of group)
+        if (other !== id && result[other]?.status === "has")
+          delete result[other];
+    }
+  }
+  return result;
+}
 
 /** Ids renamed since earlier versions (stored data is migrated). */
 export const RENAMED_FEATURES: Record<string, FeatureId> = {

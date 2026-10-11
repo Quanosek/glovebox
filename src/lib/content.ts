@@ -8,7 +8,6 @@ import {
   carHref,
   carLabel,
   equipmentHref,
-  glossaryHref,
   techDataHref,
   type CarBook,
   type CarFile,
@@ -17,6 +16,7 @@ import {
 } from "@/lib/cars";
 import { blockToText, runsToText } from "@/lib/overview";
 import { isValidId } from "@/lib/slug";
+import { cachedLogoSize, type LogoSize } from "@/lib/server/logoSize";
 import type {
   Block,
   BookIndex,
@@ -114,6 +114,8 @@ export function bookCtxs(car: CarFile): BookCtx[] {
     .filter((ctx) => getBookIndex(ctx) != null);
 }
 
+const withLogo = (logo: LogoSize | null) => (logo ? { logo } : {});
+
 export function getCarSummary(car: CarFile): CarSummary {
   return {
     id: car.id,
@@ -125,6 +127,7 @@ export function getCarSummary(car: CarFile): CarSummary {
     href: carHref(car.id),
     ...(car.spec ? { spec: car.spec } : {}),
     ...(car.catalog ? { catalog: car.catalog } : {}),
+    ...withLogo(cachedLogoSize(car, getDatabaseDir())),
     books: bookCtxs(car).map((ctx) => {
       const index = getBook(ctx);
       return {
@@ -443,7 +446,6 @@ export function getCarUrls(car: CarFile): string[] {
   const urls = new Set<string>([
     carHref(car.id),
     equipmentHref(car.id),
-    glossaryHref(car.id),
     techDataHref(car.id),
   ]);
   for (const ctx of bookCtxs(car)) {

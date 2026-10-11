@@ -61,7 +61,19 @@ export function BookmarkButton({
           strokeWidth="1.4"
         />
       </svg>
-      {active ? "W zakładkach" : "Dodaj zakładkę"}
+      {/* Both labels share one grid cell: the button keeps the width of the
+          longer one, so the page number beside it never moves. */}
+      <span className="grid">
+        {[true, false].map((label) => (
+          <span
+            key={String(label)}
+            className={`[grid-area:1/1] ${label === active ? "" : "invisible"}`}
+            aria-hidden={label !== active}
+          >
+            {label ? "W zakładkach" : "Dodaj zakładkę"}
+          </span>
+        ))}
+      </span>
     </button>
   );
 }

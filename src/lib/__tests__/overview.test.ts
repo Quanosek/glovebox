@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
-  INDICATOR_SECTION,
-  QUICK_TOPICS,
-  QUICK_TOPICS_MAX,
+  ESSENTIALS,
   TECHNICAL_SECTION,
-  matchQuickTopics,
-} from "@/config/quickTopics";
+  essentialsSize,
+  pickEssential,
+  type EssentialCandidate,
+  type EssentialId,
+} from "@/config/essentials";
 import type { Block } from "@/content/types";
 import {
   firstIllustration,
   hasMeasurement,
-  iconEntries,
   isMeasurementTable,
   isNumeric,
   kwToHp,
@@ -29,40 +29,101 @@ const icon = (id: string): Block => ({
   alt: "",
   icon: true,
 });
-const para = (id: string, text: string): Block => ({
-  type: "paragraph",
-  id,
-  runs: [text],
-});
 
-describe("quick topics", () => {
-  it("finds the usual owner topics by section title", () => {
-    expect(matchQuickTopics("Ciśnienie w oponach")).toContain("tyres");
-    expect(matchQuickTopics("Zmiana koła")).toContain("wheel");
-    expect(matchQuickTopics("Bezpieczniki w komorze silnika")).toContain(
-      "fuses",
-    );
-    expect(matchQuickTopics("Wymiana żarówek")).toContain("bulbs");
-    expect(matchQuickTopics("Olej silnikowy")).toContain("fluids");
-    expect(matchQuickTopics("Tankowanie")).toContain("fuel");
-    expect(matchQuickTopics("Lampki kontrolne")).toContain("indicators");
+const topic = (id: EssentialId) => ESSENTIALS.find((t) => t.id === id)!;
+const section = (chain: string): EssentialCandidate => ({
+  title: chain.split(" › ").at(-1)!,
+  chain,
+  section: true,
+});
+const heading = (chain: string, title: string): EssentialCandidate => ({
+  title,
+  chain,
+  section: false,
+});
+const pick = (id: EssentialId, candidates: EssentialCandidate[]) => {
+  const hit = pickEssential(topic(id), candidates);
+  return hit && (hit.section ? hit.chain : `${hit.chain} › ${hit.title}`);
+};
+
+describe("Niezbędnik topics", () => {
+  it("opens the heading of the topic inside a shared section", () => {
+    const shared = "Sytuacje awaryjne › Bezpieczniki i żarówki";
+    const candidates = [
+      section(shared),
+      heading(shared, "Bezpieczniki"),
+      heading(shared, "Wymiana żarówek"),
+    ];
+    expect(pick("fuses", candidates)).toBe(`${shared} › Bezpieczniki`);
+    expect(pick("bulbs", candidates)).toBe(`${shared} › Wymiana żarówek`);
+  });
+
+  it("prefers a fitting chapter over the first mention in reading order", () => {
+    expect(
+      pick("tyres", [
+        heading(
+          "Uruchomienie i prowadzenie pojazdu",
+          "Sprawdzanie ciśnienia w oponach",
+        ),
+        heading("Zaczep holowniczy", "Ciśnienie w oponach"),
+        heading("Porady praktyczne › Koła", "Ciśnienie w oponach"),
+        heading("Koła i opony", "Układ monitorowania ciśnienia w oponach"),
+      ]),
+    ).toBe("Porady praktyczne › Koła › Ciśnienie w oponach");
+    expect(
+      pick("indicators", [
+        heading("Pasy bezpieczeństwa", "Lampki kontrolne"),
+        section("Obsługa › Wskaźniki i lampki ostrzegawcze/kontrolne"),
+      ]),
+    ).toBe("Obsługa › Wskaźniki i lampki ostrzegawcze/kontrolne");
+  });
+
+  it("uses a weaker title only without a stronger one", () => {
+    const service = [
+      section("Ogrzewanie, wentylacja i klimatyzacja › Obsługa okresowa"),
+      section("Serwisowanie samochodu"),
+    ];
+    expect(pick("service", service)).toBe("Serwisowanie samochodu");
+    expect(pick("service", service.slice(0, 1))).toBeUndefined();
+    expect(
+      pick("service", [
+        heading("Bezpieczne przewożenie dzieci", "Przegląd systemów mocowania"),
+      ]),
+    ).toBeUndefined();
+    expect(
+      pick("help", [
+        heading(
+          "Sytuacje awaryjne › Poradnik",
+          "Wyposażenie używane w sytuacjach awaryjnych",
+        ),
+        section("Sytuacje awaryjne"),
+      ]),
+    ).toBe("Sytuacje awaryjne");
   });
 
   it("skips misleading titles", () => {
-    expect(matchQuickTopics("Lampki kontrolne")).not.toContain("bulbs");
-    expect(matchQuickTopics("Wskaźnik poziomu paliwa")).not.toContain("fuel");
-    expect(matchQuickTopics("Radio")).toEqual([]);
-  });
-
-  it("keeps the tile limit within the Navi-like grid", () => {
-    expect(QUICK_TOPICS_MAX).toBeLessThanOrEqual(8);
-    expect(new Set(QUICK_TOPICS.map((t) => t.id)).size).toBe(
-      QUICK_TOPICS.length,
+    expect(pick("bulbs", [section("Lampki kontrolne")])).toBeUndefined();
+    expect(pick("fuel", [section("Wskaźnik poziomu paliwa")])).toBeUndefined();
+    expect(
+      pick("fluids", [
+        heading("Bezpieczniki i żarówki", "Bezpieczniki w komorze silnika"),
+      ]),
+    ).toBeUndefined();
+    expect(ESSENTIALS.map((t) => pick(t.id, [section("Radio")]))).toEqual(
+      ESSENTIALS.map(() => undefined),
     );
   });
 
-  it("recognises indicator and technical data chapters", () => {
-    expect(INDICATOR_SECTION.test("Lampki kontrolne")).toBe(true);
+  it("fills whole rows: 8, 6 or 4 tiles, never fewer than 4 when available", () => {
+    expect([13, 8, 7, 6, 5, 4, 3].map(essentialsSize)).toEqual([
+      8, 8, 6, 6, 4, 4, 4,
+    ]);
+    expect(ESSENTIALS.length).toBeGreaterThanOrEqual(8);
+    expect(new Set(ESSENTIALS.map((t) => t.id)).size).toBe(ESSENTIALS.length);
+    for (const t of ESSENTIALS) expect(t.description).toMatch(/\.$/);
+  });
+
+  it("recognises technical data chapters", () => {
     expect(TECHNICAL_SECTION.test("Dane techniczne")).toBe(true);
     expect(TECHNICAL_SECTION.test("Kluczyki")).toBe(false);
   });
@@ -74,44 +135,6 @@ describe("overview helpers", () => {
     expect(shorten("Sprawdzaj ciśnienie w oponach co miesiąc", 25)).toBe(
       "Sprawdzaj ciśnienie w…",
     );
-  });
-
-  it("pairs pictograms with the text that follows them", () => {
-    const entries = iconEntries([
-      icon("b1"),
-      icon("b2"),
-      para("b3", "Lampka ciśnienia oleju"),
-      icon("b4"),
-      { type: "table", id: "b5", header: false, rows: [["a", "b"]] },
-    ]);
-    expect(entries.map((e) => [e.id, e.text])).toEqual([
-      ["b1", "Lampka ciśnienia oleju"],
-      ["b2", "Lampka ciśnienia oleju"],
-    ]);
-  });
-
-  it("reads paragraphs that start with an inline symbol as entries", () => {
-    const entries = iconEntries([
-      {
-        type: "paragraph",
-        id: "b1",
-        runs: [
-          { icon: "/media/s.webp", w: 20, h: 18 },
-          " Kierunkowskaz ",
-          { page: 98 },
-        ],
-      },
-      para("b2", "Lampka świeci na zielono."),
-    ]);
-    expect(entries).toEqual([
-      {
-        id: "b1",
-        src: "/media/s.webp",
-        width: 20,
-        height: 18,
-        text: "Kierunkowskaz str. 98",
-      },
-    ]);
   });
 
   it("uses large illustrations only as thumbnails", () => {

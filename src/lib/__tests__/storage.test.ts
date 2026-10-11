@@ -19,6 +19,7 @@ import {
   setCarEngine,
   setFeatureState,
 } from "@/lib/storage/hooks";
+import { withExclusiveFeatures } from "@/config/vehicle";
 
 function memoryStorage(
   initial: Record<string, string> = {},
@@ -54,6 +55,64 @@ const highlight = (
 });
 
 describe("migrate", () => {
+  it("stores owner choices but not inferred exclusions, and allows switching alternatives", () => {
+    const store = getStore();
+    store.replace(createEmptyData());
+    setFeatureState("car", "transmission.automatic", {
+      status: "has",
+      certainty: "confirmed",
+    });
+    expect(
+      store.get().settings.vehicles.car["transmission.manual"],
+    ).toBeUndefined();
+    expect(
+      withExclusiveFeatures(store.get().settings.vehicles.car)[
+        "transmission.manual"
+      ],
+    ).toEqual({ status: "no", certainty: "probable" });
+    setFeatureState("car", "transmission.manual", {
+      status: "has",
+      certainty: "confirmed",
+    });
+    expect(
+      store.get().settings.vehicles.car["transmission.automatic"],
+    ).toBeUndefined();
+    expect(
+      withExclusiveFeatures(store.get().settings.vehicles.car)[
+        "transmission.automatic"
+      ]?.status,
+    ).toBe("no");
+    setCarEngine("car", null);
+    expect(
+      withExclusiveFeatures(store.get().settings.vehicles.car)[
+        "transmission.automatic"
+      ]?.status,
+    ).toBe("no");
+    setFeatureState("car", "transmission.manual", null);
+    expect(
+      withExclusiveFeatures(store.get().settings.vehicles.car ?? {})[
+        "transmission.automatic"
+      ],
+    ).toBeUndefined();
+  });
+
+  it("drops retired folding-roof choices without changing other equipment", () => {
+    const data = migrate({
+      version: SCHEMA_VERSION,
+      settings: {
+        vehicles: {
+          car: {
+            "roof.electric": { status: "no", certainty: "confirmed" },
+            "roof.remote": { status: "has", certainty: "confirmed" },
+          },
+        },
+      },
+    });
+    expect(data.settings.vehicles.car).toEqual({
+      "roof.remote": { status: "has", certainty: "confirmed" },
+    });
+  });
+
   it("does not inherit another owner's legacy engine when assigning a library car", () => {
     const store = getStore();
     store.replace(createEmptyData());

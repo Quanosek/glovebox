@@ -1,4 +1,8 @@
-import { FEATURE_BY_ID, type VehicleProfile } from "@/config/vehicle";
+import {
+  FEATURE_BY_ID,
+  withExclusiveFeatures,
+  type VehicleProfile,
+} from "@/config/vehicle";
 
 /**
  * Availability of a content section for the owner's car, derived from the
@@ -34,6 +38,7 @@ export function getAvailability(
   features: readonly string[],
   profile: VehicleProfile,
 ): Availability {
+  const effectiveProfile = withExclusiveFeatures(profile);
   const a: Availability = {
     kind: "neutral",
     missing: [],
@@ -43,7 +48,7 @@ export function getAvailability(
     notes: [],
   };
   for (const id of features) {
-    const state = profile[id];
+    const state = effectiveProfile[id];
     const def = FEATURE_BY_ID[id];
     if (!state || !def) continue;
     if (state.status === "no") a.missing.push(id);

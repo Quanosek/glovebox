@@ -115,7 +115,10 @@ implementation is the `scripts/manual_extract/` package, one module per topic:
    Up to three lines much wider than the others (a footnote under two columns) do not join the
    columns they cross when the remaining lines form clear columns; they become full-width bands.
    A lone number with text right before it on its baseline ("nicy . . . 58") ends that line and
-   is not merged as a legend number. Footnotes in small print at the bottom of a column
+   is not merged as a legend number. Page numbers drawn separately to the right of a
+   dot-leader line are joined by baseline and proximity before column detection, so
+   they cannot become separate columns or reorder a numbered legend.
+   Footnotes in small print at the bottom of a column
    ("1) COC = …") are read after the page and emitted after the block they interrupted. The
    line pitch (most common baseline distance) is measured for the body text and for every text
    style (font, size) that wraps; a paragraph starts when the baseline distance, minus the extra
@@ -141,8 +144,12 @@ implementation is the `scripts/manual_extract/` package, one module per topic:
    page an entry belongs to. With no PDF outline, adjacent hyphenated heading lines
    in the same column are joined before sections are created. Unmatched outline entries are reported; their bookmark
    text is not inserted as a fabricated heading in the manual body.
+   A two-page spread — an illustration printed alone on a page, its numbered legend ("1",
+   "A") starting on the next page under new section titles — is read with the illustration
+   right above that legend, in the section that holds the legend (`move_spread_figures`).
    Chapter tables of contents (dot leaders) are skipped; other dot-leader lines
-   (legends of illustrations) become page references. `--skip-title` skips "Spis treści",
+   (legends of illustrations) become page references. Pages containing circled legend
+   markers are not mistaken for chapter tables of contents. `--skip-title` skips "Spis treści",
    "Skorowidz", …
 7. **Blocks** — paragraphs (continued across columns and pages while the sentence is
    unfinished; a list item also when the next column continues it in lower case),

@@ -10,6 +10,7 @@ from collections import Counter
 from typing import Any
 
 from .document import Document
+from .leaders import merge_leader_numbers
 from .model import Item, Span
 from .pdf import pymupdf
 from .text import INVISIBLE, MARKER_ONLY_RE, POLISH_LETTERS, REF_MARK, TEXT_ARROWS, clean_text, normalize_title
@@ -20,7 +21,7 @@ def read_pages(doc: Document) -> None:
     classify_symbol_fonts(doc, [ln for lines in pages for ln in lines])
     raw_lines: list[Item] = []
     for pno, lines in enumerate(pages):
-        raw_lines.extend(merge_markers(strip_continuation_marks(lines), marker_circles(doc, pno)))
+        raw_lines.extend(merge_markers(merge_leader_numbers(strip_continuation_marks(lines)), marker_circles(doc, pno)))
     strip_margins(doc, raw_lines)
     compute_body_size(doc)
     measure_word_spaces(doc)

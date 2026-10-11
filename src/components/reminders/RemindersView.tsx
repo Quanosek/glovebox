@@ -60,7 +60,6 @@ export function RemindersView({
 
   return (
     <div className="space-y-8">
-      <ReminderNotifications />
       {myCars.map((car) => (
         <CarReminders
           key={car.id}
@@ -72,6 +71,7 @@ export function RemindersView({
           skeletonRows={hint.reminders[car.id] ?? 0}
         />
       ))}
+      <ReminderNotifications />
     </div>
   );
 }
@@ -94,7 +94,7 @@ function CarReminders({
       aria-labelledby={`${car.id}-title`}
     >
       <div className="silver-bar flex flex-wrap items-center gap-4 border-b border-line px-5 py-4">
-        <CarLogo carId={car.id} brand={car.brand} size={40} />
+        <CarLogo carId={car.id} brand={car.brand} logo={car.logo} size={40} />
         <div className="min-w-0 flex-1">
           <h2 id={`${car.id}-title`} className="type-card">
             {car.brand} {car.model}

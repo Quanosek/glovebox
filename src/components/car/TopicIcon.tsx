@@ -1,7 +1,7 @@
-import type { QuickTopicId } from "@/config/quickTopics";
+import type { EssentialId } from "@/config/essentials";
 
-/** Line pictograms of the "Najczęściej potrzebne" tiles (Navi-style keys). */
-const PATHS: Record<QuickTopicId, string[]> = {
+/** Line pictograms of the "Niezbędnik" tiles (Navi-style keys). */
+const PATHS: Record<EssentialId | "chapter", string[]> = {
   tyres: [
     "M16 4a12 12 0 1 0 0 24 12 12 0 0 0 0-24Z",
     "M16 10a6 6 0 1 0 0 12 6 6 0 0 0 0-12Z",
@@ -35,13 +35,29 @@ const PATHS: Record<QuickTopicId, string[]> = {
     "M16 3v4M10 5l2 3M22 5l-2 3",
   ],
   service: ["M7 6h18v22H7z", "M11 4v4M21 4v4M7 12h18", "M11 18l3 3 6-6"],
+  battery: [
+    "M4 11h24v15H4z",
+    "M8 11V8h4v3M20 11V8h4v3",
+    "M8 18h4M20 18h4M22 16v4",
+  ],
+  key: [
+    "M10 10a6 6 0 1 0 0 12 6 6 0 0 0 0-12Z",
+    "M16 16h12M23 16v4M27 16v3",
+    "M10 15v2",
+  ],
+  wipers: ["M4 26c3-9 21-9 24 0", "M16 26 9 9", "M6 11l6-4"],
+  techData: ["M7 4h18v24H7z", "M11 10h10M11 15h10M11 20h6"],
+  chapter: [
+    "M16 8c-3-2-7-3-12-3v19c5 0 9 1 12 3 3-2 7-3 12-3V5c-5 0-9 1-12 3Z",
+    "M16 8v19",
+  ],
 };
 
 export function TopicIcon({
   id,
   className = "",
 }: {
-  id: QuickTopicId;
+  id: EssentialId | "chapter";
   className?: string;
 }) {
   return (

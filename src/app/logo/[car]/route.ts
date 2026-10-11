@@ -7,7 +7,11 @@ export const dynamic = "force-dynamic";
 export async function GET(_req: Request, ctx: RouteContext<"/logo/[car]">) {
   const car = getCar((await ctx.params).car);
   const logo = car ? await getCarLogo(car) : null;
-  if (!logo) return new Response("Not found", { status: 404 });
+  if (!logo)
+    return new Response("Not found", {
+      status: 404,
+      headers: { "Cache-Control": "no-store" },
+    });
   return new Response(new Uint8Array(logo.data), {
     headers: {
       "Content-Type": logo.type,

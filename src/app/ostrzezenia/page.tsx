@@ -36,7 +36,7 @@ export default async function WarningsPage({
       <p className="mt-2 text-sm text-graphite">
         Ostrzeżenia, przestrogi i uwagi z instrukcji tego auta.
       </p>
-      <WarningsList items={items} />
+      <WarningsList carId={selectedCar.id} items={items} />
     </main>
   );
 }

@@ -2,7 +2,12 @@
 
 import { useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
-import type { FeatureState, VehicleProfile } from "@/config/vehicle";
+import {
+  chooseFeature,
+  withExclusiveFeatures,
+  type FeatureState,
+  type VehicleProfile,
+} from "@/config/vehicle";
 import type { CarSummary } from "@/lib/cars";
 import { isValidId } from "@/lib/slug";
 import type { CarSpec } from "@/lib/catalog";
@@ -49,7 +54,7 @@ export function useVehicleProfile(carId?: string | null): VehicleProfile {
   const data = useAppData();
   const id = carId ?? /^\/auto\/([^/]+)/.exec(pathname)?.[1];
   const profile = (id && data.settings.vehicles[id]) || EMPTY_PROFILE;
-  return profile;
+  return withExclusiveFeatures(profile);
 }
 
 export function useCarEngine(carId: string): CarSpec | null {
@@ -107,9 +112,11 @@ export function setFeatureState(
   state: FeatureState | null,
 ): void {
   updateData((d) => {
-    const profile = { ...d.settings.vehicles[carId] };
-    if (state) profile[featureId] = state;
-    else delete profile[featureId];
+    const profile = chooseFeature(
+      d.settings.vehicles[carId] ?? {},
+      featureId,
+      state,
+    );
     const vehicles = { ...d.settings.vehicles };
     if (Object.keys(profile).length > 0) vehicles[carId] = profile;
     else delete vehicles[carId];

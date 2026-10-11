@@ -52,6 +52,40 @@ describe("parseLogoClaims", () => {
       [],
     );
   });
+
+  it("dates logos known only from a point in time (P585) to that year", () => {
+    const point = (file: string, year: number) => ({
+      rank: "deprecated",
+      mainsnak: { datavalue: { value: file } },
+      qualifiers: {
+        P585: [{ datavalue: { value: { time: `+${year}-00-00T00:00:00Z` } } }],
+      },
+    });
+    // Opel as currently published: the 1970 and 1987 logos carry P585.
+    const opel = parseLogoClaims({
+      claims: {
+        P154: [
+          point("Opel Print 1970.svg", 1970),
+          point("Opel Logo 1987.svg", 1987),
+          claim("Opel logo.svg", "deprecated", 2009, 2017),
+          claim("Opel-Logo 2017.svg", "deprecated", 2017, 2021),
+          claim("Opel logo 2023.svg", "preferred", 2023),
+        ],
+      },
+    });
+    expect(opel[1]).toMatchObject({ start: 1987, end: 1987 });
+    expect(pick(opel, 1972)).toBe("Opel Print 1970.svg");
+    expect(pick(opel, 1995)).toBe("Opel Logo 1987.svg");
+    expect(pick(opel, 2016)).toBe("Opel logo.svg");
+    expect(pick(opel, 2025)).toBe("Opel logo 2023.svg");
+    // A point-in-time logo never displaces the current undated one.
+    const brand = parseLogoClaims({
+      claims: {
+        P154: [point("Old.svg", 1987), claim("Current.svg", "normal")],
+      },
+    });
+    expect(pick(brand, 2022)).toBe("Current.svg");
+  });
 });
 
 describe("pickLogo", () => {

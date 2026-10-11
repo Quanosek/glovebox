@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import type { FontSize } from "@/lib/storage/schema";
 import { updateData, useAppData, useHydrated } from "@/lib/storage/hooks";
+import { useLayoutHint } from "@/lib/storage/hintContext";
 import { getStore } from "@/lib/storage/store";
 import { confirmDialog } from "@/components/Dialog";
 import { resetOfflineStatus } from "@/lib/offline";
@@ -18,6 +19,7 @@ const FONT_SIZES: { id: FontSize; label: string }[] = [
 export function SettingsView() {
   const data = useAppData();
   const hydrated = useHydrated();
+  const hint = useLayoutHint();
   const [message, setMessage] = useState<{
     kind: "ok" | "error";
     text: string;
@@ -25,28 +27,15 @@ export function SettingsView() {
   const [importMode, setImportMode] = useState<"merge" | "replace">("merge");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  if (!hydrated)
-    return (
-      <div className="mt-4 flex flex-col gap-6" aria-busy="true">
-        {[10, 7, 12].map((height) => (
-          <div
-            key={height}
-            className="panel"
-            style={{ minHeight: `${height}rem` }}
-          >
-            <div className="panel-title">
-              <span className="skeleton h-3 w-32" />
-            </div>
-            <div className="flex flex-col gap-3 p-4">
-              <span className="skeleton h-4 w-3/4" />
-              <span className="skeleton h-8 w-2/3" />
-              <span className="skeleton h-4 w-1/2" />
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  const { settings } = data;
+  // Before hydration the real layout renders from the layout hint (same
+  // pressed size and checkbox), with controls disabled until data is read.
+  const settings = hydrated
+    ? data.settings
+    : {
+        ...data.settings,
+        fontSize: hint.fontSize,
+        showUnavailable: hint.showUnavailable,
+      };
   const store = getStore();
 
   const exportData = () => {
@@ -121,7 +110,7 @@ export function SettingsView() {
   };
 
   return (
-    <div className="mt-4 flex flex-col gap-6">
+    <div className="mt-4 flex flex-col gap-6" aria-busy={!hydrated}>
       {message && (
         <p
           role="status"
@@ -130,7 +119,7 @@ export function SettingsView() {
           {message.text}
         </p>
       )}
-      {store.lastError && (
+      {hydrated && store.lastError && (
         <p className="border-l-4 border-red bg-paper px-4 py-2 text-sm text-red">
           Nie udało się zapisać danych w tej przeglądarce. Zwolnij miejsce albo
           pobierz kopię zapasową.
@@ -150,6 +139,7 @@ export function SettingsView() {
                   key={f.id}
                   type="button"
                   aria-pressed={settings.fontSize === f.id}
+                  disabled={!hydrated}
                   className={`btn ${settings.fontSize === f.id ? "btn-primary" : ""}`}
                   onClick={() =>
                     updateData((d) => ({
@@ -167,6 +157,7 @@ export function SettingsView() {
             <input
               type="checkbox"
               className="mt-0.5"
+              disabled={!hydrated}
               checked={settings.showUnavailable}
               onChange={(e) =>
                 updateData((d) => ({
@@ -199,6 +190,7 @@ export function SettingsView() {
             <button
               type="button"
               className="btn btn-primary"
+              disabled={!hydrated}
               onClick={exportData}
             >
               Pobierz kopię zapasową
@@ -207,6 +199,7 @@ export function SettingsView() {
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <select
               className="field w-full py-1 sm:w-auto"
+              disabled={!hydrated}
               value={importMode}
               onChange={(e) =>
                 setImportMode(e.target.value as "merge" | "replace")
@@ -221,6 +214,7 @@ export function SettingsView() {
               <input
                 ref={fileRef}
                 type="file"
+                disabled={!hydrated}
                 accept="application/json,.json"
                 className="sr-only"
                 onChange={(e) => {
@@ -234,6 +228,7 @@ export function SettingsView() {
             <button
               type="button"
               className="btn"
+              disabled={!hydrated}
               onClick={() => void clearOffline()}
             >
               Usuń instrukcje zapisane bez internetu
@@ -241,6 +236,7 @@ export function SettingsView() {
             <button
               type="button"
               className="btn text-red"
+              disabled={!hydrated}
               onClick={() => void clearAll()}
             >
               Usuń wszystkie dane

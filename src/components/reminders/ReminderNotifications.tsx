@@ -33,10 +33,16 @@ export function ReminderNotifications() {
     }
   };
 
-  if (permission === null || permission === "granted") return null;
+  // The permission is only known in the browser. Until then the panel keeps
+  // its usual box (most browsers have not answered yet); it is placed after
+  // the reminders, so hiding it once notifications are on moves nothing.
+  if (permission === "granted") return null;
 
   return (
-    <section className="panel flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+    <section
+      className="panel flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
+      aria-busy={permission === null}
+    >
       <div className="min-w-0">
         <h2 className="type-item">Powiadomienia o terminach</h2>
         <p className="mt-1 text-sm text-graphite">
@@ -47,7 +53,7 @@ export function ReminderNotifications() {
       <button
         type="button"
         className="btn shrink-0 justify-center"
-        disabled={permission === "unsupported"}
+        disabled={permission === null || permission === "unsupported"}
         onClick={() => void enable()}
       >
         {permission === "denied"

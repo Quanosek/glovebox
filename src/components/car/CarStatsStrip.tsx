@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { CarStats } from "@/lib/overview";
 import { plural } from "@/lib/typography";
+import { WARNING_KINDS, warningKindLabel, warningsHref } from "@/lib/warnings";
 import { OfflineStat } from "./OfflineStat";
 
 const fmt = (n: number) => n.toLocaleString("pl-PL");
@@ -13,8 +14,6 @@ export function CarStatsStrip({
   carId: string;
   stats: CarStats;
 }) {
-  const warningsHref = `/ostrzezenia?car=${carId}`;
-  const danger = stats.warnings.danger + stats.warnings.warning;
   const cells = [
     stats.pages > 0 && {
       value: fmt(stats.pages),
@@ -33,62 +32,67 @@ export function CarStatsStrip({
         "ilustracji",
       ),
     },
-    danger > 0 && {
-      value: fmt(danger),
-      label: plural(danger, "ostrzeżenie", "ostrzeżenia", "ostrzeżeń"),
-      href: warningsHref,
-      red: true,
-    },
-    stats.warnings.caution > 0 && {
-      value: fmt(stats.warnings.caution),
-      label: plural(
-        stats.warnings.caution,
-        "przestroga",
-        "przestrogi",
-        "przestróg",
-      ),
-      href: warningsHref,
-    },
-    stats.warnings.note > 0 && {
-      value: fmt(stats.warnings.note),
-      label: plural(stats.warnings.note, "uwaga", "uwagi", "uwag"),
-      href: warningsHref,
-    },
-  ].filter(Boolean) as Array<{
-    value: string;
-    label: string;
-    href?: string;
-    red?: boolean;
-  }>;
+  ].filter(Boolean) as Cell[];
+  // Same categories and names as the filters of the warnings list.
+  const warnings = WARNING_KINDS.filter((k) => stats.warnings[k.id] > 0).map(
+    (kind): Cell => ({
+      value: fmt(stats.warnings[kind.id]),
+      label: warningKindLabel(kind.id, stats.warnings[kind.id]),
+      href: warningsHref(carId, kind.id),
+      red: kind.red,
+    }),
+  );
 
+  // Two rows that each fill the width: the manuals, then their warnings.
   return (
-    <ul className="stat-strip" aria-label="Instrukcje w liczbach">
-      {cells.map((c) => {
-        const body = (
-          <>
-            <span className={`type-value block ${c.red ? "text-red" : ""}`}>
-              {c.value}
-            </span>
-            <span className="mt-1.5 block text-xs text-graphite">
-              {c.label}
-            </span>
-          </>
-        );
-        return (
-          <li key={c.label}>
-            {c.href ? (
-              <Link href={c.href} className="stat-cell group hover:bg-paper">
-                {body}
-              </Link>
-            ) : (
-              <div className="stat-cell">{body}</div>
-            )}
-          </li>
-        );
-      })}
-      <li>
-        <OfflineStat carId={carId} />
-      </li>
-    </ul>
+    <div>
+      <ul className="stat-strip" aria-label="Instrukcje w liczbach">
+        {cells.map((c) => (
+          <StatCell key={c.label} cell={c} />
+        ))}
+        <li>
+          <OfflineStat carId={carId} />
+        </li>
+      </ul>
+      {warnings.length > 0 && (
+        <ul
+          className="stat-strip border-t-0"
+          aria-label="Ostrzeżenia w instrukcjach"
+        >
+          {warnings.map((c) => (
+            <StatCell key={c.label} cell={c} />
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+interface Cell {
+  value: string;
+  label: string;
+  href?: string;
+  red?: boolean;
+}
+
+function StatCell({ cell: c }: { cell: Cell }) {
+  const body = (
+    <>
+      <span className={`type-value block ${c.red ? "text-red" : ""}`}>
+        {c.value}
+      </span>
+      <span className="mt-1.5 block text-xs text-graphite">{c.label}</span>
+    </>
+  );
+  return (
+    <li>
+      {c.href ? (
+        <Link href={c.href} className="stat-cell group hover:bg-paper">
+          {body}
+        </Link>
+      ) : (
+        <div className="stat-cell">{body}</div>
+      )}
+    </li>
   );
 }

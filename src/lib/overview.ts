@@ -6,12 +6,12 @@ import type {
   WarningKind,
 } from "@/content/types";
 import { FUEL_LABEL, type CarSpec } from "@/lib/catalog";
-import type { QuickTopicId } from "@/config/quickTopics";
+import type { EssentialId } from "@/config/essentials";
 import { formatDecimal } from "@/lib/files";
 
 /**
  * Pure helpers and shared types for the car overview screens (car page,
- * "Lampki kontrolne", "Dane techniczne", reader extras). Client-safe: the
+ * "Niezbędnik", "Dane techniczne", reader extras). Client-safe: the
  * server-side collection lives in `src/lib/carOverview.ts`.
  */
 
@@ -60,62 +60,6 @@ export function firstIllustration(blocks: Block[]): ImageBlock | null {
     if (b.type === "image" && !b.icon && b.width >= 120 && b.height >= 80)
       return b;
   return null;
-}
-
-export interface IconEntry {
-  /** Image block id (deep-link target). */
-  id: string;
-  src: string;
-  width: number;
-  height: number;
-  text: string;
-}
-
-/**
- * Pictograms of a section paired with the text printed next to them: the
- * following paragraph or list (manuals print the symbol, then explain it).
- * Consecutive icons share the text that follows them. A paragraph that
- * starts with an inline symbol ("[symbol] Kierunkowskaz str. 98") is an
- * entry of its own.
- */
-export function iconEntries(blocks: Block[], maxText = 220): IconEntry[] {
-  const out: IconEntry[] = [];
-  for (let i = 0; i < blocks.length; i++) {
-    const b = blocks[i];
-    if (b.type === "paragraph") {
-      const [first, ...rest] = b.runs;
-      if (typeof first !== "string" && first && "icon" in first) {
-        const text = runsToText(rest).trim();
-        if (text)
-          out.push({
-            id: b.id,
-            src: first.icon,
-            width: first.w,
-            height: first.h,
-            text: shorten(text, maxText),
-          });
-      }
-      continue;
-    }
-    if (b.type !== "image" || !b.icon) continue;
-    let text = "";
-    for (let j = i + 1; j < blocks.length && j <= i + 4; j++) {
-      const n = blocks[j];
-      if (n.type === "image" && n.icon) continue;
-      if (n.type === "paragraph" || n.type === "list" || n.type === "heading")
-        text = blockToText(n);
-      break;
-    }
-    if (!text.trim()) continue;
-    out.push({
-      id: b.id,
-      src: b.src,
-      width: b.width,
-      height: b.height,
-      text: shorten(text, maxText),
-    });
-  }
-  return out;
 }
 
 export interface TableFact {
@@ -220,20 +164,16 @@ export interface CarStats {
   warnings: Record<WarningKind, number>;
 }
 
-export interface QuickTile {
-  id: QuickTopicId;
+/** "Niezbędnik" tile: a topic (or, to fill the row, a chapter) of the manuals. */
+export interface EssentialTile {
+  id: EssentialId | "chapter";
   label: string;
+  description: string;
+  /** Section or heading the tile opens (`#bN` for a heading). */
   href: string;
-  /** Title of the section the tile opens and its book. */
-  section: string;
+  /** Where it leads: "Section › Heading", and the book. */
+  source: string;
   book: string;
-}
-
-export interface GlossaryGroup {
-  section: string;
-  book: string;
-  href: string;
-  items: Array<IconEntry & { href: string }>;
 }
 
 export interface TechCard {

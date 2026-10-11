@@ -15,6 +15,7 @@ import {
   setFeatureState,
   setVehicleProfile,
   setCarEngine,
+  useAppData,
   useCarEngine,
   useHydrated,
   useVehicleProfile,
@@ -53,6 +54,7 @@ export function EquipmentEditor({
 }) {
   const hydrated = useHydrated();
   const profile = useVehicleProfile(carId);
+  const storedProfile = useAppData().settings.vehicles[carId] ?? {};
   const spec = useCarEngine(carId);
   const detected = FEATURES.filter((f) => sections[f.id]?.length);
   const suggestions = Object.entries(suggestFromSpec(spec ?? undefined)).filter(
@@ -129,7 +131,7 @@ export function EquipmentEditor({
               onClick={() =>
                 setVehicleProfile(carId, {
                   ...Object.fromEntries(suggestions),
-                  ...profile,
+                  ...storedProfile,
                 })
               }
             >

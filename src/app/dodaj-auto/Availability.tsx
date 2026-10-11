@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { Skeleton } from "@/components/Skeleton";
 import type { SystemStatus } from "./wizardModel";
 
 export function Availability({
@@ -32,18 +31,9 @@ export function Availability({
     text =
       "Dodawanie instrukcji wymaga połączenia z aplikacją. Zapisane auta możesz dalej czytać – wróć tutaj, gdy połączenie wróci.";
   } else if (!system) {
-    return checking ? (
-      <div
-        className="mt-4 flex min-h-20 items-center gap-4 border-l-4 border-silver bg-paper px-4 py-3"
-        aria-busy="true"
-      >
-        <div className="flex-1 space-y-2">
-          <Skeleton className="h-4 w-1/3" />
-          <Skeleton className="h-3 w-2/3" />
-        </div>
-        <Skeleton className="h-9 w-36 shrink-0" />
-      </div>
-    ) : null;
+    // Usually nothing is shown once the check is done: no placeholder that
+    // would collapse and pull the form up.
+    return null;
   } else if (running) {
     title = "Trwa dodawanie innego auta";
     text = `Aplikacja odczytuje właśnie instrukcje auta ${running.label || "dodanego przed chwilą"}. Nowe auto dodasz, gdy to się zakończy.`;

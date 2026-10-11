@@ -43,6 +43,8 @@ export interface CarSummary {
   href: string;
   spec?: CarSpec;
   catalog?: { brand: string; model: string };
+  /** Pixel size of the brand logo already cached for the model year. */
+  logo?: { width: number; height: number };
   books: Array<
     CarBook & {
       href: string;
@@ -82,11 +84,6 @@ export function equipmentHref(carId: string): string {
   return `/auto/${carId}/wyposazenie`;
 }
 
-/** "Lampki kontrolne" glossary of a car. */
-export function glossaryHref(carId: string): string {
-  return `/auto/${carId}/lampki-kontrolne`;
-}
-
 /** "Dane techniczne" cards of a car. */
 export function techDataHref(carId: string): string {
   return `/auto/${carId}/dane-techniczne`;
@@ -98,11 +95,7 @@ export function logoHref(carId: string): string {
 }
 
 /** Book routes that would clash with fixed pages under `/auto/<car>/`. */
-export const RESERVED_BOOK_ROUTES = [
-  "wyposazenie",
-  "lampki-kontrolne",
-  "dane-techniczne",
-];
+export const RESERVED_BOOK_ROUTES = ["wyposazenie", "dane-techniczne"];
 
 export function bookHref(carId: string, route: string): string {
   return `/auto/${carId}/${route}`;

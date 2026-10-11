@@ -1,13 +1,12 @@
 import type { WarningKind } from "@/content/types";
 import {
-  INDICATOR_SECTION,
-  QUICK_TOPICS,
-  QUICK_TOPICS_MAX,
+  ESSENTIALS,
   TECHNICAL_SECTION,
-  matchQuickTopics,
-  type QuickTopicId,
-} from "@/config/quickTopics";
-import { glossaryHref, type CarFile } from "@/lib/cars";
+  essentialsSize,
+  pickEssential,
+  type EssentialCandidate,
+} from "@/config/essentials";
+import type { CarFile } from "@/lib/cars";
 import {
   bookCtxs,
   getAncestors,
@@ -20,14 +19,12 @@ import {
 import {
   blockToText,
   firstIllustration,
-  iconEntries,
   isMeasurementTable,
   shorten,
   tableFacts,
   textFacts,
   type CarStats,
-  type GlossaryGroup,
-  type QuickTile,
+  type EssentialTile,
   type TechCard,
   type Tip,
 } from "@/lib/overview";
@@ -37,16 +34,15 @@ import type { CarSpec } from "@/lib/catalog";
 
 /**
  * Server-side collection of the car overview data (docs/car-overview.md):
- * numbers, "Najczęściej potrzebne" tiles, the "Lampki kontrolne" glossary
- * and "Dane techniczne" cards. Everything is computed from the generated
- * manuals in `database/` at render time and memoised per car version.
- * Never import this module from client components.
+ * numbers, "Niezbędnik" tiles and "Dane techniczne" cards. Everything is
+ * computed from the generated manuals in `database/` at render time and
+ * memoised per car version. Never import this module from client components.
  */
 
 export interface CarOverview {
   stats: CarStats;
-  tiles: QuickTile[];
-  glossaryCount: number;
+  /** "Niezbędnik": 8, 6 or 4 tiles (fewer only for a manual that short). */
+  essentials: EssentialTile[];
   techCount: number;
   /** Section about periodic service, linked from the reminders. */
   serviceHref: string | null;
@@ -84,7 +80,10 @@ export function getCarOverview(car: CarFile): CarOverview {
       icons: 0,
       warnings,
     };
-    const found = new Map<QuickTopicId, QuickTile>();
+    const candidates: Array<
+      EssentialCandidate & { href: string; book: string; page: number | null }
+    > = [];
+    const chapters: typeof candidates = [];
     for (const ctx of bookCtxs(car)) {
       const index = getBook(ctx);
       if (index.placeholder) continue;
@@ -92,17 +91,28 @@ export function getCarOverview(car: CarFile): CarOverview {
       stats.pages += index.source.pages ?? 0;
       stats.sections += index.sections.length;
       for (const s of index.sections) {
-        for (const id of matchQuickTopics(s.title))
-          if (!found.has(id))
-            found.set(id, {
-              id,
-              label: QUICK_TOPICS.find((t) => t.id === id)!.label,
-              href: sectionHref(ctx, s),
-              section: s.title,
-              book: ctx.book.short,
-            });
+        const href = sectionHref(ctx, s);
+        const chain = [...getAncestors(ctx, s), s].map((x) => x.title);
+        const section = {
+          title: s.title,
+          chain: chain.join(" › "),
+          section: true,
+          href,
+          book: ctx.book.short,
+          page: s.page ?? null,
+        };
+        candidates.push(section);
+        if (s.level === 1) chapters.push(section);
         for (const b of getBlocks(ctx, s)) {
-          if (b.type === "warning") warnings[b.kind]++;
+          if (b.type === "heading")
+            candidates.push({
+              ...section,
+              title: blockToText(b).trim(),
+              section: false,
+              href: `${href}#${b.id}`,
+              page: b.page ?? section.page,
+            });
+          else if (b.type === "warning") warnings[b.kind]++;
           else if (b.type === "image") {
             if (b.icon) stats.icons++;
             else stats.illustrations++;
@@ -110,62 +120,51 @@ export function getCarOverview(car: CarFile): CarOverview {
         }
       }
     }
-    const glossaryCount = getGlossary(car).reduce(
-      (n, g) => n + g.items.length,
-      0,
-    );
-    const indicators = found.get("indicators");
-    if (glossaryCount > 0)
-      found.set("indicators", {
-        id: "indicators",
-        label: "Lampki kontrolne",
-        href: glossaryHref(car.id),
-        section: indicators?.section ?? "Symbole z instrukcji",
-        book: indicators?.book ?? "",
+    // One place per tile: a section shared by two topics goes to the first.
+    const used = new Set<string>();
+    const essentials: EssentialTile[] = [];
+    let serviceHref: string | null = null;
+    for (const topic of ESSENTIALS) {
+      const hit = pickEssential(
+        topic,
+        candidates.filter((c) => !used.has(c.href)),
+      );
+      if (!hit) continue;
+      used.add(hit.href);
+      if (topic.id === "service") serviceHref = hit.href;
+      essentials.push({
+        id: topic.id,
+        label: topic.label,
+        description: topic.description,
+        href: hit.href,
+        source: hit.section ? hit.chain : `${hit.chain} › ${hit.title}`,
+        book: hit.book,
       });
-    const tiles = QUICK_TOPICS.map((t) => found.get(t.id))
-      .filter((t): t is QuickTile => Boolean(t))
-      .slice(0, QUICK_TOPICS_MAX);
+    }
+    // At least four tiles: a manual with few known topics adds its chapters.
+    for (const c of chapters) {
+      if (essentials.length >= 4) break;
+      if (used.has(c.href)) continue;
+      used.add(c.href);
+      essentials.push({
+        id: "chapter",
+        label: c.title,
+        description:
+          c.page != null
+            ? `Rozdział instrukcji od str. ${c.page}.`
+            : "Rozdział instrukcji.",
+        href: c.href,
+        source: c.title,
+        book: c.book,
+      });
+    }
     const tech = getTechCards(car);
     return {
       stats,
-      tiles,
-      glossaryCount,
+      essentials: essentials.slice(0, essentialsSize(essentials.length)),
       techCount: tech.reduce((n, c) => n + c.tables.length, 0),
-      serviceHref: found.get("service")?.href ?? null,
+      serviceHref,
     };
-  });
-}
-
-/** Pictograms with their explanation, grouped by section. */
-export function getGlossary(car: CarFile): GlossaryGroup[] {
-  return cached(car, "glossary", () => {
-    const collect = (onlyIndicators: boolean) => {
-      const groups: GlossaryGroup[] = [];
-      const seen = new Set<string>();
-      let total = 0;
-      for (const ctx of bookCtxs(car)) {
-        for (const s of getBook(ctx).sections) {
-          if (onlyIndicators && !chainMatches(ctx, s, INDICATOR_SECTION))
-            continue;
-          const href = sectionHref(ctx, s);
-          const items = iconEntries(getBlocks(ctx, s))
-            .filter((e) => {
-              const key = `${e.src}|${e.text.slice(0, 60)}`;
-              if (seen.has(key)) return false;
-              seen.add(key);
-              return true;
-            })
-            .map((e) => ({ ...e, href: `${href}#${e.id}` }));
-          if (items.length === 0 || total >= 240) continue;
-          total += items.length;
-          groups.push({ section: s.title, book: ctx.book.short, href, items });
-        }
-      }
-      return groups;
-    };
-    const indicators = collect(true);
-    return indicators.length > 0 ? indicators : collect(false);
   });
 }
 

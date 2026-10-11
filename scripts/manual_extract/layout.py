@@ -56,11 +56,33 @@ def assign_layout(doc: Document) -> None:
                 it.data["footnote"] = True
         ordered.extend([it for it in items if id(it) not in notes] + [it for it in items if id(it) in notes])
     doc.items = ordered
+    move_spread_figures(doc)
     compute_pitch(doc)
     merge_definitions(doc)
     leaders_to_refs(doc)
     mark_paragraph_edges(doc)
     doc.flush_bullets = bullets_are_flush(doc)
+
+
+def move_spread_figures(doc: Document) -> None:
+    """A two-page spread: an illustration printed alone on a page and its
+    numbered legend ("1", "A") starting on the next page. The illustration is
+    read right before the legend, inside whatever section holds the legend."""
+    pages: dict[int, list[Item]] = {}
+    for it in doc.items:
+        pages.setdefault(it.page, []).append(it)
+    for pno, items in sorted(pages.items()):
+        if not all(it.kind == "image" for it in items):
+            continue
+        if not any(it.x1 - it.x0 >= doc.pdf[pno].rect.width * 0.6 for it in items):
+            continue
+        legend = next((it for it in pages.get(pno + 1, []) if it.data.get("legend")), None)
+        if legend is None or legend.data["legend"] not in ("1", "A"):
+            continue
+        moved = {id(it) for it in items}
+        rest = [it for it in doc.items if id(it) not in moved]
+        k = next(i for i, it in enumerate(rest) if it is legend)
+        doc.items = rest[:k] + items + rest[k:]
 
 
 def footnotes(doc: Document, items: list[Item], height: float) -> set[int]:

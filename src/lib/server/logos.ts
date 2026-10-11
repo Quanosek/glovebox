@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { APP_NAME } from "@/lib/brand";
@@ -6,6 +5,7 @@ import type { CarFile } from "@/lib/cars";
 import { catalogKey } from "@/lib/catalog";
 import { getDatabaseDir } from "@/lib/content";
 import { validTimestamp, writeCache } from "@/lib/server/catalogCache";
+import { brandMetadataFile, logoImageBase } from "@/lib/server/logoSize";
 import {
   logoCandidates,
   parseLogoClaims,
@@ -31,11 +31,50 @@ const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 const MAX_CANDIDATES = 5;
 const TIMEOUT_MS = 15_000;
 
+/**
+ * Wikidata asks anonymous clients to keep a low request rate and answers a
+ * burst with HTTP 429. Requests are spaced out; a 429/503 pauses every lookup
+ * (honouring `Retry-After`) and the request is retried a few times.
+ * Mutable so tests can shorten the delays.
+ */
+export const WIKIDATA_PACING = {
+  intervalMs: 250,
+  retryBaseMs: 1_000,
+  maxRetryWaitMs: 15_000,
+  attempts: 3,
+};
+let nextRequestAt = 0;
+
+const sleep = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+async function paced(): Promise<void> {
+  const now = Date.now();
+  const at = Math.max(now, nextRequestAt);
+  nextRequestAt = at + WIKIDATA_PACING.intervalMs;
+  if (at > now) await sleep(at - now);
+}
+
+function retryDelay(res: Response, attempt: number): number {
+  const header = res.headers.get("Retry-After");
+  const seconds = header === null ? NaN : Number(header);
+  const date = header === null ? NaN : Date.parse(header);
+  const wait = Number.isFinite(seconds)
+    ? seconds * 1000
+    : Number.isFinite(date)
+      ? date - Date.now()
+      : WIKIDATA_PACING.retryBaseMs * 2 ** attempt;
+  return Math.min(Math.max(wait, 0), WIKIDATA_PACING.maxRetryWaitMs);
+}
+
 const DAY = 24 * 60 * 60 * 1000;
 /** Found brands are refreshed monthly; misses and errors are retried sooner. */
 const TTL = { found: 30 * DAY, missing: 7 * DAY, failed: DAY / 24 };
-/** Bump when the brand matching changes so cached lookups are redone. */
-const CACHE_VERSION = 1;
+/**
+ * Bump when the brand matching or claim parsing changes. Entries of an older
+ * version are refreshed at once but still served (also offline) meanwhile.
+ */
+const CACHE_VERSION = 2;
 
 interface BrandEntry {
   version: number;
@@ -81,22 +120,31 @@ async function getJson(params: Record<string, string>): Promise<unknown> {
   else metadataActive++;
   try {
     const url = `${WIKIDATA}?${new URLSearchParams({ ...params, format: "json" })}`;
-    let res: Response;
-    try {
-      res = await fetch(url, {
-        cache: "no-store",
-        headers: { "User-Agent": USER_AGENT },
-        signal: AbortSignal.timeout(TIMEOUT_MS),
-      });
-    } catch (error) {
-      const timeout =
-        error instanceof Error &&
-        ["AbortError", "TimeoutError"].includes(error.name);
-      throw new Error(
-        timeout
-          ? "Wikidata: przekroczono czas oczekiwania"
-          : "Wikidata: błąd połączenia (sprawdź DNS, proxy i dostęp do www.wikidata.org)",
-      );
+    let res!: Response;
+    for (let attempt = 0; attempt < WIKIDATA_PACING.attempts; attempt++) {
+      await paced();
+      try {
+        res = await fetch(url, {
+          cache: "no-store",
+          headers: { "User-Agent": USER_AGENT },
+          signal: AbortSignal.timeout(TIMEOUT_MS),
+        });
+      } catch (error) {
+        const timeout =
+          error instanceof Error &&
+          ["AbortError", "TimeoutError"].includes(error.name);
+        throw new Error(
+          timeout
+            ? "Wikidata: przekroczono czas oczekiwania"
+            : "Wikidata: błąd połączenia (sprawdź DNS, proxy i dostęp do www.wikidata.org)",
+        );
+      }
+      if (res.status !== 429 && res.status !== 503) break;
+      if (attempt + 1 < WIKIDATA_PACING.attempts)
+        nextRequestAt = Math.max(
+          nextRequestAt,
+          Date.now() + retryDelay(res, attempt),
+        );
     }
     if (!res.ok) throw new Error(`Wikidata HTTP ${res.status}`);
     try {
@@ -174,10 +222,21 @@ async function brandLogos(
 ): Promise<BrandLogo[]> {
   const key = catalogKey(name).toLowerCase();
   if (!key) return [];
-  const file = path.join(logoDir(), `brand-${key}.json`);
+  const file = brandMetadataFile(logoDir(), name);
   const cached = await readJson<BrandEntry>(file);
   const valid = validBrandEntry(cached) ? cached : null;
-  if (valid && Date.now() - valid.fetchedAt < valid.ttl) return valid.logos;
+  // A failure recorded by another process (e.g. a rate-limited `pnpm initial`)
+  // does not block a logo the owner needs now; this process keeps its own
+  // hourly back-off in `failedBrands`.
+  const inheritedFailure =
+    !waitForRefresh && !!valid?.failure && !failedBrands.has(file);
+  if (
+    valid &&
+    valid.version === CACHE_VERSION &&
+    !inheritedFailure &&
+    Date.now() - valid.fetchedAt < valid.ttl
+  )
+    return valid.logos;
   if (Date.now() < (failedBrands.get(file) ?? 0)) return valid?.logos ?? [];
   const refresh = once(`brand:${file}`, async () => {
     let entry: BrandEntry;
@@ -217,7 +276,8 @@ async function brandLogos(
     }
     return entry.logos;
   });
-  if (valid && !waitForRefresh) {
+  // Stale logos are served at once; with nothing to show, wait for the lookup.
+  if (valid?.logos.length && !waitForRefresh) {
     void refresh.catch(() => {});
     return valid.logos;
   }
@@ -227,7 +287,9 @@ async function brandLogos(
 function validBrandEntry(value: BrandEntry | null): value is BrandEntry {
   return (
     !!value &&
-    value.version === CACHE_VERSION &&
+    Number.isInteger(value.version) &&
+    value.version >= 1 &&
+    value.version <= CACHE_VERSION &&
     validTimestamp(value.fetchedAt) &&
     typeof value.ttl === "number" &&
     value.ttl > 0 &&
@@ -259,10 +321,7 @@ export async function prewarmLogoMetadata(
       while (next < brands.length) {
         const brand = brands[next++];
         await brandLogos(brand.name, true);
-        const file = path.join(
-          logoDir(),
-          `brand-${catalogKey(brand.name).toLowerCase()}.json`,
-        );
+        const file = brandMetadataFile(logoDir(), brand.name);
         const entry = await readJson<BrandEntry>(file);
         if (
           Date.now() < (failedBrands.get(file) ?? 0) ||
@@ -283,8 +342,7 @@ export async function prewarmLogoMetadata(
   return failed;
 }
 
-const imageBase = (file: string) =>
-  path.join(logoDir(), createHash("sha1").update(file).digest("hex"));
+const imageBase = (file: string) => logoImageBase(logoDir(), file);
 
 // `turbopackIgnore` on the template paths below keeps `next build` from
 // tracing the project folder (`.venv` symlinks point outside it).

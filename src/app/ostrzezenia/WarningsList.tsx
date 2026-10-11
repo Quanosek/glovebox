@@ -1,10 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import type { WarningKind } from "@/content/types";
 import { getAvailability } from "@/lib/availability";
 import { useAppData, useHydrated } from "@/lib/storage/hooks";
+import {
+  WARNING_KINDS,
+  warningKindFromSlug,
+  warningsHref,
+} from "@/lib/warnings";
 
 export interface WarningItem {
   id: string;
@@ -19,19 +24,34 @@ export interface WarningItem {
   features: string[];
 }
 
-const KINDS: { id: WarningKind | "all"; label: string }[] = [
-  { id: "all", label: "Wszystkie" },
-  { id: "danger", label: "Niebezpieczeństwo" },
-  { id: "warning", label: "Ostrzeżenie" },
-  { id: "caution", label: "Przestroga" },
-  { id: "note", label: "Uwaga" },
-];
-
-export function WarningsList({ items: allItems }: { items: WarningItem[] }) {
-  const [kind, setKind] = useState<WarningKind | "all">("all");
+export function WarningsList({
+  carId,
+  items: allItems,
+}: {
+  carId: string;
+  items: WarningItem[];
+}) {
+  const searchParams = useSearchParams();
   const hydrated = useHydrated();
   const { settings } = useAppData();
   const items = allItems;
+  const count = (kind: WarningKind) =>
+    items.filter((w) => w.kind === kind).length;
+  // Only kinds this car's manuals contain, like the counts on the car page.
+  const kinds = WARNING_KINDS.filter((k) => count(k.id) > 0);
+  const requested = warningKindFromSlug(searchParams.get("rodzaj"));
+  const kind: WarningKind | "all" =
+    requested && count(requested) > 0 ? requested : "all";
+  const choose = (next: WarningKind | "all") =>
+    window.history.replaceState(
+      null,
+      "",
+      warningsHref(carId, next === "all" ? undefined : next),
+    );
+  const filters: { id: WarningKind | "all"; label: string; count: number }[] = [
+    { id: "all", label: "Wszystkie", count: items.length },
+    ...kinds.map((k) => ({ id: k.id, label: k.label, count: count(k.id) })),
+  ];
 
   const visible = items.filter((w) => {
     if (kind !== "all" && w.kind !== kind) return false;
@@ -56,23 +76,17 @@ export function WarningsList({ items: allItems }: { items: WarningItem[] }) {
         role="group"
         aria-label="Rodzaj"
       >
-        {KINDS.map((k) => {
-          const count =
-            k.id === "all"
-              ? items.length
-              : items.filter((w) => w.kind === k.id).length;
-          return (
-            <button
-              key={k.id}
-              type="button"
-              aria-pressed={kind === k.id}
-              className={`btn ${kind === k.id ? "btn-primary" : ""}`}
-              onClick={() => setKind(k.id)}
-            >
-              {k.label} ({count})
-            </button>
-          );
-        })}
+        {filters.map((k) => (
+          <button
+            key={k.id}
+            type="button"
+            aria-pressed={kind === k.id}
+            className={`btn ${kind === k.id ? "btn-primary" : ""}`}
+            onClick={() => choose(k.id)}
+          >
+            {k.label} ({k.count})
+          </button>
+        ))}
       </div>
       {hiddenCount > 0 && (
         <p className="mt-3 text-xs text-steel">

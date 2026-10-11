@@ -6,7 +6,7 @@ import { ContinueReading } from "@/components/ContinueReading";
 import { CarHero } from "@/components/car/CarHero";
 import { CarStatsStrip } from "@/components/car/CarStatsStrip";
 import { FavoritesBar } from "@/components/car/FavoritesBar";
-import { QuickTiles } from "@/components/car/QuickTiles";
+import { EssentialTiles } from "@/components/car/EssentialTiles";
 import { ServiceReminders } from "@/components/car/ServiceReminders";
 import { TechPreview } from "@/components/car/TechPreview";
 import { carLabel, equipmentHref } from "@/lib/cars";
@@ -17,6 +17,7 @@ import {
 } from "@/lib/carOverview";
 import { getCar, getCarSummary } from "@/lib/content";
 import { plural } from "@/lib/typography";
+import { warningsHref } from "@/lib/warnings";
 
 type Props = PageProps<"/auto/[car]">;
 
@@ -38,7 +39,7 @@ export default async function CarPage({ params }: Props) {
       text: "Wpisz słowo, np. „olej” albo „wycieraczki”.",
     },
     {
-      href: `/ostrzezenia?car=${car.id}`,
+      href: warningsHref(car.id),
       title: "Ostrzeżenia",
       text: "Wszystkie ostrzeżenia, przestrogi i uwagi w jednym miejscu.",
     },
@@ -70,7 +71,7 @@ export default async function CarPage({ params }: Props) {
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-8">
-          <QuickTiles tiles={overview.tiles} />
+          <EssentialTiles tiles={overview.essentials} />
 
           <section aria-labelledby="car-books-title">
             <h2 id="car-books-title" className="section-label">

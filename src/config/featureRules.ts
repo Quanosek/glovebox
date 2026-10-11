@@ -123,7 +123,7 @@ export const FEATURE_RULES: FeatureRule[] = [
   {
     feature: "climate.electronic",
     pattern:
-      /elektroniczn\w* (układ\w* )?(sterowania )?klimatyzacj|klimatyzacj\w* sterowan\w* elektroniczn|automatyczn\w* klimatyzacj|klimatronik|dwustrefow|wielostrefow|trójstrefow/i,
+      /elektroniczn\w* (układ\w* )?(sterowania )?klimatyzacj|klimatyzacj\w* sterowan\w* elektroniczn|automatyczn\w* klimatyzacj|klimatyzacj\w* automatyczn|climatronic|klimatronik|dwustrefow|wielostrefow|trójstrefow/i,
   },
   {
     feature: "seats.ventilated",
@@ -165,14 +165,7 @@ export const FEATURE_RULES: FeatureRule[] = [
   },
   {
     feature: "roof.remote",
-    pattern: /komfortow\w* otwierani|otwierani\w* dachu (za pomocą )?pilot/i,
-  },
-  {
-    feature: "roof.electric",
-    pattern:
-      /\bdach\b|dach\w* składan|składan\w* dach|składani\w* dachu|(otwierani|zamykani)\w* dachu|miękki\w* dach|kabriolet/i,
-    exclude:
-      /bagażnik\w* dachow|reling|szyberdach|panoramiczn|przesuwn|okn\w* dachow|obciążeni\w* dachu|na dachu/i,
+    pattern: /(otwierani|składani|zamykani)\w* dachu (za pomocą )?pilot/i,
   },
   {
     feature: "access.alarm",

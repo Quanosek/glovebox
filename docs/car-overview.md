@@ -10,13 +10,8 @@ Server-only (reads `src/lib/content.ts`); results are memoised per car and
 `getCarVersion(car)`, so a re-import refreshes them.
 
 - `getCarOverview(car)` → `stats` (pages, sections, illustrations, icons, warnings by kind),
-  `tiles` ("Najczęściej potrzebne"), `glossaryCount`, `techCount`
-  and `serviceHref` (section about periodic service).
-- `getGlossary(car)` → pictograms with their explanation grouped by section: icon image blocks
-  followed by text, and paragraphs that start with an inline symbol run
-  (`{ icon }`, e.g. "[symbol] Kierunkowskaz str. 98"). Sections whose
-  title chain matches `INDICATOR_SECTION` come first; when a manual has none, all icons are
-  used. Duplicates (same image and text) are dropped; at most ~240 symbols.
+  `essentials` ("Niezbędnik" tiles), `techCount` and `serviceHref` (the fragment the
+  "Przeglądy" topic found).
 - `getTechCards(car)` scans every section so more manuals get "Dane techniczne":
   - sections matching `TECHNICAL_SECTION` (technical data, specifications, tyre sizes, loads,
     fluids, tightening torques, …) give all their tables plus `textFacts` groups (≥ 2
@@ -41,24 +36,37 @@ Server-only (reads `src/lib/content.ts`); results are memoised per car and
 
 Pure helpers and shared types live in `src/lib/overview.ts` (client-safe, tested in
 `src/lib/__tests__/overview.test.ts`): `runsToText`, `blockToText`, `shorten`,
-`firstIllustration`, `iconEntries`, `tableFacts`, `isNumeric`, `kwToHp`, `specParts`.
+`firstIllustration`, `tableFacts`, `isNumeric`, `kwToHp`, `specParts`.
 
-## Topic rules (`src/config/quickTopics.ts`)
+## "Niezbędnik" (`src/config/essentials.ts`)
 
-`QUICK_TOPICS` are regex rules on Polish section titles (tyres, wheel change, fuses, bulbs,
-oil and fluids, fuel, indicators, roadside help, service), like `featureRules.ts`. The first
-matching section per topic becomes a tile; at most `QUICK_TOPICS_MAX` (8). The "Lampki
-kontrolne" tile opens the glossary page when the car has symbols. Editing rules needs no
-re-extraction.
+`ESSENTIALS` lists topics in order of importance (indicators, tyre pressure, wheel change,
+fuses, bulbs, oil and fluids, fuel, roadside help, battery, service, key, wipers, technical
+data), each with a Polish title, a one-line description and a line icon (`TopicIcon`).
+Candidates are every section **and every heading inside a section** of the car's manuals, so
+a tile opens the exact fragment (`…/<section>#bN`), e.g. "Bezpieczniki" inside "Bezpieczniki
+i żarówki". `pickEssential` takes the first of the topic's `patterns` with any match
+(stronger titles first), drops `exclude` titles and matches inside `avoid` sections (e.g. the
+air-conditioning upkeep is not "Przeglądy"), then prefers a match inside a `context` section,
+then a whole section over a heading, then the earliest in reading order. A place is used by
+one tile only. When fewer than four topics are found, chapters (level 1 sections) fill the
+tiles up to four (book icon, "Rozdział instrukcji od str. N."). The count is cut to 8, 6 or 4
+(`essentialsSize`) so rows are always full: `EssentialTiles` shows 4 tiles on phones (2
+columns), 6 from `sm` (3 columns) and 8 from `xl` (4 columns); four tiles use 2, then 4
+columns. Editing rules needs no re-extraction; `src/lib/__tests__/overview.test.ts` and
+`essentials.test.ts` cover the choices.
 
 ## Screens
 
 - Car page `/auto/<car>`: `CarHero` (logo, brand, model + year, engine chips from
-  `specParts` from the local engine: capacity, kW and KM, fuel), `CarStatsStrip` (warnings link to
-  `/ostrzezenia?car=`; the last cell is the offline copy state and jumps to `#bez-internetu`),
+  `specParts` from the local engine: capacity, kW and KM, fuel), `CarStatsStrip` (two full-width
+  rows that wrap without gaps: pages, sections, illustrations and the offline copy state, which
+  jumps to `#bez-internetu`; then one cell per warning kind present, named and counted like
+  the filters of `/ostrzezenia` via `src/lib/warnings.ts`, each linking to
+  `/ostrzezenia?car=<car>&rodzaj=<kind>`),
   "Czytaj dalej", `FavoritesBar` ("Ulubione": the six newest bookmarks of the car as numbered
   keys; bookmarks are only created with "Dodaj zakładkę" in the manual, there is no separate
-  pinning; the bar is hidden while the car has no bookmarks), `QuickTiles`, books, tools; side
+  pinning; the bar is hidden while the car has no bookmarks), `EssentialTiles`, books, tools; side
   column: `TechPreview`, `ServiceReminders` (inspection and OC insurance always; a third row
   with the nearest own reminder only once one exists; "Ustaw przypomnienia" links to
   `/przypomnienia#<car>`) and, as the last tile, `CarActions` ("Bez internetu",
@@ -71,11 +79,13 @@ re-extraction.
   Own reminders have dates and/or mileage and can be deleted. Optional native browser
   notifications are checked while the app is open, plus a link to the servicing section
   (`CarOverview.serviceHref`).
-- `/auto/<car>/lampki-kontrolne`: symbol cards with a local text filter; each card links to
-  the image block (`#<blockId>`) in the manual.
+- `/ostrzezenia?car=<car>&rodzaj=<kind>`: the warnings list opens with that kind's filter
+  (`niebezpieczenstwo`, `ostrzezenie`, `przestroga`, `uwaga`); choosing a filter replaces the
+  URL (`history.replaceState`), so a reload keeps it and "Wstecz" returns to the car. Only
+  kinds present in the car's manuals get a filter; an unknown or empty kind shows all.
 - `/auto/<car>/dane-techniczne`: fact cards (values in `.type-fact`) and compact tables, each with
   "Pokaż w instrukcji". Engine tables reuse `EngineTable` from the reader, with per-table
-  expansion and the global show-all setting. `lampki-kontrolne` and `dane-techniczne` are reserved book routes
+  expansion and the global show-all setting. `dane-techniczne` is a reserved book route
   (`RESERVED_BOOK_ROUTES`) and part of the offline copy (`getCarUrls`).
 - Reader (`/auto/<car>/<book>/<section>`): previous/next links with section thumbnails. From
   90rem a side column (`.reader-grid`, the book layout widens to 63.5rem only for it) lists

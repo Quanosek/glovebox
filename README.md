@@ -16,6 +16,11 @@ Po dodaniu auta do profilu zaznaczasz jego **wyposażenie** (np. tempomat, kamer
 aplikacja sama wyszukuje w jego instrukcjach opisy wyposażenia opcjonalnego. Sekcje o wyposażeniu,
 którego auto nie ma, są zwijane i oznaczone „Brak w Twoim aucie”, a podpowiedzi wynikające z
 wybranego silnika — „prawdopodobnie”.
+Po zaznaczeniu „Mam” przy automatycznej skrzyni biegów aplikacja podpowiada „Nie mam”
+przy manualnej i zwija jej opisy; podpowiedź możesz potwierdzić. Działa to również
+w drugą stronę oraz dla klimatyzacji manualnej i automatycznej. Zmiana lub usunięcie
+wyboru wycofuje niepotwierdzoną podpowiedź. Składany dach kabrioletu jest cechą konstrukcji
+auta, więc nie pojawia się jako wyposażenie dodatkowe do wyboru.
 
 ## Profil i auta
 
@@ -43,17 +48,17 @@ kopie do czytania bez połączenia. Zaznaczenia i notatki zostają zachowane.
   ilustracji, odnośniki do stron („str. 45”), ostrzeżenia dla wybranego auta, linki do sekcji
   i akapitów. Na szerokim ekranie z prawej: „Na tej stronie”, ostrzeżenia rozdziału i Twoje
   zaznaczenia.
-- **Widok auta** — duża karta auta (logo, model, rocznik, silnik), liczby z instrukcji, kafle
-  „Najczęściej potrzebne” (np. ciśnienie w oponach, bezpieczniki, żarówki – tylko te, które
-  są w instrukcji), pasek „Ulubione” z sześcioma najnowszymi zakładkami tego auta, podgląd danych
+- **Widok auta** — duża karta auta (logo, model, rocznik, silnik), liczby z instrukcji (każdy
+  rodzaj ostrzeżeń osobno; kliknięcie otwiera listę z tym rodzajem), „Niezbędnik” – kafle
+  z ikoną, tytułem i krótkim opisem (np. lampki kontrolne, ciśnienie w oponach, bezpieczniki),
+  które otwierają właściwy fragment instrukcji; zależnie od szerokości ekranu 4, 6 lub 8 kafli,
+  zawsze co najmniej 4 (gdy tematów jest mniej, uzupełniają je rozdziały instrukcji), pasek „Ulubione” z sześcioma najnowszymi zakładkami tego auta, podgląd danych
   technicznych (wybrany silnik, paliwo i np. zbiornik paliwa — tylko dane dostępne w
   instrukcji), najbliższe przypomnienia oraz wyszukiwanie, ostrzeżenia i wyposażenie.
 - **Przypomnienia** — dla każdego Twojego auta termin badania technicznego, ubezpieczenia OC
   i własne przypomnienia (data, przebieg). Na 30 dni przed terminem liczba przy
   „Przypomnienia” w menu podpowiada, że coś się zbliża. Terminy zostają tylko w tej
   przeglądarce.
-- **Lampki kontrolne** — symbole z instrukcji razem z opisem; kliknięcie prowadzi do
-  fragmentu instrukcji.
 - **Dane techniczne** — pojemności, ciśnienia i wymiary z instrukcji jako czytelne karty.
 - **Wyszukiwarka** — pełnotekstowa, w obrębie wybranego auta; ignoruje wielkość liter i polskie
   znaki („swiatla” znajdzie „światła”).

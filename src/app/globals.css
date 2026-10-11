@@ -963,12 +963,17 @@ body {
     background: var(--color-red);
     content: "";
   }
+  /* Cells grow to fill every row, so a short last row leaves no empty gap. */
   .stat-strip {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: 1px;
     border: 1px solid var(--color-line);
     background: var(--color-line);
+  }
+  .stat-strip > li {
+    flex: 1 1 8.5rem;
+    min-width: 0;
   }
   .stat-cell {
     display: block;

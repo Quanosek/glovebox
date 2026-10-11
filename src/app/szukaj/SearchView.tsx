@@ -14,6 +14,43 @@ import {
   useVehicleProfile,
 } from "@/lib/storage/hooks";
 
+const PLACEHOLDER = "np. ciśnienie w oponach, tempomat, dach";
+const HINT =
+  "Wielkość liter i polskie znaki nie mają znaczenia (np. „swiatla” znajdzie „światła”).";
+const PREPARING = "Przygotowywanie wyszukiwania…";
+/** One status line of fixed height: preparing, error, count or empty. */
+const STATUS = "mt-4 min-h-5 text-sm";
+
+/**
+ * The search view before it hydrates (Suspense fallback): the same form with
+ * disabled fields, hint and status line, so nothing moves when it is ready.
+ */
+export function SearchSkeleton({ cars }: { cars: SearchCar[] }) {
+  return (
+    <div className="mt-4" aria-busy="true">
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <input
+          type="search"
+          className="field"
+          placeholder={PLACEHOLDER}
+          disabled
+          aria-label="Szukane słowa"
+        />
+        {cars.length > 1 && (
+          <select className="field sm:w-56" disabled aria-label="Auto">
+            <option>{typo(cars[0].label)}</option>
+          </select>
+        )}
+        <select className="field sm:w-56" disabled aria-label="Instrukcja">
+          <option>Wszystkie instrukcje</option>
+        </select>
+      </div>
+      <p className="mt-2 text-xs text-steel">{typo(HINT)}</p>
+      <p className={`${STATUS} text-steel`}>{PREPARING}</p>
+    </div>
+  );
+}
+
 export interface SearchCar {
   id: string;
   label: string;
@@ -132,7 +169,7 @@ export function SearchView({ cars }: { cars: SearchCar[] }) {
         <input
           type="search"
           className="field"
-          placeholder="np. ciśnienie w oponach, tempomat, dach"
+          placeholder={PLACEHOLDER}
           value={query}
           autoFocus
           onChange={(e) => setQuery(e.target.value)}
@@ -169,31 +206,24 @@ export function SearchView({ cars }: { cars: SearchCar[] }) {
           ))}
         </select>
       </form>
-      <p className="mt-2 text-xs text-steel">
-        {typo(
-          "Wielkość liter i polskie znaki nie mają znaczenia (np. „swiatla” znajdzie „światła”).",
-        )}
+      <p className="mt-2 text-xs text-steel">{typo(HINT)}</p>
+
+      <p
+        className={`${STATUS} ${error ? "text-red" : docs ? "text-graphite" : "text-steel"}`}
+        role="status"
+      >
+        {error ? (
+          `Nie udało się przygotować wyszukiwania: ${error}`
+        ) : !car ? (
+          typo("Brak aut – dodaj auto na stronie „Dodaj auto”.")
+        ) : !docs ? (
+          PREPARING
+        ) : query.trim().length >= 2 ? (
+          <>
+            Wyniki: <strong>{results.length}</strong>
+          </>
+        ) : null}
       </p>
-
-      {error && (
-        <p className="mt-4 text-red">
-          Nie udało się przygotować wyszukiwania: {error}
-        </p>
-      )}
-      {!car && (
-        <p className="mt-4 text-steel">
-          {typo("Brak aut – dodaj auto na stronie „Dodaj auto”.")}
-        </p>
-      )}
-      {car && !docs && !error && (
-        <p className="mt-4 text-steel">Przygotowywanie wyszukiwania…</p>
-      )}
-
-      {docs && query.trim().length >= 2 && (
-        <p className="mt-6 text-sm text-graphite">
-          Wyniki: <strong>{results.length}</strong>
-        </p>
-      )}
 
       <ul className="mt-2 border-t border-line">
         {results.map(({ result, doc }) => {

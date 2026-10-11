@@ -10,7 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from manual_extract import cli, layout, outline, reading, tables, text  # noqa: E402
+from manual_extract import cli, layout, leaders, outline, reading, tables, text  # noqa: E402
 from manual_extract.build import build, inline_leaf_children, merge_lone_children  # noqa: E402
 from manual_extract.builder import SectionBuilder, attach_captions  # noqa: E402
 from manual_extract.document import Document  # noqa: E402
@@ -59,6 +59,55 @@ class DocumentPatternTests(unittest.TestCase):
         self.assertEqual(merged[0].text, "1 CHECK VALUE")
         self.assertEqual(len(merged[0].data["char_x"]), len(merged[0].text))
         self.assertEqual([it.text.strip() for it in tables.split_at(merged[0], [63])], ["1 CHECK", "VALUE"])
+
+    def test_separate_leader_numbers_stay_with_their_columns_and_become_refs(self) -> None:
+        doc = self.document()
+        for column in (30, 210, 390):
+            for row in range(6):
+                label = line("Control . . . . .", column, 50 + row * 12, width=100)
+                label.data["legend"] = str(row + 1)
+                number = line(str(100 + row), column + 110, 50 + row * 12, width=15)
+                doc.items.extend([label, number])
+        doc.items = leaders.merge_leader_numbers(doc.items)
+        self.assertEqual(len(doc.items), 18)
+        layout.assign_layout(doc)
+        self.assertEqual([it.col for it in doc.items], [0] * 6 + [1] * 6 + [2] * 6)
+        for it in doc.items:
+            self.assertIn({"page": 100 + int(it.data["legend"]) - 1}, build_runs([(ch, span.bold, span.italic) for span in it.spans for ch in span.text]))
+        leaders.mark_toc_lines(doc, 0, len(doc.items))
+        self.assertFalse(any(it.data.get("toc") for it in doc.items))
+
+    def test_leader_number_merge_rejects_other_rows_pages_and_distant_numbers(self) -> None:
+        label = line("Control . . . .", 30, 50, width=100)
+        numbers = [
+            line("12", 140, 62, width=15),
+            line("13", 140, 50, width=15, page=1),
+            line("14", 200, 50, width=15),
+        ]
+        self.assertEqual(len(leaders.merge_leader_numbers([label, *numbers])), 4)
+        self.assertEqual(label.text, "Control . . . .")
+
+    def spread(self, first_legend: str) -> list[Item]:
+        doc = self.document(pages=2)
+        figure = Item("image", 0, (30, 40, 560, 300))
+        legend = line("Window switch", 30, 120, page=1)
+        legend.data["legend"] = first_legend
+        doc.items = [
+            figure,
+            line("Controls", 30, 50, page=1),
+            line("Overview", 30, 80, page=1),
+            legend,
+        ]
+        layout.move_spread_figures(doc)
+        return doc.items
+
+    def test_spread_figure_is_read_right_above_its_legend(self) -> None:
+        items = self.spread("1")
+        self.assertEqual([it.kind if it.kind == "image" else it.text for it in items], ["Controls", "Overview", "image", "Window switch"])
+
+    def test_figure_before_a_continued_legend_is_not_moved(self) -> None:
+        items = self.spread("7")
+        self.assertEqual(items[0].kind, "image")
 
     def test_cell_gaps_scale_with_measured_word_spaces(self) -> None:
         for space in (1.0, 9.0):
