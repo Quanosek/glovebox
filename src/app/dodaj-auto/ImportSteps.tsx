@@ -290,11 +290,13 @@ export function StepDone({
   job,
   car,
   onOpen,
+  onProfile,
   onAgain,
 }: {
   job: Job;
   car: CarSummary | null;
   onOpen: () => void;
+  onProfile: () => void;
   onAgain: () => void;
 }) {
   const sum = (key: "pages" | "sections" | "images") =>
@@ -373,7 +375,7 @@ export function StepDone({
             <button type="button" className="btn" onClick={onAgain}>
               Dodaj kolejne auto
             </button>
-            <Link href="/" className="btn btn-ghost">
+            <Link href="/" className="btn btn-ghost" onClick={onProfile}>
               Profil
             </Link>
           </div>

@@ -125,7 +125,8 @@ export function AddCarWizard({
     (id) => duplicate?.books.filter((b) => b.id === id) ?? [],
   );
   const showUpload =
-    !duplicate || (saved?.car === duplicate.id && saved.upload);
+    !duplicate ||
+    (saved?.car === duplicate.id ? saved.upload : docs.length > 0);
   const moveSavedBook = (index: number, delta: number) => {
     if (!duplicate) return;
     const order = [...savedOrder];
@@ -1069,7 +1070,9 @@ export function AddCarWizard({
               onOpen={() => {
                 setActiveCar(job.carId);
                 router.push(carHref(job.carId));
+                router.refresh();
               }}
+              onProfile={() => router.refresh()}
               onAgain={reset}
             />
           )}

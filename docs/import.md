@@ -62,6 +62,8 @@ instructions in the UI (those live in `README.md`, section "Dodawanie aut"). Fou
 4. **Gotowe** — summary, "Otwórz instrukcje auta" (sets `settings.activeCar`, which also
    starts the automatic offline copy), "Dodaj kolejne auto". The wizard fetches the
    updated car summary directly; no mid-wizard `router.refresh()` exposes other views.
+   Only explicit exit actions ("Otwórz instrukcje auta" / "Profil") refresh the
+   shared layout cache alongside navigation, so the header knows about newly added cars.
    Dynamic height is measured with `ResizeObserver` and transitioned in CSS;
    expandable controls use grid-row/opacity transitions and `inert` while closed.
    Step changes fade in; reduced-motion preferences disable these animations.

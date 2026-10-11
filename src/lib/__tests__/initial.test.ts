@@ -13,8 +13,13 @@ import {
 
 let root: string;
 
-beforeEach(() => {
-  root = path.join(process.cwd(), `.initial-test-${randomUUID()}`);
+beforeEach(async () => {
+  root = path.join(
+    process.cwd(),
+    "node_modules/.cache/glovebox-tests",
+    `initial-${randomUUID()}`,
+  );
+  await fs.mkdir(path.dirname(root), { recursive: true });
   vi.stubEnv("MANUALS_DATABASE_DIR", root);
 });
 afterEach(async () => {

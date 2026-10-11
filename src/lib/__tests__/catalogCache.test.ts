@@ -24,8 +24,12 @@ const entry = (savedAt = Date.now() - 2000, value: unknown = ["old"]) => ({
 });
 
 beforeEach(async () => {
-  root = path.join(process.cwd(), `.catalog-cache-test-${randomUUID()}`);
-  await fs.mkdir(root);
+  root = path.join(
+    process.cwd(),
+    "node_modules/.cache/glovebox-tests",
+    `catalog-${randomUUID()}`,
+  );
+  await fs.mkdir(root, { recursive: true });
 });
 afterEach(async () => {
   await fs.rm(root, { recursive: true, force: true });

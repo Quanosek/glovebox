@@ -26,7 +26,11 @@ const metadata = (file = "Old.svg", fetchedAt = Date.now() - 31 * DAY) => ({
 const metadataFile = () => path.join(root, ".logos/brand-opel.json");
 
 beforeEach(async () => {
-  root = path.join(process.cwd(), `.logo-cache-test-${randomUUID()}`);
+  root = path.join(
+    process.cwd(),
+    "node_modules/.cache/glovebox-tests",
+    `logos-${randomUUID()}`,
+  );
   vi.stubEnv("MANUALS_DATABASE_DIR", root);
   await fs.mkdir(path.join(root, ".logos"), { recursive: true });
 });
