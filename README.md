@@ -19,7 +19,7 @@ i ustawienia — w przeglądarce.
 
 Potrzebujesz **Git oraz działającego Dockera z Compose**:
 
-- Debian: [instalacja Docker Engine](https://docs.docker.com/engine/install/debian/)
+- Linux: [instalacja Docker Engine](https://docs.docker.com/engine/install/)
   z wtyczkami Buildx i Compose; zapewnij swojemu użytkownikowi
   [dostęp do Dockera](https://docs.docker.com/engine/install/linux-postinstall/).
 - macOS: [Docker Desktop](https://docs.docker.com/desktop/setup/install/mac-install/).
@@ -40,6 +40,7 @@ Pierwszy build wymaga internetu i może potrwać kilka minut.
 
 Otwórz **http://localhost:3000**. Jeśli aplikacja jeszcze się uruchamia,
 odczekaj chwilę i odśwież stronę.
+Domyślnie port jest dostępny tylko na komputerze, na którym działa aplikacja.
 
 ### Zmiana portu
 
@@ -54,18 +55,6 @@ To zmienia wyłącznie port udostępniany przez Dockera. Wewnątrz kontenera
 oraz przy lokalnym `pnpm dev` aplikacja nadal używa portu 3000.
 Zmiana adresu lub portu oznacza dla przeglądarki osobny profil — wcześniej
 pobierz kopię notatek w Ustawieniach, a potem wczytaj ją pod nowym adresem.
-
-### Zdalny serwer Debian
-
-Aplikacja nie ma logowania, więc port jest dostępny tylko lokalnie.
-Na swoim komputerze otwórz tunel do serwera:
-
-```bash
-ssh -N -L 3000:127.0.0.1:3000 użytkownik@adres-serwera
-```
-
-Korzystaj z **http://localhost:3000**. Jeśli zmieniłeś port w `.env`,
-dostosuj port po prawej stronie tunelu.
 
 ## Pierwsze auto
 

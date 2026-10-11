@@ -121,8 +121,8 @@ Ruff keeps its Python 3.10 target and built-in/Git ignores.
 
 ## Access and operation
 
-The host port binds to `127.0.0.1`. There is no authentication; an SSH
-tunnel provides access to a remote server. Localhost also preserves
+The host port binds to `127.0.0.1` for access from the computer running
+the application. There is no authentication. Localhost also preserves
 the secure context required by service workers/PWA features.
 
 For an intentionally trusted LAN, use a local `compose.override.yaml` to
@@ -166,7 +166,7 @@ Compose setting; this project does not alter host-wide Docker configuration.
 
 ## Official references
 
-- [Docker on Debian](https://docs.docker.com/engine/install/debian/)
+- [Docker Engine installation](https://docs.docker.com/engine/install/)
 - [Multi-stage builds and caching](https://docs.docker.com/build/building/best-practices/)
 - [Compose services](https://docs.docker.com/reference/compose-file/services/)
 - [Compose down](https://docs.docker.com/reference/cli/docker/compose/down/)
