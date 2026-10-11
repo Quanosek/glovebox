@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { catalogCache, writeCache } from "@/lib/server/catalogCache";
@@ -24,11 +25,7 @@ const entry = (savedAt = Date.now() - 2000, value: unknown = ["old"]) => ({
 });
 
 beforeEach(async () => {
-  root = path.join(
-    process.cwd(),
-    "node_modules/.cache/glovebox-tests",
-    `catalog-${randomUUID()}`,
-  );
+  root = path.join(os.tmpdir(), `glovebox-catalog-${randomUUID()}`);
   await fs.mkdir(root, { recursive: true });
 });
 afterEach(async () => {

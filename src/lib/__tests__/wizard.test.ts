@@ -11,14 +11,27 @@ const { router, addOwnedCar } = vi.hoisted(() => ({
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
 vi.mock("@/lib/offline", () => ({ useOnline: () => true }));
-vi.mock("@/lib/pdfPreview", () => ({ renderPdfPreview: vi.fn() }));
+vi.mock("@/lib/pdfPreview", () => ({
+  renderPdfPreview: vi.fn().mockRejectedValue(new Error("Preview unavailable")),
+}));
 vi.mock("@/lib/storage/hooks", () => ({ addOwnedCar, setActiveCar: vi.fn() }));
 vi.mock("@/app/dodaj-auto/ImportSteps", () => ({
   StepProcessing: () => createElement("p", null, "Processing"),
-  StepEquipment: ({ onNext }: { onNext: () => void }) => createElement("button", { onClick: onNext }, "Equipment"),
-  StepDone: ({ onOpen, onProfile }: { onOpen: () => void; onProfile: () => void }) => createElement("div", null,
-    createElement("button", { onClick: onOpen }, "Open"),
-    createElement("button", { onClick: onProfile }, "Profile")),
+  StepEquipment: ({ onNext }: { onNext: () => void }) =>
+    createElement("button", { onClick: onNext }, "Equipment"),
+  StepDone: ({
+    onOpen,
+    onProfile,
+  }: {
+    onOpen: () => void;
+    onProfile: () => void;
+  }) =>
+    createElement(
+      "div",
+      null,
+      createElement("button", { onClick: onOpen }, "Open"),
+      createElement("button", { onClick: onProfile }, "Profile"),
+    ),
 }));
 
 const car: CarSummary = {
@@ -182,21 +195,41 @@ describe("add-car wizard", () => {
     expect(addOwnedCar).toHaveBeenCalledWith(car.id);
     expect(container.textContent).toContain("Equipment");
     expect(router.refresh).not.toHaveBeenCalled();
-    await act(async () => [...container.querySelectorAll("button")].find((b) => b.textContent === "Equipment")!.click());
+    await act(async () =>
+      [...container.querySelectorAll("button")]
+        .find((b) => b.textContent === "Equipment")!
+        .click(),
+    );
     expect(router.refresh).not.toHaveBeenCalled();
-    await act(async () => [...container.querySelectorAll("button")].find((b) => b.textContent === "Open")!.click());
+    await act(async () =>
+      [...container.querySelectorAll("button")]
+        .find((b) => b.textContent === "Open")!
+        .click(),
+    );
     expect(router.push).toHaveBeenCalledWith(car.href);
     expect(router.refresh).toHaveBeenCalledOnce();
   });
 
   it("keeps newly picked files visible when identifying a matching saved car", async () => {
     await identifyCar();
-    const input = container.querySelector<HTMLInputElement>('input[type="file"]')!;
-    Object.defineProperty(input, "files", { value: [new File(["%PDF-1.7"], "new.pdf", { type: "application/pdf" })] });
-    await act(async () => input.dispatchEvent(new Event("change", { bubbles: true })));
+    const input =
+      container.querySelector<HTMLInputElement>('input[type="file"]')!;
+    Object.defineProperty(input, "files", {
+      value: [new File(["%PDF-1.7"], "new.pdf", { type: "application/pdf" })],
+    });
+    await act(async () =>
+      input.dispatchEvent(new Event("change", { bubbles: true })),
+    );
     await select("car-year", "2020");
-    expect(container.querySelector(".wizard-drop")?.closest(".wizard-reveal")?.getAttribute("data-open")).toBe("true");
-    expect(container.querySelector(".wizard-drop")?.textContent).toContain("new.pdf");
+    expect(
+      container
+        .querySelector(".wizard-drop")
+        ?.closest(".wizard-reveal")
+        ?.getAttribute("data-open"),
+    ).toBe("true");
+    expect(container.querySelector(".wizard-drop")?.textContent).toContain(
+      "new.pdf",
+    );
   });
 
   it("replaces Other year with an input and validates a typed listed year as catalogue data", async () => {

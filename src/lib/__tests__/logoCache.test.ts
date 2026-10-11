@@ -1,5 +1,6 @@
 import { randomUUID, createHash } from "node:crypto";
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getCarLogo, prewarmLogoMetadata } from "@/lib/server/logos";
@@ -26,11 +27,7 @@ const metadata = (file = "Old.svg", fetchedAt = Date.now() - 31 * DAY) => ({
 const metadataFile = () => path.join(root, ".logos/brand-opel.json");
 
 beforeEach(async () => {
-  root = path.join(
-    process.cwd(),
-    "node_modules/.cache/glovebox-tests",
-    `logos-${randomUUID()}`,
-  );
+  root = path.join(os.tmpdir(), `glovebox-logos-${randomUUID()}`);
   vi.stubEnv("MANUALS_DATABASE_DIR", root);
   await fs.mkdir(path.join(root, ".logos"), { recursive: true });
 });

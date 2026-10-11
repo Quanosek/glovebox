@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { execFile } from "node:child_process";
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -14,11 +15,7 @@ import {
 let root: string;
 
 beforeEach(async () => {
-  root = path.join(
-    process.cwd(),
-    "node_modules/.cache/glovebox-tests",
-    `initial-${randomUUID()}`,
-  );
+  root = path.join(os.tmpdir(), `glovebox-initial-${randomUUID()}`);
   await fs.mkdir(path.dirname(root), { recursive: true });
   vi.stubEnv("MANUALS_DATABASE_DIR", root);
 });
