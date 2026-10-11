@@ -12,7 +12,8 @@ export function GET() {
  * Starts importing a new car. Multipart form fields: `source` (`catalog` or
  * `other`), `brand`, `model`, `year`, optional `variant` (`other` only), and repeated `files` (PDF)
  * with matching repeated `titles`. For `catalog`, brand and model are
- * catalogue ids.
+ * catalogue ids. `existingCar` reuses a saved car; repeated `bookOrder` must
+ * contain all its book ids once. PDFs may be omitted to only save the order.
  */
 export async function POST(request: Request) {
   const blocked = rejectCrossSite(request);
@@ -37,6 +38,10 @@ export async function POST(request: Request) {
       brand: String(form.get("brand") ?? ""),
       model: String(form.get("model") ?? ""),
       year: Number(form.get("year")),
+      existingCar: form.has("existingCar")
+        ? String(form.get("existingCar"))
+        : undefined,
+      bookOrder: form.getAll("bookOrder").map(String),
       variant:
         source === "other" && form.get("variant")
           ? String(form.get("variant"))

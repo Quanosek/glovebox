@@ -35,9 +35,27 @@ end time). Many brands list their former logos with years, e.g. Opel: 2009–201
 - `getCarLogo(car)` → `{ data, type } | null` for `car.brand` + `car.year`.
 - Cache in `database/.logos/` (git-ignored with `database/`): `brand-<key>.json` (entity +
   logo list; TTL 30 days when found, 7 days when not found, 1 hour after an error; a stale
-  copy is used while Wikimedia is unreachable; `CACHE_VERSION`) and `<sha1(file)>.<ext>`
+  copy is returned immediately while a background request refreshes it; `CACHE_VERSION`) and `<sha1(file)>.<ext>`
   images (kept forever). Failed downloads are retried after an hour (in memory). Only PNG,
   JPEG, GIF and WebP are stored and served, checked by magic bytes, max 2 MB — never SVG.
+- `pnpm initial` prewarms metadata for European brands from the official EEA catalogue,
+  with at most two concurrent brand lookups. It respects `MANUALS_DATABASE_DIR`, reuses
+  fresh metadata and waits for expired lookups to refresh; it does not download images.
+  Wikidata is community-maintained metadata, not an official manufacturer catalogue.
+  Missing entries are cached for seven days and may fall back to the app mark.
+  Request failures are distinct from successful lookups without a logo. Initialization
+  reports the failed count and at most three diagnostic reasons (Wikidata HTTP status,
+  timeout, connection or malformed-response failure), not every brand's name. Logos are
+  optional: these warnings do not change the command's exit status when the catalogue
+  is usable. Check DNS/proxy access to `www.wikidata.org` or HTTP 403/429 restrictions;
+  failed metadata is retried after an hour. Failed first-lookups retain their diagnostic
+  in the short-lived cache; a failed refresh never overwrites last-good metadata.
+- Metadata is rechecked on runtime use even when an image is already cached. Corrected
+  Commons file references therefore replace the selected logo after metadata expiry;
+  image caching never freezes the brand's logo list. Future/invalid timestamps and
+  malformed cached entries are ignored. Atomic writes prevent truncated snapshots.
+  Failed, malformed or empty refreshes never erase a last-good logo list or renew its
+  timestamp; retries are paused for an hour. Other brands keep their independent TTLs.
 - `GET /logo/<car>` → the image (`Cache-Control: max-age=86400`) or 404.
 - `/api/cars/<car>/offline` resolves the logo first and lists `/logo/<car>` only when it
   exists, so a brand without a logo does not count as a failed offline item.

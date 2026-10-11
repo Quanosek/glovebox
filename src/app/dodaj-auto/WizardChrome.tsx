@@ -1,5 +1,52 @@
-import type { CSSProperties, ReactNode } from "react";
+import {
+  useLayoutEffect,
+  useRef,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { STEPS, type Step } from "./wizardModel";
+
+export function WizardMotion({ children }: { children: ReactNode }) {
+  const frame = useRef<HTMLDivElement>(null);
+  const content = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const outer = frame.current;
+    const inner = content.current;
+    if (!outer || !inner || typeof ResizeObserver === "undefined") return;
+    outer.style.height = `${inner.getBoundingClientRect().height}px`;
+    const observer = new ResizeObserver(() => {
+      outer.style.height = `${inner.getBoundingClientRect().height}px`;
+    });
+    observer.observe(inner);
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <div ref={frame} className="wizard-motion">
+      <div ref={content} className="flow-root">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export function WizardReveal({
+  open,
+  children,
+}: {
+  open: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className="wizard-reveal"
+      data-open={open}
+      inert={!open}
+      aria-hidden={!open}
+    >
+      <div className="min-h-0 overflow-hidden">{children}</div>
+    </div>
+  );
+}
 
 /**
  * Step strip in the spirit of the Navi 950 soft keys: square keys on one

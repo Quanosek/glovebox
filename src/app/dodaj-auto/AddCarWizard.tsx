@@ -19,7 +19,14 @@ import { addOwnedCar, setActiveCar } from "@/lib/storage/hooks";
 import { plural } from "@/lib/typography";
 import { Availability } from "./Availability";
 import { StepDone, StepEquipment, StepProcessing } from "./ImportSteps";
-import { DropIcon, Field, PanelHeading, WizardSteps } from "./WizardChrome";
+import {
+  DropIcon,
+  Field,
+  PanelHeading,
+  WizardSteps,
+  WizardMotion,
+  WizardReveal,
+} from "./WizardChrome";
 import {
   BRAND_GROUPS,
   OTHER,
@@ -41,6 +48,13 @@ export function AddCarWizard({
   minYear: number;
 }) {
   const router = useRouter();
+  const [library, setLibrary] = useState(cars);
+  const [saved, setSaved] = useState<{
+    car: string;
+    order: string[];
+    upload: boolean;
+  } | null>(null);
+  const [completedCar, setCompletedCar] = useState<CarSummary | null>(null);
   const [step, setStep] = useState<Step>(1);
   const [system, setSystem] = useState<SystemStatus | null>(null);
   const [systemError, setSystemError] = useState<string | null>(null);
@@ -95,13 +109,32 @@ export function AddCarWizard({
   const model = brandIsOther ? modelOther.trim() : (catalogModel?.name ?? "");
   const duplicate =
     brand && model && year
-      ? cars.find(
+      ? library.find(
           (c) =>
             slugify(c.brand) === slugify(brand) &&
             slugify(c.model) === slugify(model) &&
-            String(c.year) === year,
+            c.year === Number(year),
         )
       : undefined;
+  const savedOrder = duplicate
+    ? saved?.car === duplicate.id
+      ? saved.order
+      : duplicate.books.map((b) => b.id)
+    : [];
+  const savedBooks = savedOrder.flatMap(
+    (id) => duplicate?.books.filter((b) => b.id === id) ?? [],
+  );
+  const showUpload =
+    !duplicate ||
+    (saved?.car === duplicate.id ? saved.upload : docs.length > 0);
+  const moveSavedBook = (index: number, delta: number) => {
+    if (!duplicate) return;
+    const order = [...savedOrder];
+    const target = index + delta;
+    if (target < 0 || target >= order.length) return;
+    [order[index], order[target]] = [order[target], order[index]];
+    setSaved({ car: duplicate.id, order, upload: showUpload });
+  };
 
   /* ---- background check: can this app read PDFs right now? */
 
@@ -211,7 +244,7 @@ export function AddCarWizard({
         messages.push(
           `Pominięto „${file.name}” – plik jest większy niż ${formatFileSize(maxBytes)}.`,
         );
-      } else if (docs.length + next.length >= maxDocs) {
+      } else if (savedBooks.length + docs.length + next.length >= maxDocs) {
         messages.push(
           `Pominięto „${file.name}” – jedno auto może mieć najwyżej ${maxDocs} ${plural(maxDocs, "plik", "pliki", "plików")}.`,
         );
@@ -285,24 +318,40 @@ export function AddCarWizard({
   const formErrors: string[] = [];
   if (!brand) formErrors.push("Wybierz markę z listy albo „Inna” i wpisz ją.");
   if (!model) formErrors.push("Wybierz lub wpisz model.");
-  if (!year) formErrors.push("Wybierz rocznik.");
-  if (docs.length === 0) formErrors.push("Dodaj co najmniej jeden plik PDF.");
+  if (!year) formErrors.push("Wybierz lub wpisz rocznik.");
+  else if (
+    !Number.isInteger(Number(year)) ||
+    Number(year) < minYear ||
+    Number(year) > maxYear
+  )
+    formErrors.push(`Wpisz rocznik od ${minYear} do ${maxYear}.`);
+  if (docs.length === 0 && !duplicate)
+    formErrors.push("Dodaj co najmniej jeden plik PDF.");
   if (docs.some((d) => !d.title.trim()))
     formErrors.push("Każda instrukcja musi mieć nazwę.");
+  if (savedBooks.length + docs.length > maxDocs)
+    formErrors.push(`Jedno auto może mieć najwyżej ${maxDocs} instrukcji.`);
 
   /* ---- step 2: upload + polling */
 
   const submit = () => {
     setSubmitError(null);
     setJob(null);
+    setCompletedCar(null);
     setUpload(0);
     setStep(2);
     const form = new FormData();
-    const manualEntry = brandIsOther || yearIsOther;
+    const manualEntry =
+      brandIsOther || !catalogModel?.years.includes(Number(year));
+    if (yearIsOther && !manualEntry) setYearIsOther(false);
     form.set("source", manualEntry ? "other" : "catalog");
     form.set("brand", manualEntry ? brand : brandChoice);
     form.set("model", manualEntry ? model : modelChoice);
     form.set("year", year);
+    if (duplicate) {
+      form.set("existingCar", duplicate.id);
+      for (const id of savedOrder) form.append("bookOrder", id);
+    }
     if (brandIsOther && variant.trim()) form.set("variant", variant.trim());
     for (const d of docs) {
       form.append("files", d.file, d.file.name);
@@ -392,9 +441,20 @@ export function AddCarWizard({
     setStep(3);
     addOwnedCar(jobCar);
     void loadEquipment(jobCar);
-    // Reload server components so the new car appears in the header and lists.
-    router.refresh();
-  }, [jobState, jobCar, router, loadEquipment]);
+    let alive = true;
+    void fetch(`/api/cars/${encodeURIComponent(jobCar)}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body: { car?: CarSummary } | null) => {
+        if (!alive || !body?.car) return;
+        const car = body.car;
+        setCompletedCar(car);
+        setLibrary((prev) => [...prev.filter((c) => c.id !== car.id), car]);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [jobState, jobCar, loadEquipment]);
 
   const resume = (id: string) => {
     setJob({
@@ -419,6 +479,8 @@ export function AddCarWizard({
     setEquipment(null);
     setUpload(null);
     setNotice([]);
+    setSaved(null);
+    setCompletedCar(null);
     setStep(1);
     void check();
   };
@@ -426,8 +488,9 @@ export function AddCarWizard({
   const ready =
     online &&
     !!system &&
-    system.pythonReady &&
-    system.extractor &&
+    system.nodeReady &&
+    ((duplicate && docs.length === 0) ||
+      (system.pythonReady && system.extractor)) &&
     system.database.writable &&
     system.localAccess &&
     !system.runningJob;
@@ -445,464 +508,564 @@ export function AddCarWizard({
   return (
     <div className="mt-6">
       <WizardSteps step={step} />
+      <WizardMotion>
+        <div key={step} className="wizard-content">
+          {step === 1 && (
+            <Availability
+              online={online}
+              system={system}
+              error={systemError}
+              checking={checking}
+              onCheck={check}
+              onResume={resume}
+              needsPdf={!duplicate || docs.length > 0}
+            />
+          )}
 
-      {step === 1 && (
-        <Availability
-          online={online}
-          system={system}
-          error={systemError}
-          checking={checking}
-          onCheck={check}
-          onResume={resume}
-        />
-      )}
-
-      {step === 1 && (
-        <section className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_19rem]">
-          <h2 className="sr-only">Auto i instrukcje</h2>
-          <div className="flex min-w-0 flex-col gap-6">
-            <div className="panel">
-              <PanelHeading
-                mark="A"
-                title="Twoje auto"
-                hint="Marka, model i rocznik"
-              />
-              <div className="p-4 sm:p-5">
-                <div className="grid gap-x-5 gap-y-4 sm:grid-cols-2">
-                  <Field label="Marka" htmlFor="car-brand">
-                    <select
-                      id="car-brand"
-                      className="field"
-                      value={brandChoice}
-                      onChange={(e) => void chooseBrand(e.target.value)}
-                    >
-                      <option value="">
-                        {brands.state === "loading"
-                          ? "Wczytywanie listy marek…"
-                          : "Wybierz markę"}
-                      </option>
-                      {BRAND_GROUPS.map((g) => {
-                        const list = brandList.filter(g.filter);
-                        return list.length === 0 ? null : (
-                          <optgroup key={g.label} label={g.label}>
-                            {list.map((b) => (
-                              <option key={b.id} value={b.id}>
-                                {b.name}
+          {step === 1 && (
+            <section className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_19rem]">
+              <h2 className="sr-only">Auto i instrukcje</h2>
+              <div className="flex min-w-0 flex-col gap-6">
+                <div className="panel">
+                  <PanelHeading
+                    mark="A"
+                    title="Twoje auto"
+                    hint="Marka, model i rocznik"
+                  />
+                  <div className="p-4 sm:p-5">
+                    <div className="grid gap-x-5 gap-y-4 sm:grid-cols-3">
+                      <Field label="Marka" htmlFor="car-brand">
+                        <select
+                          id="car-brand"
+                          className="field"
+                          value={brandChoice}
+                          onChange={(e) => void chooseBrand(e.target.value)}
+                        >
+                          <option value="">
+                            {brands.state === "loading"
+                              ? "Wczytywanie listy marek…"
+                              : "Wybierz markę"}
+                          </option>
+                          {BRAND_GROUPS.map((g) => {
+                            const list = brandList.filter(g.filter);
+                            return list.length === 0 ? null : (
+                              <optgroup key={g.label} label={g.label}>
+                                {list.map((b) => (
+                                  <option key={b.id} value={b.id}>
+                                    {b.name}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            );
+                          })}
+                          <option value={OTHER}>Inna (wpiszę ręcznie)</option>
+                        </select>
+                        <WizardReveal open={brandIsOther}>
+                          <input
+                            className="field mt-1"
+                            placeholder="Wpisz markę"
+                            maxLength={60}
+                            value={brandOther}
+                            onChange={(e) => setBrandOther(e.target.value)}
+                            aria-label="Marka wpisana ręcznie"
+                            autoFocus={brandIsOther}
+                          />
+                        </WizardReveal>
+                      </Field>
+                      <Field label="Model" htmlFor="car-model">
+                        {brandIsOther ? (
+                          <input
+                            id="car-model"
+                            className="field"
+                            placeholder={
+                              brand ? "Wpisz model" : "najpierw wpisz markę"
+                            }
+                            maxLength={60}
+                            value={modelOther}
+                            disabled={!brand}
+                            onChange={(e) => setModelOther(e.target.value)}
+                          />
+                        ) : (
+                          <select
+                            id="car-model"
+                            className="field"
+                            value={modelChoice}
+                            disabled={models?.state !== "done"}
+                            onChange={(e) => chooseModel(e.target.value)}
+                          >
+                            <option value="">
+                              {!brandChoice
+                                ? "najpierw wybierz markę"
+                                : models?.state === "loading"
+                                  ? "Wczytywanie modeli…"
+                                  : models?.state === "error"
+                                    ? "Nie udało się wczytać"
+                                    : "Wybierz model"}
+                            </option>
+                            {modelList.map((m) => (
+                              <option key={m.id} value={m.id}>
+                                {m.name}
                               </option>
                             ))}
-                          </optgroup>
-                        );
-                      })}
-                      <option value={OTHER}>Inna (wpiszę ręcznie)</option>
-                    </select>
-                    {brandIsOther && (
-                      <input
-                        className="field mt-1"
-                        placeholder="Wpisz markę"
-                        maxLength={60}
-                        value={brandOther}
-                        onChange={(e) => setBrandOther(e.target.value)}
-                        aria-label="Marka wpisana ręcznie"
-                        autoFocus
-                      />
-                    )}
-                  </Field>
-                  <Field label="Model" htmlFor="car-model">
-                    {brandIsOther ? (
-                      <input
-                        id="car-model"
-                        className="field"
-                        placeholder={
-                          brand ? "Wpisz model" : "najpierw wpisz markę"
-                        }
-                        maxLength={60}
-                        value={modelOther}
-                        disabled={!brand}
-                        onChange={(e) => setModelOther(e.target.value)}
-                      />
-                    ) : (
-                      <select
-                        id="car-model"
-                        className="field"
-                        value={modelChoice}
-                        disabled={models?.state !== "done"}
-                        onChange={(e) => chooseModel(e.target.value)}
-                      >
-                        <option value="">
-                          {!brandChoice
-                            ? "najpierw wybierz markę"
-                            : models?.state === "loading"
-                              ? "Wczytywanie modeli…"
-                              : models?.state === "error"
-                                ? "Nie udało się wczytać"
-                                : "Wybierz model"}
-                        </option>
-                        {modelList.map((m) => (
-                          <option key={m.id} value={m.id}>
-                            {m.name}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </Field>
-                  <Field label="Rocznik" htmlFor="car-year">
-                    <select
-                      id="car-year"
-                      className="field"
-                      value={yearIsOther ? OTHER : year}
-                      disabled={!model}
-                      onChange={(e) => chooseYear(e.target.value)}
-                    >
-                      <option value="">
-                        {model ? "Wybierz rocznik" : "najpierw wybierz model"}
-                      </option>
-                      {years.map((y) => (
-                        <option key={y} value={y}>
-                          {y}
-                        </option>
-                      ))}
-                      {!brandIsOther && model && otherYears.length > 0 && (
-                        <option value={OTHER}>Inny rocznik</option>
-                      )}
-                    </select>
-                    {yearIsOther && (
-                      <>
-                        <select
-                          className="field mt-1"
-                          aria-label="Rocznik spoza listy"
-                          value={year}
-                          onChange={(e) => setYear(e.target.value)}
-                        >
-                          <option value="">Wybierz rocznik swojego auta</option>
-                          {otherYears.map((y) => (
-                            <option key={y} value={y}>
-                              {y}
+                          </select>
+                        )}
+                      </Field>
+                      <Field label="Rocznik" htmlFor="car-year">
+                        {yearIsOther ? (
+                          <input
+                            id="car-year"
+                            className="field min-w-0"
+                            type="number"
+                            inputMode="numeric"
+                            min={minYear}
+                            max={maxYear}
+                            step={1}
+                            placeholder="Wpisz rocznik"
+                            value={year}
+                            onChange={(e) => setYear(e.target.value)}
+                            onBlur={() => {
+                              if (catalogModel?.years.includes(Number(year))) {
+                                setYear(String(Number(year)));
+                                setYearIsOther(false);
+                              }
+                            }}
+                            autoFocus
+                          />
+                        ) : (
+                          <select
+                            id="car-year"
+                            className="field"
+                            value={yearIsOther ? OTHER : year}
+                            disabled={!model}
+                            onChange={(e) => chooseYear(e.target.value)}
+                          >
+                            <option value="">
+                              {model
+                                ? "Wybierz rocznik"
+                                : "najpierw wybierz model"}
                             </option>
-                          ))}
-                        </select>
-                        <p className="mt-2 text-xs text-graphite">
-                          Lista nie obejmuje wszystkich lat produkcji. Wybierz
-                          rocznik swojego auta i dodaj pasującą instrukcję.
-                        </p>
-                      </>
+                            {years.map((y) => (
+                              <option key={y} value={y}>
+                                {y}
+                              </option>
+                            ))}
+                            {!brandIsOther &&
+                              model &&
+                              otherYears.length > 0 && (
+                                <option value={OTHER}>Inny rocznik</option>
+                              )}
+                          </select>
+                        )}
+                      </Field>
+                    </div>
+                    <WizardReveal open={brandIsOther}>
+                      <Field
+                        label="Wersja (opcjonalnie)"
+                        htmlFor="car-variant"
+                        className="mt-4"
+                      >
+                        <input
+                          id="car-variant"
+                          className="field"
+                          maxLength={120}
+                          placeholder="np. 1.6 Turbo 170 KM, automat"
+                          value={variant}
+                          onChange={(e) => setVariant(e.target.value)}
+                        />
+                      </Field>
+                    </WizardReveal>
+                    {brands.state === "error" && !brandIsOther && (
+                      <div
+                        role="status"
+                        className="mt-2 flex flex-col gap-2 border-l-4 border-red bg-paper px-3 py-2 text-sm sm:flex-row sm:items-center"
+                      >
+                        <p className="flex-1">{brands.error}</p>
+                        <button
+                          type="button"
+                          className="btn shrink-0"
+                          onClick={() => void loadBrands()}
+                        >
+                          Spróbuj ponownie
+                        </button>
+                      </div>
                     )}
-                  </Field>
-                  {brandIsOther && (
-                    <Field label="Wersja (opcjonalnie)" htmlFor="car-variant">
-                      <input
-                        id="car-variant"
-                        className="field"
-                        maxLength={120}
-                        placeholder="np. 1.6 Turbo 170 KM, automat"
-                        value={variant}
-                        onChange={(e) => setVariant(e.target.value)}
-                      />
-                    </Field>
-                  )}
-                </div>
-                {brands.state === "error" && !brandIsOther && (
-                  <div
-                    role="status"
-                    className="mt-2 flex flex-col gap-2 border-l-4 border-red bg-paper px-3 py-2 text-sm sm:flex-row sm:items-center"
-                  >
-                    <p className="flex-1">{brands.error}</p>
-                    <button
-                      type="button"
-                      className="btn shrink-0"
-                      onClick={() => void loadBrands()}
-                    >
-                      Spróbuj ponownie
-                    </button>
+                    {models?.state === "error" && (
+                      <p className="mt-2 border-l-4 border-red bg-paper px-3 py-2 text-sm">
+                        {models.error}
+                      </p>
+                    )}
+                    <p className="mt-4 text-xs text-steel">
+                      {brandIsOther
+                        ? "Wpisz markę i model oraz wybierz rocznik – wszystkie trzy są wymagane."
+                        : "Marki, modele i roczniki pochodzą z oficjalnych rejestrów aut sprzedanych w Unii Europejskiej i w USA. Jeśli brakuje roku Twojego auta, wybierz „Inny rocznik”. Jeśli brakuje marki lub modelu, wybierz markę „Inna”."}
+                    </p>
                   </div>
-                )}
-                {models?.state === "error" && (
-                  <p className="mt-2 border-l-4 border-red bg-paper px-3 py-2 text-sm">
-                    {models.error}
-                  </p>
-                )}
-                <p className="mt-4 text-xs text-steel">
-                  {brandIsOther
-                    ? "Wpisz markę i model oraz wybierz rocznik – wszystkie trzy są wymagane."
-                    : "Marki, modele i roczniki pochodzą z oficjalnych rejestrów aut sprzedanych w Unii Europejskiej i w USA. Jeśli brakuje roku Twojego auta, wybierz „Inny rocznik”. Jeśli brakuje marki lub modelu, wybierz markę „Inna”."}
-                </p>
-                {duplicate && (
-                  <p className="mt-2 border-l-4 border-red bg-paper px-3 py-2 text-sm">
-                    Auto „{duplicate.label}” jest już na liście. Nowe instrukcje
-                    zostaną dodane jako osobne auto.
-                  </p>
-                )}
-              </div>
-            </div>
+                </div>
 
-            <div className="panel">
-              <PanelHeading
-                mark="B"
-                title="Instrukcje"
-                hint={`${docs.length} z ${maxDocs} plików`}
-              />
-              <div className="p-4 sm:p-5">
-                <div
-                  className={`wizard-drop p-3 sm:p-4 ${dragging ? "wizard-drop-active" : ""} ${
-                    docs.length === 0 ? "py-10 sm:py-12" : ""
-                  }`}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setDragging(true);
-                  }}
-                  onDragLeave={() => setDragging(false)}
-                  onDrop={onDrop}
-                >
-                  <div
-                    className={`flex flex-wrap items-center gap-3 text-sm ${
-                      docs.length === 0
-                        ? "flex-col justify-center text-center"
-                        : "justify-between"
+                <div className="panel">
+                  <PanelHeading
+                    mark="B"
+                    title="Instrukcje"
+                    hint={`${savedBooks.length + docs.length} instrukcji`}
+                  />
+                  <div className="p-4 sm:p-5">
+                    <WizardReveal open={!!duplicate}>
+                      <div className="space-y-3">
+                        <p className="text-sm text-graphite" role="status">
+                          Instrukcje tego auta są już dostępne. Możesz z nich
+                          skorzystać, zmienić ich kolejność lub dołączyć nowe
+                          pliki.
+                        </p>
+                        <ol
+                          className="divide-y divide-line border border-line"
+                          aria-label="Dostępne instrukcje"
+                        >
+                          {savedBooks.map((book, i) => (
+                            <li
+                              key={book.id}
+                              className="flex items-center gap-3 p-3 text-sm"
+                            >
+                              <span className="text-steel">{i + 1}</span>
+                              <span className="min-w-0 flex-1">
+                                {book.title}
+                              </span>
+                              <button
+                                type="button"
+                                className="btn btn-ghost shrink-0 px-2"
+                                disabled={i === 0}
+                                onClick={() => moveSavedBook(i, -1)}
+                                aria-label={`Przesuń wcześniej: ${book.title}`}
+                              >
+                                ↑
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-ghost shrink-0 px-2"
+                                disabled={i === savedBooks.length - 1}
+                                onClick={() => moveSavedBook(i, 1)}
+                                aria-label={`Przesuń dalej: ${book.title}`}
+                              >
+                                ↓
+                              </button>
+                            </li>
+                          ))}
+                        </ol>
+                        <button
+                          type="button"
+                          className="btn mb-4"
+                          aria-expanded={showUpload}
+                          onClick={() =>
+                            duplicate &&
+                            setSaved({
+                              car: duplicate.id,
+                              order: savedOrder,
+                              upload: !showUpload,
+                            })
+                          }
+                        >
+                          {showUpload
+                            ? "Ukryj wybór nowych plików"
+                            : "Dodaj nowe pliki"}
+                        </button>
+                      </div>
+                    </WizardReveal>
+                    <WizardReveal open={showUpload}>
+                      <div
+                        className={`wizard-drop p-3 sm:p-4 ${dragging ? "wizard-drop-active" : ""} ${
+                          docs.length === 0 ? "py-10 sm:py-12" : ""
+                        }`}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setDragging(true);
+                        }}
+                        onDragLeave={() => setDragging(false)}
+                        onDrop={onDrop}
+                      >
+                        <div
+                          className={`flex flex-wrap items-center gap-3 text-sm ${
+                            docs.length === 0
+                              ? "flex-col justify-center text-center"
+                              : "justify-between"
+                          }`}
+                        >
+                          {docs.length === 0 && <DropIcon />}
+                          <p className="text-graphite">
+                            {docs.length === 0 ? (
+                              <>
+                                <strong className="block text-base text-ink">
+                                  Przeciągnij tutaj instrukcje w PDF
+                                </strong>
+                                np. instrukcja obsługi, instrukcja radia i
+                                nawigacji, książka serwisowa – do {maxDocs}{" "}
+                                plików
+                              </>
+                            ) : (
+                              "Przeciągnij kolejne pliki tutaj albo"
+                            )}
+                          </p>
+                          <label
+                            className={`btn cursor-pointer ${
+                              savedBooks.length + docs.length >= maxDocs
+                                ? "pointer-events-none opacity-50"
+                                : ""
+                            }`}
+                          >
+                            Wybierz pliki
+                            <input
+                              type="file"
+                              accept="application/pdf,.pdf"
+                              multiple
+                              className="sr-only"
+                              disabled={
+                                savedBooks.length + docs.length >= maxDocs
+                              }
+                              onChange={(e) => {
+                                if (e.target.files) addFiles(e.target.files);
+                                e.target.value = "";
+                              }}
+                            />
+                          </label>
+                        </div>
+                        <WizardMotion>
+                          {notice.length > 0 && (
+                            <ul className="mt-2 text-xs text-red">
+                              {notice.map((n, i) => (
+                                <li key={i}>{n}</li>
+                              ))}
+                            </ul>
+                          )}
+                          {docs.length > 0 && (
+                            <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+                              {docs.map((d, i) => (
+                                <li
+                                  key={d.key}
+                                  className="wizard-content flex flex-col border border-line bg-white"
+                                >
+                                  <div className="relative flex aspect-3/4 items-center justify-center overflow-hidden border-b border-line bg-paper">
+                                    {d.preview ? (
+                                      // eslint-disable-next-line @next/next/no-img-element -- local object URL
+                                      <img
+                                        src={d.preview}
+                                        alt={`Pierwsza strona: ${d.title}`}
+                                        className="h-full w-full object-contain"
+                                      />
+                                    ) : d.previewState === "loading" ? (
+                                      <Skeleton className="h-3/4 w-3/4" />
+                                    ) : (
+                                      <span className="px-2 text-center text-xs text-steel">
+                                        Brak podglądu
+                                      </span>
+                                    )}
+                                    <span className="absolute top-0 left-0 bg-ink px-1.5 py-0.5 text-xs text-white">
+                                      {i + 1}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-1 flex-col gap-1 p-2">
+                                    <input
+                                      className="field h-8 px-2 text-sm"
+                                      value={d.title}
+                                      maxLength={120}
+                                      aria-label={`Nazwa instrukcji ${i + 1}`}
+                                      onChange={(e) =>
+                                        setDocs((prev) =>
+                                          prev.map((x) =>
+                                            x.key === d.key
+                                              ? { ...x, title: e.target.value }
+                                              : x,
+                                          ),
+                                        )
+                                      }
+                                    />
+                                    <p
+                                      className="truncate text-xs text-steel"
+                                      title={d.file.name}
+                                    >
+                                      {d.file.name}
+                                    </p>
+                                    <p className="text-xs text-graphite">
+                                      {d.pages != null
+                                        ? `${d.pages} str. · `
+                                        : ""}
+                                      {formatFileSize(d.file.size)}
+                                    </p>
+                                    <div className="mt-auto flex gap-1 pt-1">
+                                      <button
+                                        type="button"
+                                        className="btn btn-ghost h-7 px-2 py-0"
+                                        disabled={i === 0}
+                                        onClick={() => moveDoc(d.key, -1)}
+                                        aria-label="Przesuń wcześniej"
+                                      >
+                                        ←
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="btn btn-ghost h-7 px-2 py-0"
+                                        disabled={i === docs.length - 1}
+                                        onClick={() => moveDoc(d.key, 1)}
+                                        aria-label="Przesuń dalej"
+                                      >
+                                        →
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="btn btn-ghost ml-auto h-7 px-2 py-0 text-red"
+                                        onClick={() => removeDoc(d.key)}
+                                      >
+                                        Usuń
+                                      </button>
+                                    </div>
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </WizardMotion>
+                      </div>
+
+                      <p className="mt-4 text-xs leading-relaxed text-steel">
+                        Każdy plik stanie się osobną instrukcją o nazwie
+                        wpisanej na karcie. Pliki PDF są potrzebne tylko na czas
+                        odczytywania – potem aplikacja je{" "}
+                        <strong className="text-graphite">usuwa</strong>, a
+                        instrukcje zostają już na stałe.
+                      </p>
+                    </WizardReveal>
+                  </div>
+                </div>
+              </div>
+
+              <aside className="panel lg:sticky lg:top-[calc(var(--header-h)+1rem)]">
+                <h3 className="panel-title">Podsumowanie</h3>
+                <div className="p-4 sm:p-5">
+                  <p className="section-label mb-0">{brand || "Marka"}</p>
+                  <p
+                    className={`type-card mt-0.5 ${
+                      model ? "text-ink" : "text-silver"
                     }`}
                   >
-                    {docs.length === 0 && <DropIcon />}
-                    <p className="text-graphite">
-                      {docs.length === 0 ? (
-                        <>
-                          <strong className="block text-base text-ink">
-                            Przeciągnij tutaj instrukcje w PDF
-                          </strong>
-                          np. instrukcja obsługi, instrukcja radia i nawigacji,
-                          książka serwisowa – do {maxDocs} plików
-                        </>
-                      ) : (
-                        "Przeciągnij kolejne pliki tutaj albo"
+                    {model || "Model"}
+                  </p>
+                  <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 border-t border-line pt-3 text-sm">
+                    <dt className="text-steel">Rocznik</dt>
+                    <dd className="text-right font-semibold">{year || "–"}</dd>
+                    {brandIsOther && (
+                      <>
+                        <dt className="text-steel">Wersja</dt>
+                        <dd className="text-right">{variant.trim() || "–"}</dd>
+                      </>
+                    )}
+                    <dt className="text-steel">Instrukcje</dt>
+                    <dd className="text-right font-semibold">
+                      {savedBooks.length + docs.length}
+                      {docs.some((d) => d.pages != null) && (
+                        <span className="font-normal text-graphite">
+                          {" "}
+                          · {docs.reduce((n, d) => n + (d.pages ?? 0), 0)} str.
+                        </span>
                       )}
-                    </p>
-                    <label
-                      className={`btn cursor-pointer ${
-                        docs.length >= maxDocs
-                          ? "pointer-events-none opacity-50"
-                          : ""
-                      }`}
-                    >
-                      Wybierz pliki
-                      <input
-                        type="file"
-                        accept="application/pdf,.pdf"
-                        multiple
-                        className="sr-only"
-                        disabled={docs.length >= maxDocs}
-                        onChange={(e) => {
-                          if (e.target.files) addFiles(e.target.files);
-                          e.target.value = "";
-                        }}
-                      />
-                    </label>
-                  </div>
-                  {notice.length > 0 && (
-                    <ul className="mt-2 text-xs text-red">
-                      {notice.map((n, i) => (
-                        <li key={i}>{n}</li>
-                      ))}
-                    </ul>
-                  )}
-                  {docs.length > 0 && (
-                    <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
-                      {docs.map((d, i) => (
-                        <li
-                          key={d.key}
-                          className="flex flex-col border border-line bg-white"
-                        >
-                          <div className="relative flex aspect-3/4 items-center justify-center overflow-hidden border-b border-line bg-paper">
-                            {d.preview ? (
-                              // eslint-disable-next-line @next/next/no-img-element -- local object URL
-                              <img
-                                src={d.preview}
-                                alt={`Pierwsza strona: ${d.title}`}
-                                className="h-full w-full object-contain"
-                              />
-                            ) : d.previewState === "loading" ? (
-                              <Skeleton className="h-3/4 w-3/4" />
-                            ) : (
-                              <span className="px-2 text-center text-xs text-steel">
-                                Brak podglądu
-                              </span>
-                            )}
-                            <span className="absolute top-0 left-0 bg-ink px-1.5 py-0.5 text-xs text-white">
-                              {i + 1}
-                            </span>
-                          </div>
-                          <div className="flex flex-1 flex-col gap-1 p-2">
-                            <input
-                              className="field h-8 px-2 text-sm"
-                              value={d.title}
-                              maxLength={120}
-                              aria-label={`Nazwa instrukcji ${i + 1}`}
-                              onChange={(e) =>
-                                setDocs((prev) =>
-                                  prev.map((x) =>
-                                    x.key === d.key
-                                      ? { ...x, title: e.target.value }
-                                      : x,
-                                  ),
-                                )
-                              }
+                    </dd>
+                  </dl>
+                  <WizardMotion>
+                    {formErrors.length > 0 ? (
+                      <ul className="mt-4 flex flex-col gap-1.5 border-t border-line pt-3 text-xs text-graphite">
+                        {formErrors.map((e) => (
+                          <li key={e} className="flex gap-2">
+                            <span
+                              aria-hidden="true"
+                              className="mt-1 h-1.5 w-1.5 shrink-0 bg-red"
                             />
-                            <p
-                              className="truncate text-xs text-steel"
-                              title={d.file.name}
-                            >
-                              {d.file.name}
-                            </p>
-                            <p className="text-xs text-graphite">
-                              {d.pages != null ? `${d.pages} str. · ` : ""}
-                              {formatFileSize(d.file.size)}
-                            </p>
-                            <div className="mt-auto flex gap-1 pt-1">
-                              <button
-                                type="button"
-                                className="btn btn-ghost h-7 px-2 py-0"
-                                disabled={i === 0}
-                                onClick={() => moveDoc(d.key, -1)}
-                                aria-label="Przesuń wcześniej"
-                              >
-                                ←
-                              </button>
-                              <button
-                                type="button"
-                                className="btn btn-ghost h-7 px-2 py-0"
-                                disabled={i === docs.length - 1}
-                                onClick={() => moveDoc(d.key, 1)}
-                                aria-label="Przesuń dalej"
-                              >
-                                →
-                              </button>
-                              <button
-                                type="button"
-                                className="btn btn-ghost ml-auto h-7 px-2 py-0 text-red"
-                                onClick={() => removeDoc(d.key)}
-                              >
-                                Usuń
-                              </button>
-                            </div>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
+                            {e}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-4 border-t border-line pt-3 text-xs text-graphite">
+                        Wszystko gotowe – możesz dodać auto.
+                      </p>
+                    )}
+                  </WizardMotion>
+                  <button
+                    type="button"
+                    className="btn btn-primary mt-5 w-full justify-center py-2.5 text-base"
+                    disabled={formErrors.length > 0 || !ready}
+                    onClick={submit}
+                  >
+                    Dodaj auto
+                    {docs.length > 0
+                      ? ` i ${docs.length} ${plural(docs.length, "instrukcję", "instrukcje", "instrukcji")}`
+                      : ""}{" "}
+                    →
+                  </button>
+                  {!ready && formErrors.length === 0 && (
+                    <p className="mt-2 text-xs text-red">
+                      Dodawanie jest teraz niedostępne – zobacz komunikat na
+                      górze.
+                    </p>
                   )}
                 </div>
+              </aside>
+            </section>
+          )}
 
-                <p className="mt-4 text-xs leading-relaxed text-steel">
-                  Każdy plik stanie się osobną instrukcją o nazwie wpisanej na
-                  karcie. Pliki PDF są potrzebne tylko na czas odczytywania –
-                  potem aplikacja je{" "}
-                  <strong className="text-graphite">usuwa</strong>, a instrukcje
-                  zostają już na stałe.
-                </p>
-              </div>
-            </div>
-          </div>
+          {step === 2 && (
+            <StepProcessing
+              upload={upload}
+              job={job}
+              picked={docs.map((d) => ({
+                title: d.title,
+                name: d.file.name,
+                preview: d.preview,
+              }))}
+              error={submitError}
+              onBack={() => {
+                setSubmitError(null);
+                setJob(null);
+                setUpload(null);
+                setStep(1);
+                void check();
+              }}
+            />
+          )}
 
-          <aside className="panel lg:sticky lg:top-[calc(var(--header-h)+1rem)]">
-            <h3 className="panel-title">Podsumowanie</h3>
-            <div className="p-4 sm:p-5">
-              <p className="section-label mb-0">{brand || "Marka"}</p>
-              <p
-                className={`type-card mt-0.5 ${
-                  model ? "text-ink" : "text-silver"
-                }`}
-              >
-                {model || "Model"}
-              </p>
-              <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 border-t border-line pt-3 text-sm">
-                <dt className="text-steel">Rocznik</dt>
-                <dd className="text-right font-semibold">{year || "–"}</dd>
-                {brandIsOther && (
-                  <>
-                    <dt className="text-steel">Wersja</dt>
-                    <dd className="text-right">{variant.trim() || "–"}</dd>
-                  </>
-                )}
-                <dt className="text-steel">Instrukcje</dt>
-                <dd className="text-right font-semibold">
-                  {docs.length}
-                  {docs.some((d) => d.pages != null) && (
-                    <span className="font-normal text-graphite">
-                      {" "}
-                      · {docs.reduce((n, d) => n + (d.pages ?? 0), 0)} str.
-                    </span>
-                  )}
-                </dd>
-              </dl>
-              {formErrors.length > 0 ? (
-                <ul className="mt-4 flex flex-col gap-1.5 border-t border-line pt-3 text-xs text-graphite">
-                  {formErrors.map((e) => (
-                    <li key={e} className="flex gap-2">
-                      <span
-                        aria-hidden="true"
-                        className="mt-1 h-1.5 w-1.5 shrink-0 bg-red"
-                      />
-                      {e}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="mt-4 border-t border-line pt-3 text-xs text-graphite">
-                  Wszystko gotowe – możesz dodać auto.
-                </p>
-              )}
-              <button
-                type="button"
-                className="btn btn-primary mt-5 w-full justify-center py-2.5 text-base"
-                disabled={formErrors.length > 0 || !ready}
-                onClick={submit}
-              >
-                Dodaj auto
-                {docs.length > 0
-                  ? ` i ${docs.length} ${plural(docs.length, "instrukcję", "instrukcje", "instrukcji")}`
-                  : ""}{" "}
-                →
-              </button>
-              {!ready && formErrors.length === 0 && (
-                <p className="mt-2 text-xs text-red">
-                  Dodawanie jest teraz niedostępne – zobacz komunikat na górze.
-                </p>
-              )}
-            </div>
-          </aside>
-        </section>
-      )}
+          {step === 3 && job && (
+            <StepEquipment
+              job={job}
+              equipment={equipment}
+              onRetry={() => void loadEquipment(job.carId)}
+              onNext={() => setStep(4)}
+            />
+          )}
 
-      {step === 2 && (
-        <StepProcessing
-          upload={upload}
-          job={job}
-          picked={docs.map((d) => ({ title: d.title, preview: d.preview }))}
-          error={submitError}
-          onBack={() => {
-            setSubmitError(null);
-            setJob(null);
-            setUpload(null);
-            setStep(1);
-            void check();
-          }}
-        />
-      )}
-
-      {step === 3 && job && (
-        <StepEquipment
-          job={job}
-          equipment={equipment}
-          onRetry={() => void loadEquipment(job.carId)}
-          onNext={() => setStep(4)}
-        />
-      )}
-
-      {step === 4 && job && (
-        <StepDone
-          job={job}
-          onOpen={() => {
-            setActiveCar(job.carId);
-            router.push(carHref(job.carId));
-          }}
-          onAgain={reset}
-        />
-      )}
+          {step === 4 && job && (
+            <StepDone
+              job={job}
+              car={
+                completedCar ??
+                (brand && model && year
+                  ? {
+                      id: job.carId,
+                      brand,
+                      model,
+                      year: Number(year),
+                      variant,
+                      label: job.label,
+                      href: carHref(job.carId),
+                      books: [],
+                    }
+                  : null)
+              }
+              onOpen={() => {
+                setActiveCar(job.carId);
+                router.push(carHref(job.carId));
+                router.refresh();
+              }}
+              onProfile={() => router.refresh()}
+              onAgain={reset}
+            />
+          )}
+        </div>
+      </WizardMotion>
     </div>
   );
 }

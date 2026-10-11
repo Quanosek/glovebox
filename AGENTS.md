@@ -15,15 +15,15 @@ itself) is a private, local-only Next.js app for reading vehicle manuals from an
 highlighting, comments, bookmarks and a Markdown notebook. The visual hierarchy takes
 inspiration from Opel's Navi 950 interface; the vehicle database itself is generic and user
 populated. There is no bundled example, default vehicle, manual template or generated content.
-Users assign readable cars from `database/` to their browser profile or add cars from PDF manuals
-with a step-by-step wizard, then can mark optional equipment.
+Users always add cars through the step-by-step wizard. After selecting brand/model/year,
+they can reuse matching manuals from `database/`, reorder them or append PDFs, then mark equipment.
 
 - **No accounts, no database server.** On entry the user sees a local profile (`/`): car
   assignments or notebook. User data lives in the browser only (localStorage + Cache API).
 - **Manual content is a local file database** (`database/`, **git-ignored**), served by the
   local Next.js server (`next dev` / `next start`). Nothing inside it is committed. Cars in the
-  library are not automatically assigned to the browser profile; users can add a library car or
-  import their own. A fresh checkout starts without manuals.
+  library are not automatically assigned to the browser profile; the wizard reuses matching
+  manuals or imports new ones. A fresh checkout starts without manuals.
 - **Offline after a car is chosen.** Opening a car saves all its pages, images and scripts
   to the Cache API in the background; from then on it works with no connection. A
   connection is only needed to add cars and to refresh the car list (`docs/offline.md`).
@@ -58,18 +58,20 @@ caches. Check `git status --ignored` carefully before modifying local database c
 
 ```bash
 pnpm install           # install from pnpm-lock.yaml (CI: --frozen-lockfile)
+pnpm initial           # create cache folders and prewarm European catalogues/logo metadata
 pnpm dev               # dev server (service worker + automatic offline copies disabled)
-pnpm build             # next build (server output in .next/)
-pnpm start             # next start on :3000 (needed for database/ and the import wizard)
 pnpm lint              # ESLint, no warnings allowed (flat config: next core-web-vitals + typescript)
 pnpm lint:py           # ruff on scripts/ (scripts/ruff.toml; needs scripts/requirements-dev.txt)
 pnpm typecheck         # next typegen && tsc --noEmit
 pnpm unused            # knip: unused files, exports and dependencies (knip.json)
+pnpm format:check      # check formatting without changing files
 pnpm test              # Vitest (src/**/*.test.ts)
-pnpm format            # Prettier (+ Tailwind class sorting); `pnpm format:check` only checks
 pnpm test:extract      # Python unittest for the extractor (same interpreter lookup as the importer)
-pnpm check             # all of the above in one go + production build (also run by CI)
+pnpm format            # fix formatting with Prettier (+ Tailwind class sorting)
 pnpm icons             # src/app/icon.svg -> favicon.ico, apple-icon.png, public/icon-*.png
+pnpm check             # all of the above in one go + production build (also run by CI)
+pnpm build             # next build (server output in .next/; already included in check)
+pnpm start             # next start on :3000 (needed for database/ and the import wizard)
 ```
 
 For `pnpm lint:py` install the Python dev requirements into the same interpreter:
@@ -87,8 +89,8 @@ database/                       user-managed manual content (git-ignored; JSON +
   <car>/<bookId>/index.json     BookIndex (+ one ChapterFile JSON per top-level chapter)
   <car>/assets/<bookId>/<chapter>/p<page>-<n>.webp   illustrations, served as /media/<car>/...
   .import-<job>/                staging folder of a running import (skipped)
-  .catalog/                     cached official catalogue answers (docs/catalog.md)
-  .logos/                       cached brand logos (docs/logos.md)
+  .catalog/                     initialized official catalogue answers, runtime-refreshed (docs/catalog.md)
+  .logos/                       initialized logo metadata and lazy images (docs/logos.md)
 scripts/                        generic PDF extraction (Python), tests, icon generator
   extract.py                    CLI entry: PDF -> JSON blocks + WebP images (PyMuPDF, Pillow)
   manual_extract/               extractor package, one module per topic (docs/extraction.md)
@@ -111,7 +113,7 @@ src/
     auto/[car]/dane-techniczne/   technical data cards (tables of technical chapters)
     auto/[car]/wyposazenie/     per-car equipment editor (EquipmentEditor)
     auto/[car]/[book]/          book index + sidebar layout; [...slug]/ section pages
-    dodaj-auto/                 add library car or import wizard (car + PDFs, reading, equipment):
+    dodaj-auto/                 unified wizard (car + saved manuals/PDFs, reading, equipment):
                                 AddCarWizard (state + step 1 form), ImportSteps (reading,
                                 equipment, done), Availability, WizardChrome, wizardModel
     api/system                  GET environment + manual count check (Node, Python, database)

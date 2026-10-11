@@ -5,6 +5,7 @@ import { APP_NAME } from "@/lib/brand";
 import type { CarFile } from "@/lib/cars";
 import { catalogKey } from "@/lib/catalog";
 import { getDatabaseDir } from "@/lib/content";
+import { validTimestamp, writeCache } from "@/lib/server/catalogCache";
 import {
   logoCandidates,
   parseLogoClaims,
@@ -42,6 +43,7 @@ interface BrandEntry {
   ttl: number;
   entity: string | null;
   logos: BrandLogo[];
+  failure?: string;
 }
 
 const IMAGE_TYPES: { ext: string; type: string; magic: number[] }[] = [
@@ -60,6 +62,10 @@ const logoDir = () => path.join(getDatabaseDir(), ".logos");
 const inflight = new Map<string, Promise<unknown>>();
 /** Failed downloads (in memory): retried after `TTL.failed`. */
 const failedImages = new Map<string, number>();
+const failedBrands = new Map<string, number>();
+const brandFailures = new Map<string, string>();
+let metadataActive = 0;
+const metadataQueue: (() => void)[] = [];
 
 function once<T>(key: string, fn: () => Promise<T>): Promise<T> {
   const running = inflight.get(key) as Promise<T> | undefined;
@@ -70,13 +76,39 @@ function once<T>(key: string, fn: () => Promise<T>): Promise<T> {
 }
 
 async function getJson(params: Record<string, string>): Promise<unknown> {
-  const url = `${WIKIDATA}?${new URLSearchParams({ ...params, format: "json" })}`;
-  const res = await fetch(url, {
-    headers: { "User-Agent": USER_AGENT },
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-  });
-  if (!res.ok) throw new Error(`Wikidata HTTP ${res.status}`);
-  return res.json();
+  if (metadataActive >= 2)
+    await new Promise<void>((resolve) => metadataQueue.push(resolve));
+  else metadataActive++;
+  try {
+    const url = `${WIKIDATA}?${new URLSearchParams({ ...params, format: "json" })}`;
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        cache: "no-store",
+        headers: { "User-Agent": USER_AGENT },
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
+    } catch (error) {
+      const timeout =
+        error instanceof Error &&
+        ["AbortError", "TimeoutError"].includes(error.name);
+      throw new Error(
+        timeout
+          ? "Wikidata: przekroczono czas oczekiwania"
+          : "Wikidata: błąd połączenia (sprawdź DNS, proxy i dostęp do www.wikidata.org)",
+      );
+    }
+    if (!res.ok) throw new Error(`Wikidata HTTP ${res.status}`);
+    try {
+      return await res.json();
+    } catch {
+      throw new Error("Wikidata: nieprawidłowa odpowiedź");
+    }
+  } finally {
+    const next = metadataQueue.shift();
+    if (next) next();
+    else metadataActive--;
+  }
 }
 
 async function lookupBrand(
@@ -90,13 +122,38 @@ async function lookupBrand(
     type: "item",
     limit: "50",
   })) as { search?: SearchHit[] };
+  if (
+    !search ||
+    !Array.isArray(search.search) ||
+    search.search.some(
+      (hit) =>
+        !hit ||
+        typeof hit.id !== "string" ||
+        !/^Q\d+$/.test(hit.id) ||
+        typeof hit.label !== "string",
+    )
+  )
+    throw new Error("Wikidata: nieprawidłowa odpowiedź wyszukiwania");
   for (const id of logoCandidates(search.search ?? [], name).slice(
     0,
     MAX_CANDIDATES,
   )) {
-    const logos = parseLogoClaims(
-      await getJson({ action: "wbgetclaims", entity: id, property: "P154" }),
-    );
+    const claims = await getJson({
+      action: "wbgetclaims",
+      entity: id,
+      property: "P154",
+    });
+    if (
+      typeof claims !== "object" ||
+      claims === null ||
+      !("claims" in claims) ||
+      typeof claims.claims !== "object" ||
+      claims.claims === null ||
+      Array.isArray(claims.claims) ||
+      ("P154" in claims.claims && !Array.isArray(claims.claims.P154))
+    )
+      throw new Error("Wikidata: nieprawidłowa odpowiedź logotypów");
+    const logos = parseLogoClaims(claims);
     if (logos.length > 0) return { entity: id, logos, ttl: TTL.found };
   }
   return { entity: null, logos: [], ttl: TTL.missing };
@@ -111,14 +168,18 @@ async function readJson<T>(file: string): Promise<T | null> {
 }
 
 /** Logos of a brand, from the cache while fresh (stale copy if offline). */
-async function brandLogos(name: string): Promise<BrandLogo[]> {
+async function brandLogos(
+  name: string,
+  waitForRefresh = false,
+): Promise<BrandLogo[]> {
   const key = catalogKey(name).toLowerCase();
   if (!key) return [];
   const file = path.join(logoDir(), `brand-${key}.json`);
-  return once(`brand:${key}`, async () => {
-    const cached = await readJson<BrandEntry>(file);
-    const valid = cached?.version === CACHE_VERSION ? cached : null;
-    if (valid && Date.now() - valid.fetchedAt < valid.ttl) return valid.logos;
+  const cached = await readJson<BrandEntry>(file);
+  const valid = validBrandEntry(cached) ? cached : null;
+  if (valid && Date.now() - valid.fetchedAt < valid.ttl) return valid.logos;
+  if (Date.now() < (failedBrands.get(file) ?? 0)) return valid?.logos ?? [];
+  const refresh = once(`brand:${file}`, async () => {
     let entry: BrandEntry;
     try {
       entry = {
@@ -126,24 +187,100 @@ async function brandLogos(name: string): Promise<BrandLogo[]> {
         fetchedAt: Date.now(),
         ...(await lookupBrand(name)),
       };
-    } catch {
-      if (valid?.entity) return valid.logos;
+      if (valid?.logos.length && !entry.logos.length)
+        throw new Error("Wikidata: niepełne dane logotypów");
+      failedBrands.delete(file);
+      brandFailures.delete(file);
+    } catch (error) {
+      failedBrands.set(file, Date.now() + TTL.failed);
+      const failure =
+        error instanceof Error && error.message.startsWith("Wikidata")
+          ? error.message
+          : "Wikidata: nie udało się odczytać informacji o logotypach";
+      brandFailures.set(file, failure);
+      if (valid) return valid.logos;
       entry = {
         version: CACHE_VERSION,
         fetchedAt: Date.now(),
         ttl: TTL.failed,
         entity: null,
         logos: [],
+        failure,
       };
     }
     try {
-      await fs.mkdir(logoDir(), { recursive: true });
-      await fs.writeFile(file, JSON.stringify(entry));
+      await writeCache(file, entry);
     } catch {
+      failedBrands.set(file, Date.now() + TTL.failed);
+      brandFailures.set(file, "Nie udało się zapisać informacji o logotypach");
       // A read-only database still serves logos for this run.
     }
     return entry.logos;
   });
+  if (valid && !waitForRefresh) {
+    void refresh.catch(() => {});
+    return valid.logos;
+  }
+  return refresh;
+}
+
+function validBrandEntry(value: BrandEntry | null): value is BrandEntry {
+  return (
+    !!value &&
+    value.version === CACHE_VERSION &&
+    validTimestamp(value.fetchedAt) &&
+    typeof value.ttl === "number" &&
+    value.ttl > 0 &&
+    value.ttl <= TTL.found &&
+    (value.entity === null || /^Q\d+$/.test(value.entity)) &&
+    Array.isArray(value.logos) &&
+    value.logos.every(
+      (logo) =>
+        !!logo &&
+        typeof logo.file === "string" &&
+        logo.file.trim().length > 0 &&
+        ["normal", "preferred", "deprecated"].includes(logo.rank) &&
+        (logo.start === undefined || Number.isInteger(logo.start)) &&
+        (logo.end === undefined || Number.isInteger(logo.end)),
+    ) &&
+    (value.entity !== null || value.logos.length === 0)
+  );
+}
+
+/** Metadata only: Commons images remain lazy, cached independently by file. */
+export async function prewarmLogoMetadata(
+  brands: { name: string }[],
+  onFailure?: (reason: string) => void,
+): Promise<string[]> {
+  let next = 0;
+  const failed: string[] = [];
+  await Promise.all(
+    Array.from({ length: Math.min(2, brands.length) }, async () => {
+      while (next < brands.length) {
+        const brand = brands[next++];
+        await brandLogos(brand.name, true);
+        const file = path.join(
+          logoDir(),
+          `brand-${catalogKey(brand.name).toLowerCase()}.json`,
+        );
+        const entry = await readJson<BrandEntry>(file);
+        if (
+          Date.now() < (failedBrands.get(file) ?? 0) ||
+          entry?.ttl === TTL.failed
+        ) {
+          failed.push(brand.name);
+          onFailure?.(
+            brandFailures.get(file) ??
+              (typeof entry?.failure === "string" &&
+              entry.failure.startsWith("Wikidata")
+                ? entry.failure.slice(0, 200)
+                : "Wikidata: poprzednia próba nie powiodła się; ponowienie za godzinę"),
+          );
+        }
+      }
+    }),
+  );
+  return failed;
 }
 
 const imageBase = (file: string) =>
