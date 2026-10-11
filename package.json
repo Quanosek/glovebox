@@ -5,18 +5,18 @@
   "scripts": {
     "initial": "node scripts/initial.mjs",
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
     "lint": "eslint --max-warnings=0",
     "lint:py": "node scripts/run-python.mjs -m ruff check scripts",
     "typecheck": "next typegen && tsc --noEmit",
     "unused": "knip",
-    "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:extract": "node scripts/run-python.mjs -m unittest discover -s scripts/tests",
+    "format": "prettier --write .",
+    "icons": "node scripts/generate-icons.mjs",
     "check": "pnpm lint && pnpm lint:py && pnpm typecheck && pnpm unused && pnpm format:check && pnpm test && pnpm test:extract && pnpm build",
-    "icons": "node scripts/generate-icons.mjs"
+    "build": "next build",
+    "start": "next start"
   },
   "dependencies": {
     "minisearch": "^7.2.0",

@@ -43,6 +43,7 @@ interface BrandEntry {
   ttl: number;
   entity: string | null;
   logos: BrandLogo[];
+  failure?: string;
 }
 
 const IMAGE_TYPES: { ext: string; type: string; magic: number[] }[] = [
@@ -62,6 +63,7 @@ const inflight = new Map<string, Promise<unknown>>();
 /** Failed downloads (in memory): retried after `TTL.failed`. */
 const failedImages = new Map<string, number>();
 const failedBrands = new Map<string, number>();
+const brandFailures = new Map<string, string>();
 let metadataActive = 0;
 const metadataQueue: (() => void)[] = [];
 
@@ -79,13 +81,29 @@ async function getJson(params: Record<string, string>): Promise<unknown> {
   else metadataActive++;
   try {
     const url = `${WIKIDATA}?${new URLSearchParams({ ...params, format: "json" })}`;
-    const res = await fetch(url, {
-      cache: "no-store",
-      headers: { "User-Agent": USER_AGENT },
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-    });
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        cache: "no-store",
+        headers: { "User-Agent": USER_AGENT },
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
+    } catch (error) {
+      const timeout =
+        error instanceof Error &&
+        ["AbortError", "TimeoutError"].includes(error.name);
+      throw new Error(
+        timeout
+          ? "Wikidata: przekroczono czas oczekiwania"
+          : "Wikidata: błąd połączenia (sprawdź DNS, proxy i dostęp do www.wikidata.org)",
+      );
+    }
     if (!res.ok) throw new Error(`Wikidata HTTP ${res.status}`);
-    return await res.json();
+    try {
+      return await res.json();
+    } catch {
+      throw new Error("Wikidata: nieprawidłowa odpowiedź");
+    }
   } finally {
     const next = metadataQueue.shift();
     if (next) next();
@@ -104,7 +122,18 @@ async function lookupBrand(
     type: "item",
     limit: "50",
   })) as { search?: SearchHit[] };
-  if (!Array.isArray(search.search)) throw new Error("Invalid Wikidata search");
+  if (
+    !search ||
+    !Array.isArray(search.search) ||
+    search.search.some(
+      (hit) =>
+        !hit ||
+        typeof hit.id !== "string" ||
+        !/^Q\d+$/.test(hit.id) ||
+        typeof hit.label !== "string",
+    )
+  )
+    throw new Error("Wikidata: nieprawidłowa odpowiedź wyszukiwania");
   for (const id of logoCandidates(search.search ?? [], name).slice(
     0,
     MAX_CANDIDATES,
@@ -119,9 +148,11 @@ async function lookupBrand(
       claims === null ||
       !("claims" in claims) ||
       typeof claims.claims !== "object" ||
-      claims.claims === null
+      claims.claims === null ||
+      Array.isArray(claims.claims) ||
+      ("P154" in claims.claims && !Array.isArray(claims.claims.P154))
     )
-      throw new Error("Invalid Wikidata claims");
+      throw new Error("Wikidata: nieprawidłowa odpowiedź logotypów");
     const logos = parseLogoClaims(claims);
     if (logos.length > 0) return { entity: id, logos, ttl: TTL.found };
   }
@@ -157,10 +188,16 @@ async function brandLogos(
         ...(await lookupBrand(name)),
       };
       if (valid?.logos.length && !entry.logos.length)
-        throw new Error("Incomplete logo metadata");
+        throw new Error("Wikidata: niepełne dane logotypów");
       failedBrands.delete(file);
-    } catch {
+      brandFailures.delete(file);
+    } catch (error) {
       failedBrands.set(file, Date.now() + TTL.failed);
+      const failure =
+        error instanceof Error && error.message.startsWith("Wikidata")
+          ? error.message
+          : "Wikidata: nie udało się odczytać informacji o logotypach";
+      brandFailures.set(file, failure);
       if (valid) return valid.logos;
       entry = {
         version: CACHE_VERSION,
@@ -168,12 +205,14 @@ async function brandLogos(
         ttl: TTL.failed,
         entity: null,
         logos: [],
+        failure,
       };
     }
     try {
       await writeCache(file, entry);
     } catch {
       failedBrands.set(file, Date.now() + TTL.failed);
+      brandFailures.set(file, "Nie udało się zapisać informacji o logotypach");
       // A read-only database still serves logos for this run.
     }
     return entry.logos;
@@ -211,6 +250,7 @@ function validBrandEntry(value: BrandEntry | null): value is BrandEntry {
 /** Metadata only: Commons images remain lazy, cached independently by file. */
 export async function prewarmLogoMetadata(
   brands: { name: string }[],
+  onFailure?: (reason: string) => void,
 ): Promise<string[]> {
   let next = 0;
   const failed: string[] = [];
@@ -227,8 +267,16 @@ export async function prewarmLogoMetadata(
         if (
           Date.now() < (failedBrands.get(file) ?? 0) ||
           entry?.ttl === TTL.failed
-        )
+        ) {
           failed.push(brand.name);
+          onFailure?.(
+            brandFailures.get(file) ??
+              (typeof entry?.failure === "string" &&
+              entry.failure.startsWith("Wikidata")
+                ? entry.failure.slice(0, 200)
+                : "Wikidata: poprzednia próba nie powiodła się; ponowienie za godzinę"),
+          );
+        }
       }
     }),
   );

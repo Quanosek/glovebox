@@ -60,17 +60,18 @@ caches. Check `git status --ignored` carefully before modifying local database c
 pnpm install           # install from pnpm-lock.yaml (CI: --frozen-lockfile)
 pnpm initial           # create cache folders and prewarm European catalogues/logo metadata
 pnpm dev               # dev server (service worker + automatic offline copies disabled)
-pnpm build             # next build (server output in .next/)
-pnpm start             # next start on :3000 (needed for database/ and the import wizard)
 pnpm lint              # ESLint, no warnings allowed (flat config: next core-web-vitals + typescript)
 pnpm lint:py           # ruff on scripts/ (scripts/ruff.toml; needs scripts/requirements-dev.txt)
 pnpm typecheck         # next typegen && tsc --noEmit
 pnpm unused            # knip: unused files, exports and dependencies (knip.json)
+pnpm format:check      # check formatting without changing files
 pnpm test              # Vitest (src/**/*.test.ts)
-pnpm format            # Prettier (+ Tailwind class sorting); `pnpm format:check` only checks
 pnpm test:extract      # Python unittest for the extractor (same interpreter lookup as the importer)
-pnpm check             # all of the above in one go + production build (also run by CI)
+pnpm format            # fix formatting with Prettier (+ Tailwind class sorting)
 pnpm icons             # src/app/icon.svg -> favicon.ico, apple-icon.png, public/icon-*.png
+pnpm check             # all of the above in one go + production build (also run by CI)
+pnpm build             # next build (server output in .next/; already included in check)
+pnpm start             # next start on :3000 (needed for database/ and the import wizard)
 ```
 
 For `pnpm lint:py` install the Python dev requirements into the same interpreter:

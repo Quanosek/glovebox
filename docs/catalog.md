@@ -48,7 +48,11 @@ the browser), during initialization or catalogue use. No user data is sent.
   These are missing source names, not malformed responses: brand/model normalisation skips
   them while retaining usable rows. Non-string names, missing selected fields, invalid years
   and non-integer/negative registration counts still reject the response. Blank output names
-  and empty model lists remain invalid cache values, so bad refreshes cannot erase last-good data.
+  remain invalid cache values. An empty model list is accepted only when validated EU
+  rows account for exactly the brand's known positive registration count but no model
+  survives normalisation or the existing thresholds (`emptyVerified`). Zero rows and
+  incomplete coverage are not proof of an empty catalogue. Even a verified empty refresh
+  cannot replace previously known models or renew their timestamp.
 - Thresholds (drop noise from the raw data): brands need ≥ 1000 EU registrations or US
   models; models need a share of the brand's registrations (clamped 20–1000) or US model
   years; a model year needs ≥ 10 registrations and ≥ 1 % of the model's peak year. The 30
@@ -87,6 +91,10 @@ EEA registration years are not a complete manufacturer production calendar: rare
 older models and years before 2010 may be absent. Existing thresholds and manual-entry
 options still apply. A first offline run cannot invent official lists; the command leaves
 the empty layout intact and reports failure so it can be rerun with a connection.
+Failures preparing models still produce a nonzero exit status. Optional logo failures
+instead produce a bounded warning with the source, HTTP status or connection/response
+problem and retry guidance; a usable catalogue is not failed just because Wikidata is
+unavailable. A successful lookup without a logo is not reported as a request failure.
 
 ## Normalisation (`src/lib/catalog.ts`, client-safe, unit-tested)
 

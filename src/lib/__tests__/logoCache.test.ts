@@ -133,4 +133,37 @@ describe("brand metadata refresh", () => {
     );
     expect(peak).toBe(2);
   });
+
+  it("distinguishes a successful missing logo from failed requests on repeated runs", async () => {
+    const fetch = vi.fn(async () => Response.json({ search: [] }));
+    vi.stubGlobal("fetch", fetch);
+    const diagnostic = vi.fn();
+    expect(await prewarmLogoMetadata([{ name: "Opel" }], diagnostic)).toEqual(
+      [],
+    );
+    expect(diagnostic).not.toHaveBeenCalled();
+    expect(JSON.parse(await fs.readFile(metadataFile(), "utf8")).ttl).toBe(
+      7 * DAY,
+    );
+    await prewarmLogoMetadata([{ name: "Opel" }], diagnostic);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("retains HTTP diagnostics and the hourly retry for failed first lookups", async () => {
+    const fetch = vi.fn(async () => new Response("", { status: 429 }));
+    vi.stubGlobal("fetch", fetch);
+    const diagnostic = vi.fn();
+    expect(await prewarmLogoMetadata([{ name: "Opel" }], diagnostic)).toEqual([
+      "Opel",
+    ]);
+    expect(diagnostic).toHaveBeenCalledWith("Wikidata HTTP 429");
+    const original = await fs.readFile(metadataFile(), "utf8");
+    await prewarmLogoMetadata([{ name: "Opel" }], diagnostic);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(await fs.readFile(metadataFile(), "utf8")).toBe(original);
+    expect(JSON.parse(original)).toMatchObject({
+      ttl: DAY / 24,
+      failure: "Wikidata HTTP 429",
+    });
+  });
 });

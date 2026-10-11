@@ -41,6 +41,7 @@ export async function catalogCache<T>(options: {
   ttl: number;
   partialTtl: number;
   validate: (value: unknown) => value is T;
+  canReplace?: (value: T, previous: T) => boolean;
   waitForRefresh?: boolean;
   load: () => Promise<{ value: T; partial?: boolean }>;
 }): Promise<T> {
@@ -74,7 +75,11 @@ export async function catalogCache<T>(options: {
         const result = await options.load();
         if (!validate(result.value)) throw new Error("Invalid catalogue data");
         // An incomplete source response cannot erase a last-good snapshot.
-        if (result.partial && stale) {
+        if (
+          stale &&
+          (result.partial ||
+            options.canReplace?.(result.value, stale.value) === false)
+        ) {
           retryAfter.set(file, Date.now() + options.partialTtl);
           return stale.value;
         }

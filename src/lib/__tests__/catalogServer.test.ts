@@ -174,4 +174,44 @@ describe("EEA source row validation", () => {
     );
     expect(memory.files.has(cacheFile("brands"))).toBe(false);
   });
+
+  it("caches a verified empty brand through the same reader used by the wizard", async () => {
+    mockEea({ results: [{ Cn: null, Year: 2022, n: 20000 }] }, [
+      { Mk: "AVTOVAZ", n: 20000 },
+    ]);
+    expect(await prewarmEuropeanCatalog()).toMatchObject({ failed: [] });
+    const value = JSON.parse(
+      memory.files.get(cacheFile("models-eu-AVTOVAZ"))!,
+    ).value;
+    expect(value).toEqual({ models: [], aliases: {}, emptyVerified: true });
+    const { getCatalogModels } = await import("@/lib/server/catalog");
+    expect(await getCatalogModels("AVTOVAZ")).toEqual([]);
+  });
+
+  it.each([{ results: [] }, { results: [{ Cn: null, Year: 2022, n: 100 }] }])(
+    "rejects unverified empty model data %j",
+    async (response) => {
+      mockEea(response);
+      expect(await prewarmEuropeanCatalog()).toMatchObject({
+        failed: ["Toyota"],
+      });
+      expect(memory.files.has(cacheFile("models-eu-TOYOTA"))).toBe(false);
+    },
+  );
+
+  it("does not erase known models even with a complete but empty refresh", async () => {
+    const original = JSON.stringify(
+      snapshot(
+        {
+          models: [{ id: "YARIS", name: "Yaris", years: [2022] }],
+          aliases: {},
+        },
+        Date.now() - 15 * 24 * 60 * 60 * 1000,
+      ),
+    );
+    memory.files.set(cacheFile("models-eu-TOYOTA"), original);
+    mockEea({ results: [{ Cn: null, Year: 2022, n: 20000 }] });
+    expect(await prewarmEuropeanCatalog()).toMatchObject({ failed: [] });
+    expect(memory.files.get(cacheFile("models-eu-TOYOTA"))).toBe(original);
+  });
 });

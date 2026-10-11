@@ -70,48 +70,89 @@ function officialSources(opelModel = "ASTRA") {
 }
 
 describe("pnpm initial data preparation", () => {
-  it("runs the actual Node entry point using the existing compiler", async () => {
-    const source = `
+  it.each([
+    "missing",
+    "403",
+    "malformed",
+    "offline",
+    "no-catalogue",
+    "empty-models",
+    "malformed-models",
+  ])(
+    "runs the actual Node entry point with %s source responses",
+    async (mode) => {
+      const source = `
       globalThis.fetch = async (input) => {
         const url = new URL(String(input));
         if (url.hostname === "discodata.eea.europa.eu") {
+          if (${JSON.stringify(mode)} === "no-catalogue") throw new Error("offline");
           const query = url.searchParams.get("query");
           const results = query.includes("SELECT DISTINCT Year")
             ? Array.from({ length: new Date().getFullYear() - 2009 }, (_, i) => ({ Year: 2010 + i }))
             : query.includes("GROUP BY Mk")
               ? [{ Mk: "OPEL", n: 100000 }]
-              : [{ Cn: "ASTRA", Year: 2024, n: 20000 }];
+              : ${JSON.stringify(mode)} === "empty-models"
+                ? [{ Cn: null, Year: 2024, n: 100000 }]
+                : ${JSON.stringify(mode)} === "malformed-models"
+                  ? [{ Cn: 123, Year: 2024, n: 100000 }]
+                  : [{ Cn: "ASTRA", Year: 2024, n: 20000 }];
           return Response.json({ results });
         }
         if (url.hostname === "vpic.nhtsa.dot.gov") return Response.json({ Results: [] });
-        if (url.hostname === "www.wikidata.org") return Response.json({ search: [] });
+        if (url.hostname === "www.wikidata.org") {
+          if (${JSON.stringify(mode)} === "403") return new Response("", { status: 403 });
+          if (${JSON.stringify(mode)} === "malformed") return Response.json({});
+          if (${JSON.stringify(mode)} === "offline") throw new TypeError("fetch failed");
+          return Response.json({ search: [] });
+        }
         throw new Error("Unexpected source");
       };
     `;
-    const { stdout } = await promisify(execFile)(
-      process.execPath,
-      [
-        "--import",
-        `data:text/javascript,${encodeURIComponent(source)}`,
-        "scripts/initial.mjs",
-      ],
-      {
-        cwd: process.cwd(),
-        env: { ...process.env, MANUALS_DATABASE_DIR: root },
-        timeout: 30_000,
-      },
-    );
-    expect(stdout).toContain("Katalog przygotowany");
-    expect((await fs.readdir(root)).sort()).toEqual([".catalog", ".logos"]);
-    expect(await fs.readdir(path.join(root, ".catalog"))).toContain(
-      "models-eu-OPEL.json",
-    );
-  }, 35_000);
+      const result = promisify(execFile)(
+        process.execPath,
+        [
+          "--import",
+          `data:text/javascript,${encodeURIComponent(source)}`,
+          "scripts/initial.mjs",
+        ],
+        {
+          cwd: process.cwd(),
+          env: { ...process.env, MANUALS_DATABASE_DIR: root },
+          timeout: 30_000,
+        },
+      );
+      if (mode === "no-catalogue" || mode === "malformed-models") {
+        await expect(result).rejects.toMatchObject({
+          code: 1,
+          stderr: expect.stringContaining(
+            mode === "no-catalogue"
+              ? "Nie udało się przygotować katalogu"
+              : "Nie udało się przygotować modeli",
+          ),
+        });
+        return;
+      }
+      const { stdout, stderr } = await result;
+      expect(stdout).toContain("Katalog przygotowany");
+      if (mode === "missing" || mode === "empty-models")
+        expect(stderr).toBe("");
+      else {
+        expect(stderr).toContain("Logotypy są opcjonalne");
+        expect(stderr).toContain("Wikidata");
+        if (mode === "403") expect(stderr).toContain("HTTP 403");
+      }
+      expect((await fs.readdir(root)).sort()).toEqual([".catalog", ".logos"]);
+      expect(await fs.readdir(path.join(root, ".catalog"))).toContain(
+        "models-eu-OPEL.json",
+      );
+    },
+    35_000,
+  );
 
   it("creates only the configured cache layout and prewarms every European brand", async () => {
     const fetch = officialSources();
     vi.stubGlobal("fetch", fetch);
-    expect(await initializeDatabase()).toEqual({ failed: [] });
+    expect(await initializeDatabase()).toEqual({ failed: [], warnings: [] });
     expect((await fs.readdir(root)).sort()).toEqual([".catalog", ".logos"]);
     expect((await fs.readdir(path.join(root, ".catalog"))).sort()).toEqual([
       "brands.json",

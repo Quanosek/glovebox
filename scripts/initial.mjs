@@ -7,10 +7,11 @@ try {
   console.log(
     "Przygotowywanie katalogu europejskich aut i informacji o logotypach…",
   );
-  const { failed } = await initializeDatabase();
+  const { failed, warnings } = await initializeDatabase();
+  for (const warning of warnings) console.warn(warning);
   if (failed.length) {
     console.warn(
-      `Nie udało się przygotować wszystkich danych: ${failed.join(", ")}.`,
+      `Nie udało się przygotować modeli ${failed.length} marek: ${failed.slice(0, 5).join(", ")}${failed.length > 5 ? ", …" : ""}.`,
     );
     console.warn(
       "Dostępne dane zachowano. Uruchom ponownie pnpm initial przy działającym połączeniu.",

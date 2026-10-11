@@ -236,7 +236,11 @@ async function cached<T>(
   ttl: number,
   load: () => Promise<{ value: T; partial?: boolean }>,
   validate: (value: unknown) => value is T,
-  options: { waitForRefresh?: boolean; fallback?: string } = {},
+  options: {
+    waitForRefresh?: boolean;
+    fallback?: string;
+    canReplace?: (value: T, previous: T) => boolean;
+  } = {},
 ): Promise<T> {
   try {
     return await catalogCache({
@@ -250,6 +254,7 @@ async function cached<T>(
       validate,
       load,
       waitForRefresh: options.waitForRefresh,
+      canReplace: options.canReplace,
     });
   } catch (err) {
     console.error(`Car catalogue (${name}) unavailable:`, err);
@@ -489,6 +494,8 @@ interface ModelsFile {
   models: CatalogModel[];
   /** Merged spelling variants: family key → model id. */
   aliases: Record<string, string>;
+  /** All counted EU registrations were read, but no models passed the filters. */
+  emptyVerified?: true;
 }
 
 interface FamilyAcc {
@@ -562,6 +569,7 @@ function getModelsFile(
       return f;
     };
     const words = [...brand.raw, brand.name];
+    let euRegistrations = 0;
 
     if (brand.raw.length > 0) {
       const tables = await getTables(true);
@@ -577,6 +585,7 @@ function getModelsFile(
         )
       ).flat();
       for (const row of rows) {
+        euRegistrations += row.n;
         const fam = modelFamily(brand.id, row.Cn, words, allBrands);
         if (!fam) continue;
         const f = acc(fam.key);
@@ -716,9 +725,19 @@ function getModelsFile(
     models.sort((a, b) =>
       a.name.localeCompare(b.name, "pl", { numeric: true }),
     );
-    return { value: { models, aliases }, partial };
+    const value: ModelsFile = { models, aliases };
+    if (
+      models.length === 0 &&
+      !partial &&
+      euRegistrations > 0 &&
+      euRegistrations === brand.registrations
+    ) {
+      value.emptyVerified = true;
+      value.aliases = {};
+    }
+    return { value, partial };
   };
-  return cached(
+  return cached<ModelsFile>(
     `${europeOnly ? "models-eu" : "models"}-${brandId}`,
     TTL.models,
     load,
@@ -726,6 +745,8 @@ function getModelsFile(
     {
       waitForRefresh: europeOnly,
       fallback: europeOnly ? `models-${brandId}` : `models-eu-${brandId}`,
+      canReplace: (value, previous) =>
+        value.models.length > 0 || previous.models.length === 0,
     },
   );
 }
@@ -919,7 +940,9 @@ function isModels(value: unknown): value is ModelsFile {
     record(value.aliases) &&
     Object.values(value.aliases).every(text) &&
     Array.isArray(value.models) &&
-    value.models.length > 0 &&
+    (value.models.length > 0 ||
+      (value.emptyVerified === true &&
+        Object.keys(value.aliases).length === 0)) &&
     value.models.every(
       (m) =>
         record(m) &&

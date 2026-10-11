@@ -128,6 +128,11 @@ uruchomienia korzystają z aktualnych zapisanych danych. Polecenie respektuje
 `MANUALS_DATABASE_DIR`. Aplikacja później odświeża nieaktualne dane w tle podczas używania
 katalogu i logotypów, zachowując ostatnią dobrą kopię przy braku połączenia.
 Nie trzeba uruchamiać przygotowania przy każdym starcie aplikacji.
+Brak dostępu do Wikidanych nie blokuje gotowego katalogu aut: polecenie wyświetli
+ostrzeżenie z przyczyną i wskazówką ponowienia, a aplikacja użyje zapisanych logotypów
+albo swojej ikony. Przy HTTP 403/429 sprawdź ograniczenia sieci; przy błędzie połączenia —
+dostęp do `www.wikidata.org` (DNS lub proxy). Ponów przygotowanie po godzinie.
+Nieudane przygotowanie katalogu aut nadal kończy polecenie błędem.
 
 Aplikacja działa jako lokalny serwer Next.js (potrzebny do czytania folderu `database/` i do
 kreatora „Dodaj auto”). Tryb offline (service worker i automatyczne zapisywanie instrukcji) działa
@@ -227,18 +232,27 @@ Dane ze starszej wersji aplikacji są automatycznie przenoszone do aktualnego fo
 
 | Polecenie           | Opis                                                             |
 | ------------------- | ---------------------------------------------------------------- |
+| `pnpm install`      | instalacja zależności przed pierwszym uruchomieniem              |
+| `pnpm initial`      | przygotowanie katalogu aut i informacji o logotypach             |
 | `pnpm dev`          | serwer deweloperski                                              |
-| `pnpm build`        | wersja produkcyjna (`.next/`)                                    |
-| `pnpm start`        | uruchomienie wersji produkcyjnej na :3000                        |
-| `pnpm icons`        | wygenerowanie ikon PNG/ICO (karta, iOS, instalacja) z `icon.svg` |
-| `pnpm test`         | testy jednostkowe (Vitest)                                       |
-| `pnpm test:extract` | testy skryptu ekstrakcji (Python)                                |
 | `pnpm lint`         | ESLint (bez ostrzeżeń)                                           |
 | `pnpm lint:py`      | ruff dla kodu Pythona                                            |
 | `pnpm typecheck`    | sprawdzenie typów TypeScript                                     |
 | `pnpm unused`       | wyszukanie nieużywanego kodu (knip)                              |
-| `pnpm format`       | formatowanie (Prettier); `pnpm format:check` tylko sprawdza      |
+| `pnpm format:check` | kontrola formatowania bez zmieniania plików                      |
+| `pnpm test`         | testy jednostkowe (Vitest)                                       |
+| `pnpm test:extract` | testy skryptu ekstrakcji (Python)                                |
+| `pnpm format`       | naprawa formatowania (Prettier)                                  |
+| `pnpm icons`        | wygenerowanie ikon PNG/ICO (karta, iOS, instalacja) z `icon.svg` |
 | `pnpm check`        | pełna kontrola projektu (wszystko powyżej i build)               |
+| `pnpm build`        | wersja produkcyjna (`.next/`); wykonywane też przez `check`      |
+| `pnpm start`        | uruchomienie wersji produkcyjnej na :3000                        |
+
+Kolejność odpowiada przygotowaniu, pracy w trybie deweloperskim, sprawdzeniom,
+poprawkom i uruchomieniu produkcyjnemu. `pnpm install` to polecenie menedżera pakietów,
+nie osobny skrypt. `format` poprawia formatowanie, a `icons` jest potrzebne tylko po zmianie
+ikony; żadne z nich nie naprawia automatycznie błędów logiki. `pnpm check` obejmuje już
+budowanie, więc po jego powodzeniu można od razu uruchomić `pnpm start`.
 
 `pnpm lint:py` wymaga narzędzi deweloperskich Pythona:
 `.venv/bin/python -m pip install -r scripts/requirements-dev.txt`. Ta sama kontrola
