@@ -11,7 +11,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 # AGENTS.md — Glovebox
 
 **Glovebox** (package `glovebox`; name in `src/lib/brand.ts`, use it everywhere the app names
-itself) is a private, local-only Next.js app for reading vehicle manuals from any manufacturer, with
+itself) is a local Next.js app for reading vehicle manuals from any manufacturer, with
 highlighting, comments, bookmarks and a Markdown notebook. The visual hierarchy takes
 inspiration from Opel's Navi 950 interface; the vehicle database itself is generic and user
 populated. There is no bundled example, default vehicle, manual template or generated content.
@@ -49,7 +49,13 @@ they can reuse matching manuals from `database/`, reorder them or append PDFs, t
 ## First session and commands
 
 pnpm is the only package manager (`pnpm-lock.yaml`; `pnpm-workspace.yaml` allow-lists
-dependency build scripts). Do not add `package-lock.json` / `yarn.lock`.
+dependency build scripts). Node.js 24 (`.nvmrc`) and pnpm 11
+(`packageManager` in `package.json`) are recommended and used by Docker/CI.
+Minimums are Node.js 22.22.2 and pnpm 10.26; there are no upper bounds or
+strict engine enforcement. Workspace settings preserve an installed pnpm 11+
+instead of automatically switching to the recommended version.
+On Node 24, test dependencies require 24.15+.
+Do not add `package-lock.json` / `yarn.lock`.
 Read the Polish user setup in `README.md` before changing onboarding or import behavior. A
 fresh clone has no car content: install dependencies, prepare Python as described there, start
 the app, and add the first car through `/dodaj-auto`. Never create or commit files under
@@ -80,6 +86,18 @@ For `pnpm lint:py` install the Python dev requirements into the same interpreter
 The importer finds Python via `PYTHON`, then `.venv/bin/python` / `.venv\Scripts\python.exe`,
 then `python3`, `python`, `py`; it accepts Python 3.10+, PyMuPDF 1.26+ and Pillow 12.3+
 (`src/lib/server/python.ts`, `scripts/requirements.txt`).
+
+Production containers use `Dockerfile` + `compose.yaml` (Debian slim, Next
+standalone, Python venv; `docs/deployment.md`). Run `sh scripts/prepare-docker.sh`
+before `docker compose up -d --build`; setup creates directories and updates
+UID/GID in `.env`, preserving the selected host port. Only `database/`, `.runtime/tmp/`
+and `.runtime/cache/` are writable project-local bind mounts. Never mount host
+`node_modules` or the project root over `/app`. `GLOVEBOX_STANDALONE=1` selects
+standalone output; normal `pnpm build` / `pnpm start` stay unchanged. The default
+published port is loopback-only because the app has no authentication.
+Docker daemon image/layer storage is separate and must not be changed implicitly.
+Compose uses folder-derived project/image names; `docker compose down --rmi local`
+removes the app image but not shared base layers/build caches.
 
 ## Architecture
 

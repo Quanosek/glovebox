@@ -1,0 +1,18 @@
+services:
+  app:
+    build: .
+    user: "${GLOVEBOX_UID:-1000}:${GLOVEBOX_GID:-1000}"
+    init: true
+    restart: unless-stopped
+    read_only: true
+    ports:
+      - "127.0.0.1:${GLOVEBOX_PORT:-3000}:3000"
+    volumes:
+      - ./database:/app/database
+      - ./.runtime/tmp:/app/tmp
+      - ./.runtime/cache:/app/.next/cache
+    logging:
+      driver: local
+      options:
+        max-size: "10m"
+        max-file: "3"

@@ -1,7 +1,2 @@
-.next
-out
-node_modules
-public
-database
+# Generated files not already excluded by .gitignore or Prettier's defaults
 pnpm-lock.yaml
-manuals

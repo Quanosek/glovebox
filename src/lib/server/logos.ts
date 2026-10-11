@@ -25,7 +25,7 @@ import {
 
 const WIKIDATA = "https://www.wikidata.org/w/api.php";
 const COMMONS_FILE = "https://commons.wikimedia.org/wiki/Special:FilePath/";
-const USER_AGENT = `${APP_NAME}/1.0 (private local app)`;
+const USER_AGENT = `${APP_NAME}/1.0 (vehicle manual library)`;
 const IMAGE_WIDTH = 400;
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 const MAX_CANDIDATES = 5;

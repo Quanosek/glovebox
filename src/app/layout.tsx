@@ -67,8 +67,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <DialogHost />
           <footer className="mt-auto border-t border-line bg-paper py-3 text-xs text-steel print:hidden">
             <p className="app-frame">
-              Treść instrukcji należy do producentów aut i służy wyłącznie do
-              użytku prywatnego. Notatki zapisują się tylko w tej przeglądarce.
+              Notatki i ustawienia zapisują się w tej przeglądarce.
             </p>
           </footer>
         </LayoutHintProvider>

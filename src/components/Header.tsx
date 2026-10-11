@@ -44,7 +44,7 @@ function Clock() {
           Bez internetu
         </span>
       )}
-      <span className="block min-w-[11.75rem] text-right">
+      <span className="block min-w-47 text-right">
         {now ? (
           now.toLocaleDateString("pl-PL", {
             weekday: "long",

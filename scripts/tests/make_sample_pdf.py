@@ -1,7 +1,7 @@
 """Builds a small synthetic PDF with a representative vehicle-manual layout.
 
-Used by the extractor tests (the real manuals are copyrighted and are not
-committed). Layout: A5-like pages, two columns, running header with page
+Used by the extractor tests instead of imported user manuals.
+Layout: A5-like pages, two columns, running header with page
 number, outline (bookmarks), bold headings, framed and unframed warnings,
 bullet and numbered lists, hyphenation, page references in a symbol font,
 a raster illustration with callout numbers, a vector drawing and a table.

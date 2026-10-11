@@ -1,0 +1,28 @@
+# Dependencies and environments are installed inside the image.
+# Local data and settings are mounted only at runtime.
+**
+
+# Build inputs
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!next.config.ts
+!tsconfig.json
+
+# Application source and public assets
+!src/
+!src/**
+!public/
+!public/**
+
+# PDF extractor
+!scripts/
+!scripts/extract.py
+!scripts/requirements.txt
+!scripts/manual_extract/
+!scripts/manual_extract/**
+
+# Generated files and local data inside allowed source directories
+**/__pycache__/
+**/*.pyc
+**/*.[pP][dD][fF]

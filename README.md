@@ -1,264 +1,159 @@
-# Glovebox
+# <img src="src/app/icon.svg" width="40" height="40" alt="" /> Glovebox
 
-**Glovebox** (czyt. „glawboks”, ang. schowek w desce rozdzielczej) to Twój cyfrowy schowek na
-dokumenty auta: prywatna, lokalna aplikacja (Next.js) do czytania instrukcji samochodowych
-wszystkich marek z zakreślaczem, komentarzami i notatnikiem, a przy okazji menedżer Twoich aut
-(wyposażenie, przypomnienia o badaniu i OC) — wszystkie Twoje dane zostają lokalnie. Każda osoba dodaje **własne auta i instrukcje PDF** —
-markę, model i rocznik można wybrać z oficjalnych katalogów, a dane spoza katalogu
-wprowadzić ręcznie. Silnik wybierasz później w wyposażeniu konkretnego auta. Aplikacja nie
-zawiera domyślnego auta ani przykładowej instrukcji.
+Twój cyfrowy schowek na instrukcje samochodowe. Dodajesz własne pliki PDF,
+a Glovebox zamienia je w wygodny przewodnik po Twoim aucie — z wyszukiwaniem,
+notatkami i przypomnieniami.
 
-Jeśli marka i model są na liście, ale brakuje roku Twojego auta (np. Seat Ibiza 2008),
-wybierz „Inny rocznik”, ustaw właściwy rok i dodaj pasującą instrukcję. Nie musisz zmieniać
-marki na „Inna” — lista roczników nie obejmuje wszystkich lat produkcji.
+- 📖 **Instrukcje wszystkich marek** — import PDF, czytelny spis treści i ilustracje.
+- 🔎 **Wyszukiwarka i Niezbędnik** — szybki dostęp do ważnych fragmentów instrukcji.
+- 🖍️ **Zaznaczenia i komentarze** — wyróżnij fragment i dopisz własne uwagi.
+- 📝 **Notatnik i zakładki** — zapisz informacje i wróć do miejsca czytania.
+- 🚗 **Wyposażenie auta** — dopasuj widoczne opisy do swojej wersji i silnika.
+- ⏰ **Przypomnienia** — terminy badania technicznego, ubezpieczenia i własnych zdarzeń.
+- 📴 **Czytanie offline** — otwarte instrukcje są dostępne także bez połączenia.
 
-Po dodaniu auta do profilu zaznaczasz jego **wyposażenie** (np. tempomat, kamera cofania, hak):
-aplikacja sama wyszukuje w jego instrukcjach opisy wyposażenia opcjonalnego. Sekcje o wyposażeniu,
-którego auto nie ma, są zwijane i oznaczone „Brak w Twoim aucie”, a podpowiedzi wynikające z
-wybranego silnika — „prawdopodobnie”.
-Po zaznaczeniu „Mam” przy automatycznej skrzyni biegów aplikacja podpowiada „Nie mam”
-przy manualnej i zwija jej opisy; podpowiedź możesz potwierdzić. Działa to również
-w drugą stronę oraz dla klimatyzacji manualnej i automatycznej. Zmiana lub usunięcie
-wyboru wycofuje niepotwierdzoną podpowiedź. Składany dach kabrioletu jest cechą konstrukcji
-auta, więc nie pojawia się jako wyposażenie dodatkowe do wyboru.
+Bez kont i analityki. Instrukcje zapisują się na komputerze, a notatki
+i ustawienia — w przeglądarce.
 
-## Profil i auta
+## Instalacja od zera
 
-Po wejściu do aplikacji widzisz **swój profil** — bez logowania i bez bazy danych. Z profilu
-wybierasz:
+Potrzebujesz **Git oraz działającego Dockera z Compose**:
 
-- **Twoje auta** — listę aut dodanych do profilu. Nowe auto dodajesz krok po kroku;
-  po wybraniu marki, modelu i rocznika możesz skorzystać z zapisanych instrukcji albo
-  dołączyć własne pliki PDF. Usunięcie auta z listy nie kasuje instrukcji,
-- **własny notatnik** — puste kartki z podstawowym formatowaniem Markdown.
+- Debian: [instalacja Docker Engine](https://docs.docker.com/engine/install/debian/)
+  z wtyczkami Buildx i Compose; zapewnij swojemu użytkownikowi
+  [dostęp do Dockera](https://docs.docker.com/engine/install/linux-postinstall/).
+- macOS: [Docker Desktop](https://docs.docker.com/desktop/setup/install/mac-install/).
 
-Wybrane auto, zaznaczenia, komentarze, zakładki i notatki zapisują się w tej przeglądarce
-(localStorage), a wyposażenie — osobno dla każdego auta. Instrukcje aut są tylko na Twoim
-komputerze: folder `database/` jest w `.gitignore` i nie trafia do repozytorium.
-Silnik również jest częścią Twojego wyposażenia, a nie wspólnych instrukcji. Wybierzesz
-go lub zmienisz na stronie „Wyposażenie”. Dopasowane dane silnika w tabelach są pokazywane
-przed pozostałymi wersjami; przyciskiem „Pokaż wszystkie silniki” odsłonisz pełną tabelę.
-Gdy dopasowanie nie jest pewne, aplikacja niczego nie ukrywa.
-Po tej aktualizacji otwórz potrzebne auta przy działającej aplikacji, aby odnowić ich
-kopie do czytania bez połączenia. Zaznaczenia i notatki zostają zachowane.
-
-## Funkcje
-
-- **Czytnik** — spis treści ksiąg wybranego auta, poprzedni/następny rozdział z miniaturą
-  ilustracji, odnośniki do stron („str. 45”), ostrzeżenia dla wybranego auta, linki do sekcji
-  i akapitów. Na szerokim ekranie z prawej: „Na tej stronie”, ostrzeżenia rozdziału i Twoje
-  zaznaczenia.
-- **Widok auta** — duża karta auta (logo, model, rocznik, silnik), liczby z instrukcji (każdy
-  rodzaj ostrzeżeń osobno; kliknięcie otwiera listę z tym rodzajem), „Niezbędnik” – kafle
-  z ikoną, tytułem i krótkim opisem (np. lampki kontrolne, ciśnienie w oponach, bezpieczniki),
-  które otwierają właściwy fragment instrukcji; zależnie od szerokości ekranu 4, 6 lub 8 kafli,
-  zawsze co najmniej 4 (gdy tematów jest mniej, uzupełniają je rozdziały instrukcji), pasek „Ulubione” z sześcioma najnowszymi zakładkami tego auta, podgląd danych
-  technicznych (wybrany silnik, paliwo i np. zbiornik paliwa — tylko dane dostępne w
-  instrukcji), najbliższe przypomnienia oraz wyszukiwanie, ostrzeżenia i wyposażenie.
-- **Przypomnienia** — dla każdego Twojego auta termin badania technicznego, ubezpieczenia OC
-  i własne przypomnienia (data, przebieg). Na 30 dni przed terminem liczba przy
-  „Przypomnienia” w menu podpowiada, że coś się zbliża. Terminy zostają tylko w tej
-  przeglądarce.
-- **Dane techniczne** — pojemności, ciśnienia i wymiary z instrukcji jako czytelne karty.
-- **Wyszukiwarka** — pełnotekstowa, w obrębie wybranego auta; ignoruje wielkość liter i polskie
-  znaki („swiatla” znajdzie „światła”).
-- **Zakreślacz** — zaznacz dowolny fragment tekstu i wybierz kolor (odcienie srebra, grafit,
-  czerwień). Kliknij zaznaczenie, aby zmienić kolor, dodać komentarz lub je usunąć.
-- **Komentarze** — do każdego zaznaczenia; lista w każdej sekcji oraz zbiorcza strona
-  „Moje komentarze” (z podziałem na auta).
-- **Notatnik** — osobne kartki (tworzenie, zmiana nazwy, kolejność, usuwanie), zapis
-  automatyczny, Markdown z paskiem narzędzi i podglądem: nagłówki, **pogrubienie**,
-  _kursywa_, przekreślenie, listy, lista zadań `- [ ]`, cytaty, kod, linki.
-- **Zakładki**, **powrót do ostatnio czytanego miejsca** i historia ostatnio czytanych
-  rozdziałów na profilu, a także ostatnie zaznaczenia i wskazówka „Czy wiesz, że…”.
-- **Dodaj auto** — kreator krok po kroku (opis niżej).
-- **Logo marki** — po wybraniu auta w nagłówku widać oficjalne logo jego marki z roku
-  produkcji, a gdy nie da się go ustalić — najnowsze logo albo ikonę aplikacji. Logo pochodzi
-  z Wikidanych i zapisuje się
-  na komputerze (`database/.logos/`), więc działa też offline.
-- **Wyposażenie auta** — dla każdego auta osobno („Mam” / „Nie mam” / „Nie wiem”), tylko
-  funkcje opisane w jego instrukcjach, z linkami do odpowiednich sekcji; podpowiedzi na
-  podstawie silnika. Edytor otworzysz osobnym przyciskiem na stronie wybranego auta.
-- **Offline** — po otwarciu auta wszystkie jego strony i ilustracje zapisują się same w tle;
-  potem całe auto działa bez internetu (znaczek „Offline” w nagłówku). Połączenie jest
-  potrzebne tylko do dodawania aut i odświeżenia listy aut.
-- **Ikona aplikacji** — schowek z instrukcją w kolorach aplikacji. W karcie przeglądarki ikona
-  dopasowuje się do jasnego lub ciemnego motywu systemu; sama aplikacja zawsze ma jasny wygląd.
-  Aplikację można też zainstalować na pulpicie (Chrome, Edge, Safari na macOS) lub na ekranie
-  głównym telefonu i tabletu (Android, iPhone, iPad – w Safari: Udostępnij → Do ekranu
-  początkowego). Zainstalowana aplikacja otwiera się we własnym oknie, ma skróty do listy aut,
-  wyszukiwania, przypomnień i notatnika, a wybrane auta działają bez internetu.
-- **Proste w obsłudze** — okna potwierdzeń na środku ekranu, czytelne komunikaty po polsku
-  bez technicznego żargonu, jasny wygląd inspirowany podziałem i stylistyką ekranów Opel Navi 950.
-- **Prywatność** — brak bazy danych, kont i analityki. Pliki PDF są przetwarzane tylko na
-  Twoim komputerze. Jedyne zapytania na zewnątrz wysyła lokalny serwer — do publicznych
-  katalogów aut (kreator „Dodaj auto”) i po logo marki (Wikidane) — bez żadnych Twoich
-  danych.
-
-## Prawa autorskie — tylko do użytku prywatnego
-
-Treść i ilustracje instrukcji © ich producentów.
-Repozytorium jest prywatne i przeznaczone wyłącznie do osobistego użytku. Nie publikuj
-wygenerowanej treści ani uruchomionej aplikacji. Pliki PDF nie są przechowywane w
-repozytorium (są w `.gitignore` i są usuwane po imporcie).
-
-## Wymagania
-
-- **Node.js 20.9+** (zalecany 22 LTS) i **pnpm 10+** (`npm install -g pnpm` albo
-  `corepack enable`) — projekt używa wyłącznie pnpm (`pnpm-lock.yaml`)
-- Do importowania instrukcji PDF: **Python 3.10+**, PyMuPDF 1.26+ i Pillow 12.3+ — patrz
-  „Przygotowanie komputera” niżej
-
-## Instalacja i uruchomienie
+W terminalu, jako zwykły użytkownik (bez `sudo`):
 
 ```bash
-git clone <adres-repozytorium> glovebox
+git clone https://github.com/Quanosek/opel-cascada-manual.git glovebox
 cd glovebox
-pnpm install
-pnpm initial       # przygotowanie katalogu europejskich aut i informacji o logotypach
-
-# tryb deweloperski: http://localhost:3000
-pnpm dev
-
-# wersja produkcyjna (szybsza, z obsługą offline)
-pnpm build
-pnpm start         # http://localhost:3000
+sh scripts/prepare-docker.sh
+docker compose up -d --build
 ```
 
-`pnpm initial` tworzy brakujące foldery `database/.catalog/` i `database/.logos/`,
-pobiera listę marek oraz modele i roczniki z oficjalnych danych europejskich, a także
-informacje o logotypach z Wikidanych. Nie dodaje aut ani instrukcji i nie pobiera obrazów
-logotypów. Pierwsze przygotowanie wymaga internetu i może potrwać kilka minut; kolejne
-uruchomienia korzystają z aktualnych zapisanych danych. Polecenie respektuje
-`MANUALS_DATABASE_DIR`. Aplikacja później odświeża nieaktualne dane w tle podczas używania
-katalogu i logotypów, zachowując ostatnią dobrą kopię przy braku połączenia.
-Nie trzeba uruchamiać przygotowania przy każdym starcie aplikacji.
-Brak dostępu do Wikidanych nie blokuje gotowego katalogu aut: polecenie wyświetli
-ostrzeżenie z przyczyną i wskazówką ponowienia, a aplikacja użyje zapisanych logotypów
-albo swojej ikony. Przy HTTP 403/429 sprawdź ograniczenia sieci; przy błędzie połączenia —
-dostęp do `www.wikidata.org` (DNS lub proxy). Ponów przygotowanie po godzinie.
-Nieudane przygotowanie katalogu aut nadal kończy polecenie błędem.
+Przygotowanie tworzy potrzebne foldery oraz `.env` i automatycznie ustawia
+uprawnienia użytkownika kontenera. Docker instaluje Node.js 24, pnpm 11, Python i wszystkie
+zależności wewnątrz obrazu — nie musisz instalować ich na komputerze.
+Pierwszy build wymaga internetu i może potrwać kilka minut.
 
-Aplikacja działa jako lokalny serwer Next.js (potrzebny do czytania folderu `database/` i do
-kreatora „Dodaj auto”). Tryb offline (service worker i automatyczne zapisywanie instrukcji) działa
-tylko w wersji produkcyjnej otwartej pod `http://localhost` (albo przez HTTPS).
+Otwórz **http://localhost:3000**. Jeśli aplikacja jeszcze się uruchamia,
+odczekaj chwilę i odśwież stronę.
 
-## Dodawanie aut
+### Zmiana portu
 
-Nowa kopia aplikacji nie ma żadnego domyślnego auta ani instrukcji. Kreator sprawdza, czy
-środowisko spełnia wymagania opisane niżej (Node.js, Python, biblioteki, skrypt odczytu i zapis
-do bazy). Jeśli `database/` nie zawiera jeszcze czytelnej instrukcji, dodajesz pierwsze auto
-z plików PDF. Pusta baza nie blokuje dodawania pierwszego auta.
+W `.env` zmień tylko:
 
-### Dla użytkownika — kreator „Dodaj auto”
+```dotenv
+GLOVEBOX_PORT=8080
+```
 
-Przycisk „Dodaj auto” na profilu zawsze otwiera kreator. Przeprowadza on przez cztery kroki,
-bez technicznych pytań:
+Uruchom ponownie `docker compose up -d` i otwórz **http://localhost:8080**.
+To zmienia wyłącznie port udostępniany przez Dockera. Wewnątrz kontenera
+oraz przy lokalnym `pnpm dev` aplikacja nadal używa portu 3000.
+Zmiana adresu lub portu oznacza dla przeglądarki osobny profil — wcześniej
+pobierz kopię notatek w Ustawieniach, a potem wczytaj ją pod nowym adresem.
 
-1. **Auto i instrukcje** — marka → model → rocznik, wybierane z list. Listy pochodzą
-   z oficjalnych danych rejestracyjnych (Europejska Agencja Środowiska — wszystkie nowe auta
-   osobowe rejestrowane w UE od 2010 r.; NHTSA — modele sprzedawane w USA od 2000 r.), więc
-   nie da się wybrać modelu ani rocznika, który nie istniał. Dla modeli sprzedawanych w
-   ostatnim roku katalog obejmuje też bieżący i przyszły rocznik, zanim pojawią się dane o
-   rejestracjach. Dla aut spoza katalogu (np. starszych) wybierz markę **„Inna (wpiszę
-   ręcznie)”** — wtedy wpisujesz markę i model, wybierasz rocznik (obowiązkowe) i opcjonalnie
-   wersję. „Inny rocznik” pozwala wpisać rok zamiast wybierać go z dodatkowej listy;
-   rok obecny w katalogu zostanie rozpoznany jako pozycja z listy.
-   Jeśli instrukcje wybranego auta są już zapisane, zobaczysz je najpierw i możesz zmienić
-   ich kolejność lub dołączyć nowe pliki — bez tworzenia drugiego wpisu tego samego auta.
-   Dla nowego auta pojawia się pole do przeciągania plików z siatką instrukcji: podgląd pierwszej strony,
-   liczba stron, nazwa, kolejność. Limit: **10 plików PDF** na auto (do 250 MB każdy).
-2. **Odczytywanie** — aplikacja odczytuje tekst, rozdziały, ostrzeżenia, tabele i ilustracje.
-3. **Wyposażenie** — silniki i lista wyposażenia opcjonalnego znalezione w instrukcjach; zaznacz, co
-   ma Twoje auto (można pominąć i uzupełnić później na stronie „Wyposażenie” auta).
-4. **Gotowe** — auto zostaje dodane do profilu. **Pliki PDF są zawsze usuwane** (także po błędzie).
+### Zdalny serwer Debian
 
-Po `pnpm initial` europejskie marki, modele i roczniki są już zapisane w `database/.catalog/`.
-Nieaktualne listy aplikacja odświeża w tle, a przy braku połączenia zachowuje ostatnie
-dostępne dane. Bez wcześniejszego przygotowania katalog pobierany jest przy pierwszym
-otwarciu kreatora. Gdy nie ma ani zapisanej listy, ani połączenia, wybierz „Inna”.
-
-Jeśli dodawanie nie jest możliwe (brak połączenia, trwa dodawanie innego auta, komputer nie
-jest przygotowany), kreator pokazuje jeden prosty komunikat zamiast formularza wymagań.
-
-### Przygotowanie komputera (jednorazowo, dla osoby uruchamiającej aplikację)
-
-Odczyt PDF wymaga Pythona z bibliotekami PyMuPDF i Pillow. Najprościej utworzyć środowisko
-`.venv` w katalogu projektu — aplikacja wykryje je sama (bez restartu):
+Aplikacja nie ma logowania, więc port jest dostępny tylko lokalnie.
+Na swoim komputerze otwórz tunel do serwera:
 
 ```bash
+ssh -N -L 3000:127.0.0.1:3000 użytkownik@adres-serwera
+```
+
+Korzystaj z **http://localhost:3000**. Jeśli zmieniłeś port w `.env`,
+dostosuj port po prawej stronie tunelu.
+
+## Pierwsze auto
+
+1. Otwórz **„Dodaj auto”**.
+2. Wybierz markę, model i rok albo wpisz je ręcznie.
+3. Dodaj instrukcje PDF i poczekaj na ich odczytanie.
+4. Zaznacz wyposażenie swojego auta lub pomiń ten krok.
+
+Katalog marek i modeli przygotowuje się przy pierwszym użyciu. Pliki PDF
+są usuwane po imporcie, także po błędzie. Na słabszym komputerze dodawaj
+mniejsze instrukcje pojedynczo.
+
+Po otwarciu auta aplikacja zapisuje jego instrukcje do czytania bez połączenia.
+Zaznaczenia, komentarze, zakładki, notatnik i ustawienia zapisują się
+w przeglądarce. Ich kopię pobierzesz w **Ustawieniach**.
+
+## Aktualizacja i zatrzymanie
+
+W folderze projektu, gdy nie trwa dodawanie auta:
+
+```bash
+# Aktualizacja
+git pull
+docker compose up -d --build
+
+# Zatrzymanie
+docker compose down
+
+# Ponowne uruchomienie
+docker compose up -d
+```
+
+Instrukcje i notatki nie znikają przy aktualizacji ani zatrzymaniu.
+Jeśli aplikacja nie startuje, sprawdź `docker compose logs --tail=50`.
+
+## Gdzie są dane i jak przenieść aplikację
+
+```text
+glovebox/
+├── compose.yaml   konfiguracja uruchomienia
+├── Dockerfile     sposób budowania obrazu
+├── .env           port i automatycznie ustawiony użytkownik
+├── database/      instrukcje, katalog aut i logotypy
+└── .runtime/      pliki tymczasowe i pamięć podręczna
+```
+
+Zatrzymaj aplikację, skopiuj cały folder na nowy komputer, uruchom tam
+`sh scripts/prepare-docker.sh`, a następnie `docker compose up -d --build`.
+Przygotowanie zachowa wybrany port i dostosuje użytkownika kontenera.
+Kopiuj folder razem z plikami ukrytymi; nowy użytkownik musi mieć do niego
+dostęp. Notatki przenoś osobno przez kopię z Ustawień.
+
+**Folder zawiera wszystkie trwałe dane aplikacji, ale nie magazyn Dockera.**
+Obrazy, warstwy i cache builda Docker przechowuje systemowo; Compose nie może
+zamknąć ich w folderze projektu.
+
+Przed całkowitym usunięciem, w folderze projektu wykonaj:
+
+```bash
+docker compose down --rmi local
+```
+
+To usuwa kontener, jego logi, sieć i obraz aplikacji. Potem możesz usunąć folder
+`glovebox/` — razem z instrukcjami. Dane przeglądarki usuń osobno w Ustawieniach.
+Docker może zachować współdzielone obrazy bazowe i cache builda; nie czyścimy
+ich automatycznie, aby nie ingerować w inne aplikacje.
+
+## Uruchomienie bez Dockera
+
+Dla osób rozwijających projekt rekomendujemy **Node.js 24** i **pnpm 11** —
+tych wersji używają również Docker i automatyczna walidacja.
+Minimum to **Node.js 22.22.2**, **pnpm 10.26** i Python 3.10+.
+Repozytorium nie blokuje nowszych wersji. W gałęzi Node.js 24 pełna walidacja
+wymaga co najmniej 24.15 ze względu na biblioteki testowe.
+Jeśli używasz nvm, uruchom `nvm install` i `nvm use` w folderze projektu.
+Rekomendowaną wersję pnpm wskazuje `package.json`; możesz ją aktywować przez
+`corepack enable` i `corepack install`. Jeśli masz już odpowiedni pnpm,
+nie musisz go zmieniać.
+
+```bash
+pnpm install
 python3 -m venv .venv
 .venv/bin/python -m pip install -r scripts/requirements.txt
-# Windows: py -3 -m venv .venv && .venv\Scripts\python -m pip install -r scripts\requirements.txt
+pnpm initial
+pnpm dev
 ```
 
-Inny interpreter wskażesz zmienną `PYTHON`, np. `PYTHON=/usr/bin/python3 pnpm start`.
-
-### Gdzie trafiają auta i jak je przenieść
-
-Kreator zapisuje auto w folderze `database/<marka-model-rocznik>/` obok kodu aplikacji
-(pliki JSON i obrazy WebP). Cały folder `database/` jest w `.gitignore` — baza aut zostaje
-lokalnie, a każdy, kto uruchamia kod, wgrywa własne instrukcje. Aby przenieść auto na inny
-komputer, skopiuj jego folder do `database/` w drugiej kopii projektu (bez ponownego wgrywania
-PDF).
-
-Dodawanie i usuwanie aut działa tylko pod adresem `http://localhost` na komputerze, na
-którym działa aplikacja (czytanie instrukcji jest możliwe także z innych urządzeń w sieci;
-`MANUALS_ALLOW_REMOTE_IMPORT=1` zdejmuje to ograniczenie w zaufanej sieci). Każde auto można
-usunąć na jego stronie („Usuń to auto”).
-
-## Generowanie treści
-
-Nie ma wbudowanej instrukcji ani gotowego zestawu plików dla żadnego auta. Instrukcje każdej
-marki dodaje się w kreatorze „Dodaj auto”; podane pliki PDF są przetwarzane na tym komputerze,
-a następnie usuwane. Wygenerowane pliki trafiają do ignorowanego przez Git folderu
-`database/<marka-model-rocznik>/`. Nie edytuj ich ręcznie — kreator pozwala dołączyć kolejne
-instrukcje do tego samego auta i zmienić ich kolejność bez utraty zaznaczeń.
-
-Rozpoznawanie wyposażenia w treści (tytuły sekcji i nagłówki, np. „Tempomat”) jest w
-`src/config/featureRules.ts` i działa dla wszystkich aut — można je poprawiać bez ponownej
-ekstrakcji. Szczegóły: `docs/vehicle-profile.md` i `docs/catalog.md`.
-
-## Kopia zapasowa notatek
-
-Zaznaczenia, komentarze, notatnik, zakładki, wyposażenie aut i ustawienia są zapisywane tylko w tej
-przeglądarce (dla wszystkich aut). Wyczyszczenie danych przeglądarki usunie je bezpowrotnie.
-Dane ze starszej wersji aplikacji są automatycznie przenoszone do aktualnego formatu.
-
-- **Kopia:** Ustawienia → „Pobierz kopię zapasową” — pobiera plik z datą w nazwie.
-- **Wczytanie:** Ustawienia → wybierz sposób („Scal z obecnymi danymi” lub „Zastąp obecne
-  dane”) → „Wczytaj kopię z pliku…”.
-- **Przeniesienie na inny komputer / przeglądarkę:** eksport na starym, import na nowym.
-- **Usunięcie wszystkiego:** Ustawienia → „Usuń wszystkie dane”.
-- **Instrukcje offline:** Ustawienia → „Usuń instrukcje zapisane offline” (zapiszą się
-  ponownie przy następnym otwarciu auta).
-
-## Polecenia
-
-| Polecenie           | Opis                                                             |
-| ------------------- | ---------------------------------------------------------------- |
-| `pnpm install`      | instalacja zależności przed pierwszym uruchomieniem              |
-| `pnpm initial`      | przygotowanie katalogu aut i informacji o logotypach             |
-| `pnpm dev`          | serwer deweloperski                                              |
-| `pnpm lint`         | ESLint (bez ostrzeżeń)                                           |
-| `pnpm lint:py`      | ruff dla kodu Pythona                                            |
-| `pnpm typecheck`    | sprawdzenie typów TypeScript                                     |
-| `pnpm unused`       | wyszukanie nieużywanego kodu (knip)                              |
-| `pnpm format:check` | kontrola formatowania bez zmieniania plików                      |
-| `pnpm test`         | testy jednostkowe (Vitest)                                       |
-| `pnpm test:extract` | testy skryptu ekstrakcji (Python)                                |
-| `pnpm format`       | naprawa formatowania (Prettier)                                  |
-| `pnpm icons`        | wygenerowanie ikon PNG/ICO (karta, iOS, instalacja) z `icon.svg` |
-| `pnpm check`        | pełna kontrola projektu (wszystko powyżej i build)               |
-| `pnpm build`        | wersja produkcyjna (`.next/`); wykonywane też przez `check`      |
-| `pnpm start`        | uruchomienie wersji produkcyjnej na :3000                        |
-
-Kolejność odpowiada przygotowaniu, pracy w trybie deweloperskim, sprawdzeniom,
-poprawkom i uruchomieniu produkcyjnemu. `pnpm install` to polecenie menedżera pakietów,
-nie osobny skrypt. `format` poprawia formatowanie, a `icons` jest potrzebne tylko po zmianie
-ikony; żadne z nich nie naprawia automatycznie błędów logiki. `pnpm check` obejmuje już
-budowanie, więc po jego powodzeniu można od razu uruchomić `pnpm start`.
-
-`pnpm lint:py` wymaga narzędzi deweloperskich Pythona:
-`.venv/bin/python -m pip install -r scripts/requirements-dev.txt`. Ta sama kontrola
-(`pnpm check`) uruchamia się automatycznie w GitHub Actions dla każdej zmiany w `master`.
+Otwórz **http://localhost:3000**. Wersję produkcyjną uruchomisz przez
+`pnpm build`, a potem `pnpm start`.
+Szczegóły techniczne: [wdrożenie](docs/deployment.md), [import](docs/import.md),
+[funkcje i wygląd](docs/ui.md), [dane użytkownika](docs/storage.md).

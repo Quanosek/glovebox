@@ -3,6 +3,7 @@ import path from "node:path";
 import { getDatabaseDir } from "@/lib/content";
 import { isLoopbackHost } from "@/lib/server/guard";
 import { findPython } from "@/lib/server/python";
+import { versionAtLeast } from "@/lib/server/version";
 import {
   MAX_DOCUMENTS,
   MAX_FILE_BYTES,
@@ -39,13 +40,12 @@ export async function GET(request: Request) {
       count + car.books.filter((book) => !book.placeholder).length,
     0,
   );
-  const [nodeMajor, nodeMinor] = process.versions.node.split(".").map(Number);
   const localAccess =
     process.env.MANUALS_ALLOW_REMOTE_IMPORT === "1" ||
     isLoopbackHost(request.headers.get("host") ?? "");
   return Response.json({
     node: process.version,
-    nodeReady: nodeMajor > 20 || (nodeMajor === 20 && nodeMinor >= 9),
+    nodeReady: versionAtLeast(process.versions.node, "22.22.2"),
     platform: process.platform,
     python: best ?? found[0] ?? null,
     pythonReady: Boolean(best),

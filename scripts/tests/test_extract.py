@@ -1,7 +1,6 @@
 """Tests for the extractor (scripts/extract.py, package manual_extract). Run: pnpm test:extract
 
-Uses a synthetic PDF built by make_sample_pdf.py (the real manuals are
-copyrighted and never committed).
+Uses a synthetic PDF built by make_sample_pdf.py, without imported user manuals.
 """
 
 from __future__ import annotations

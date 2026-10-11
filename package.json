@@ -2,6 +2,7 @@
   "name": "glovebox",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "pnpm@11.28.5",
   "scripts": {
     "initial": "node scripts/initial.mjs",
     "dev": "next dev",
@@ -27,7 +28,7 @@
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4.3.3",
-    "@types/node": "^22.20.5",
+    "@types/node": "^24.0.0",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "eslint": "^9.39.5",
@@ -42,7 +43,7 @@
     "vitest": "^5.0.3"
   },
   "engines": {
-    "node": ">=20.9",
-    "pnpm": ">=10"
+    "node": ">=22.22.2",
+    "pnpm": ">=10.26.0"
   }
 }

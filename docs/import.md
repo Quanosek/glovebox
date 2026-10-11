@@ -47,7 +47,8 @@ instructions in the UI (those live in `README.md`, section "Dodawanie aut"). Fou
    one plain message above the form and the submit button stays disabled:
    offline / server unreachable → "Brak połączenia"; running job → "Trwa dodawanie innego
    auta" + "Pokaż postęp" (resumes polling); `localAccess === false` → "Dodawanie tylko na
-   komputerze z aplikacją"; missing Python/PyMuPDF/Pillow, extractor or writable `database/`
+   komputerze z aplikacją"; Node.js below 22.22.2 (newer majors are accepted),
+   missing Python/PyMuPDF/Pillow, extractor or writable `database/`
    → "Ten komputer nie jest jeszcze gotowy" (points to the README). Reusing saved manuals
    does not require Python or the extractor. Technical details from
    `/api/system` are never rendered.

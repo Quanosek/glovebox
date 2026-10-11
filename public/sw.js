@@ -48,7 +48,8 @@ self.addEventListener("install", (event) => {
             const res = await fetch(url, { cache: "no-cache" });
             if (!res.ok || res.redirected) return;
             const html = await res.clone().text();
-            for (const [asset] of html.matchAll(STATIC_ASSET)) assets.add(asset);
+            for (const [asset] of html.matchAll(STATIC_ASSET))
+              assets.add(asset);
             await cache.put(url, res);
           } catch {
             // cached on first use instead
@@ -77,7 +78,9 @@ self.addEventListener("activate", (event) => {
       const keep = [CACHE, OFFLINE_CACHE];
       const keys = await caches.keys();
       await Promise.all(
-        keys.filter((k) => k.startsWith(PREFIX) && !keep.includes(k)).map((k) => caches.delete(k)),
+        keys
+          .filter((k) => k.startsWith(PREFIX) && !keep.includes(k))
+          .map((k) => caches.delete(k)),
       );
       await self.clients.claim();
     })(),
@@ -88,14 +91,16 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const path = `/przypomnienia#${event.notification.data?.car ?? ""}`;
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
-      const client = clients[0];
-      if (client) {
-        client.navigate(path);
-        return client.focus();
-      }
-      return self.clients.openWindow(path);
-    }),
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clients) => {
+        const client = clients[0];
+        if (client) {
+          client.navigate(path);
+          return client.focus();
+        }
+        return self.clients.openWindow(path);
+      }),
   );
 });
 
@@ -139,7 +144,8 @@ async function staleWhileRevalidate(event) {
 
 async function networkFirst(request) {
   const url = new URL(request.url);
-  const isRsc = request.headers.get("RSC") === "1" || url.searchParams.has("_rsc");
+  const isRsc =
+    request.headers.get("RSC") === "1" || url.searchParams.has("_rsc");
   try {
     const res = await fetch(request);
     put(request, res.clone());
@@ -156,8 +162,11 @@ async function networkFirst(request) {
     }
     if (request.mode === "navigate") {
       return new Response(
-        "<!doctype html><meta charset=utf-8><title>Brak internetu</title><body style=\"font-family:system-ui;padding:2rem\"><h1>Brak połączenia</h1><p>Ta strona nie została jeszcze zapisana na tym urządzeniu. Otwórz ją ponownie, gdy połączenie wróci – instrukcje wybranego auta zapisują się same, aby działały bez internetu.</p><p><a href=\"/\">Wróć do profilu</a></p>",
-        { status: 503, headers: { "Content-Type": "text/html; charset=utf-8" } },
+        '<!doctype html><meta charset=utf-8><title>Brak internetu</title><body style="font-family:system-ui;padding:2rem"><h1>Brak połączenia</h1><p>Ta strona nie została jeszcze zapisana na tym urządzeniu. Otwórz ją ponownie, gdy połączenie wróci – instrukcje wybranego auta zapisują się same, aby działały bez internetu.</p><p><a href="/">Wróć do profilu</a></p>',
+        {
+          status: 503,
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        },
       );
     }
     throw err;

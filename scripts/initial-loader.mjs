@@ -4,7 +4,7 @@ import ts from "typescript";
 
 const source = new URL("../src/", import.meta.url);
 
-// Node 20.9+ loader: reuse the installed compiler, without an extra TS runner.
+// Reuse the installed compiler without an extra TS runner.
 export async function resolve(specifier, context, nextResolve) {
   if (specifier.startsWith("@/")) {
     return {

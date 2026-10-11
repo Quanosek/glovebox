@@ -1,2 +1,5 @@
+# Keep the installed pnpm instead of downloading the recommended version.
+pmOnFail: ignore
+
 allowBuilds:
   unrs-resolver: true
