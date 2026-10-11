@@ -138,14 +138,18 @@ async function eea<T>(query: string): Promise<T[]> {
   };
   if (body.errors?.length) throw new EeaQueryError(body.errors[0].error);
   if (!Array.isArray(body.results)) throw new Error("Invalid EEA response");
+  const selection = query.split(" FROM ")[0];
   for (const row of body.results) {
+    // Raw names may be null or blank; normalisation skips missing source data.
     if (
       !record(row) ||
-      ("Year" in row && !year(row.Year)) ||
-      ("n" in row &&
-        (typeof row.n !== "number" || !Number.isFinite(row.n) || row.n < 0)) ||
-      (query.includes("GROUP BY Mk") && !(row.Mk === null || text(row.Mk))) ||
-      (query.includes("GROUP BY Cn") && !(row.Cn === null || text(row.Cn)))
+      ((selection.includes("Year") || "Year" in row) && !year(row.Year)) ||
+      ((selection.includes("COUNT(*) n") || "n" in row) &&
+        (typeof row.n !== "number" || !Number.isInteger(row.n) || row.n < 0)) ||
+      (query.includes("GROUP BY Mk") &&
+        !(row.Mk === null || typeof row.Mk === "string")) ||
+      (query.includes("GROUP BY Cn") &&
+        !(row.Cn === null || typeof row.Cn === "string"))
     )
       throw new Error("Invalid EEA row");
   }

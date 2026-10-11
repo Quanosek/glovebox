@@ -236,6 +236,9 @@ describe("add-car wizard", () => {
     await identifyCar();
     await select("car-year", "__other__");
     expect(container.querySelector("#car-year")?.tagName).toBe("INPUT");
+    expect(
+      container.querySelector('[aria-label="Wybierz rocznik z listy"]'),
+    ).toBeNull();
     expect(container.querySelectorAll("select")).toHaveLength(2);
     await typeYear("2020");
     const submit = [...container.querySelectorAll("button")].find((b) =>

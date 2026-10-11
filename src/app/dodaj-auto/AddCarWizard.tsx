@@ -612,37 +612,25 @@ export function AddCarWizard({
                       </Field>
                       <Field label="Rocznik" htmlFor="car-year">
                         {yearIsOther ? (
-                          <div className="flex gap-1">
-                            <input
-                              id="car-year"
-                              className="field min-w-0"
-                              type="number"
-                              inputMode="numeric"
-                              min={minYear}
-                              max={maxYear}
-                              step={1}
-                              placeholder="Wpisz rocznik"
-                              value={year}
-                              onChange={(e) => setYear(e.target.value)}
-                              onBlur={() => {
-                                if (
-                                  catalogModel?.years.includes(Number(year))
-                                ) {
-                                  setYear(String(Number(year)));
-                                  setYearIsOther(false);
-                                }
-                              }}
-                              autoFocus
-                            />
-                            <button
-                              type="button"
-                              className="btn btn-ghost shrink-0 px-2"
-                              aria-label="Wybierz rocznik z listy"
-                              onClick={() => chooseYear("")}
-                            >
-                              ↶
-                            </button>
-                          </div>
+                          <input
+                            id="car-year"
+                            className="field min-w-0"
+                            type="number"
+                            inputMode="numeric"
+                            min={minYear}
+                            max={maxYear}
+                            step={1}
+                            placeholder="Wpisz rocznik"
+                            value={year}
+                            onChange={(e) => setYear(e.target.value)}
+                            onBlur={() => {
+                              if (catalogModel?.years.includes(Number(year))) {
+                                setYear(String(Number(year)));
+                                setYearIsOther(false);
+                              }
+                            }}
+                            autoFocus
+                          />
                         ) : (
                           <select
                             id="car-year"
