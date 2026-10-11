@@ -1,7 +1,7 @@
 /**
  * Content model shared by the extraction scripts (`scripts/extract.py`)
- * and the reader. Generated JSON files in `src/content/<book>/` must match
- * these types. Generated files live in `database/<car>/<book>/`.
+ * and the reader. Generated files in `database/<car>/<book>/` must match
+ * these types.
  * Bump `CONTENT_FORMAT_VERSION` when the shape changes.
  */
 

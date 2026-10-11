@@ -52,6 +52,7 @@ describe("logo size", () => {
     fs.writeFileSync(
       brandMetadataFile(dir, "Opel"),
       JSON.stringify({
+        version: 1,
         logos: [
           { file: "Old.svg", rank: "normal", start: 2009, end: 2017 },
           { file: "New.svg", rank: "preferred", start: 2023 },
@@ -66,5 +67,14 @@ describe("logo size", () => {
     );
     expect(cachedLogoSize(car, root)).toEqual({ width: 123, height: 45 });
     expect(cachedLogoSize({ brand: "Opel", year: 2024 }, root)).toBeNull();
+    const metadata = brandMetadataFile(dir, "Opel");
+    fs.writeFileSync(
+      metadata,
+      JSON.stringify({
+        ...JSON.parse(fs.readFileSync(metadata, "utf8")),
+        version: 2,
+      }),
+    );
+    expect(cachedLogoSize(car, root)).toBeNull();
   });
 });

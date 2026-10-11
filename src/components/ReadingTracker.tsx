@@ -2,9 +2,10 @@
 
 import { useEffect } from "react";
 import { recordReading, updateData } from "@/lib/storage/hooks";
+import { STORAGE_KEY } from "@/lib/storage/schema";
 
 /** sessionStorage key set by "Kontynuuj czytanie" to restore the scroll position. */
-export const RESTORE_SCROLL_KEY = "opel-cascada-manual:restore-scroll";
+export const RESTORE_SCROLL_KEY = `${STORAGE_KEY}:restore-scroll`;
 
 /**
  * Remembers the last read section and scroll position, and adds the section

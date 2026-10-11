@@ -3,10 +3,11 @@ import {
   InvalidDataError,
   UnsupportedVersionError,
   mergeData,
-  migrate,
+  parseData,
   parseImport,
-} from "@/lib/storage/migrations";
+} from "@/lib/storage/data";
 import {
+  EXPORT_APP_ID,
   SCHEMA_VERSION,
   STORAGE_KEY,
   createEmptyData,
@@ -15,7 +16,6 @@ import {
 import { AppStore, getStore, type KeyValueStorage } from "@/lib/storage/store";
 import {
   addOwnedCar,
-  initializeCarEngine,
   setCarEngine,
   setFeatureState,
 } from "@/lib/storage/hooks";
@@ -42,11 +42,11 @@ const highlight = (
   updatedAt = "2026-01-01T00:00:00.000Z",
 ): Highlight => ({
   id,
-  car: "opel-cascada-2016",
+  car: "car",
   book: "manual",
   sectionId: "kluczyki/kluczyki-zamki",
   sectionTitle: "Kluczyki, zamki",
-  href: "/auto/opel-cascada-2016/instrukcja/kluczyki/kluczyki-zamki",
+  href: "/auto/car/manual/kluczyki/kluczyki-zamki",
   anchor: { exact: "kluczyk", prefix: "", suffix: "", start: 0, end: 7 },
   color: "red",
   comment: "",
@@ -54,7 +54,36 @@ const highlight = (
   updatedAt,
 });
 
-describe("migrate", () => {
+const engine = {
+  fuel: "diesel" as const,
+  engineCm3: 1956,
+  powerKw: 125,
+  label: "2.0 Diesel",
+  code: "D20",
+};
+
+describe("Glovebox schema", () => {
+  it("starts at version 1 with its own storage and export identity", () => {
+    expect(SCHEMA_VERSION).toBe(1);
+    expect(STORAGE_KEY).toBe("glovebox");
+    expect(EXPORT_APP_ID).toBe("glovebox");
+    expect(parseData(createEmptyData())).toEqual(createEmptyData());
+  });
+
+  it.each([null, [], "data", {}, { version: "1" }, { version: 1.5 }])(
+    "rejects invalid or unversioned data: %j",
+    (data) => {
+      expect(() => parseData(data)).toThrow(InvalidDataError);
+    },
+  );
+
+  it.each([0, 2, 7])(
+    "rejects unsupported schema %s without migrating it",
+    (version) => {
+      expect(() => parseData({ version })).toThrow(UnsupportedVersionError);
+    },
+  );
+
   it("stores owner choices but not inferred exclusions, and allows switching alternatives", () => {
     const store = getStore();
     store.replace(createEmptyData());
@@ -77,11 +106,6 @@ describe("migrate", () => {
     expect(
       store.get().settings.vehicles.car["transmission.automatic"],
     ).toBeUndefined();
-    expect(
-      withExclusiveFeatures(store.get().settings.vehicles.car)[
-        "transmission.automatic"
-      ]?.status,
-    ).toBe("no");
     setCarEngine("car", null);
     expect(
       withExclusiveFeatures(store.get().settings.vehicles.car)[
@@ -96,47 +120,13 @@ describe("migrate", () => {
     ).toBeUndefined();
   });
 
-  it("drops retired folding-roof choices without changing other equipment", () => {
-    const data = migrate({
-      version: SCHEMA_VERSION,
-      settings: {
-        vehicles: {
-          car: {
-            "roof.electric": { status: "no", certainty: "confirmed" },
-            "roof.remote": { status: "has", certainty: "confirmed" },
-          },
-        },
-      },
-    });
-    expect(data.settings.vehicles.car).toEqual({
-      "roof.remote": { status: "has", certainty: "confirmed" },
-    });
-  });
-
-  it("does not inherit another owner's legacy engine when assigning a library car", () => {
+  it("assigns a library car with an unknown engine and preserves a local choice", () => {
     const store = getStore();
     store.replace(createEmptyData());
     addOwnedCar("car");
-    initializeCarEngine("car", {
-      fuel: "diesel",
-      engineCm3: 1956,
-      powerKw: 125,
-      label: "Diesel",
-    });
     expect(store.get().settings.engines.car).toBeNull();
-  });
-  it("preserves a legacy owned car's engine only until the owner makes a local choice", () => {
-    const store = getStore();
-    const data = createEmptyData();
-    data.settings.ownedCars = ["car"];
-    store.replace(data);
-    const engine = {
-      fuel: "diesel" as const,
-      engineCm3: 1956,
-      powerKw: 125,
-      label: "Diesel",
-    };
-    initializeCarEngine("car", engine);
+    setCarEngine("car", engine);
+    addOwnedCar("car");
     expect(store.get().settings.engines.car).toEqual(engine);
     expect(store.get().settings.vehicles.car["engine.diesel"].status).toBe(
       "has",
@@ -144,31 +134,11 @@ describe("migrate", () => {
     setFeatureState("car", "engine.diesel", null);
     expect(store.get().settings.vehicles.car["engine.diesel"]).toBeUndefined();
     setCarEngine("car", null);
-    initializeCarEngine("car", engine);
     expect(store.get().settings.engines.car).toBeNull();
-  });
-  it("upgrades v6 with empty local engine choices and preserves equipment", () => {
-    const data = migrate({
-      version: 6,
-      settings: {
-        vehicles: {
-          car: { "engine.diesel": { status: "has", certainty: "confirmed" } },
-        },
-      },
-    });
-    expect(data.settings.engines).toEqual({});
-    expect(data.settings.vehicles.car["engine.diesel"].status).toBe("has");
   });
 
   it("keeps valid engines and explicit unknown choices, drops malformed entries", () => {
-    const engine = {
-      fuel: "diesel",
-      engineCm3: 1956,
-      powerKw: 125,
-      label: "2.0 Diesel",
-      code: "D20",
-    };
-    const data = migrate({
+    const data = parseData({
       version: SCHEMA_VERSION,
       settings: {
         engines: {
@@ -181,7 +151,7 @@ describe("migrate", () => {
     });
     expect(data.settings.engines).toEqual({ car: engine, unknown: null });
     expect(
-      parseImport(JSON.stringify({ app: "opel-cascada-manual", data })).settings
+      parseImport(JSON.stringify({ app: EXPORT_APP_ID, data })).settings
         .engines,
     ).toEqual(data.settings.engines);
   });
@@ -189,12 +159,6 @@ describe("migrate", () => {
   it("merges local engines with current choices including unknown winning", () => {
     const current = createEmptyData();
     const incoming = createEmptyData();
-    const engine = {
-      fuel: "diesel" as const,
-      engineCm3: 1956,
-      powerKw: 125,
-      label: "2.0 Diesel",
-    };
     current.settings.engines.car = null;
     incoming.settings.engines = { car: engine, other: engine };
     expect(mergeData(current, incoming).settings.engines).toEqual({
@@ -202,62 +166,9 @@ describe("migrate", () => {
       other: engine,
     });
   });
-  it("returns empty data for missing storage", () => {
-    expect(migrate(null)).toEqual(createEmptyData());
-  });
-
-  it("upgrades unversioned (v0) data", () => {
-    const data = migrate({ highlights: { a: highlight("a") } });
-    expect(data.version).toBe(SCHEMA_VERSION);
-    expect(data.highlights.a.color).toBe("red");
-  });
-
-  it("runs migrations step by step", () => {
-    const migrations = {
-      0: (d: Record<string, unknown>) => ({ ...d, step0: true }),
-      1: (d: Record<string, unknown>) => ({
-        ...d,
-        notebook: { pages: [{ id: "p", title: "T", body: String(d.step0) }] },
-      }),
-    };
-    const data = migrate({}, migrations, 2);
-    expect(data.notebook.pages[0].body).toBe("true");
-  });
-
-  it("moves v1 (single car) data to the Cascada car", () => {
-    const { car: _car, ...v1 } = highlight("a");
-    void _car;
-    const data = migrate({
-      version: 1,
-      highlights: {
-        a: { ...v1, href: "/navi-950/radio#b3" },
-      },
-      lastRead: {
-        book: "manual",
-        sectionId: "x",
-        title: "X",
-        href: "/instrukcja/x",
-        scrollY: 10,
-        at: "2026-01-01T00:00:00.000Z",
-      },
-      settings: { fontSize: "large" },
-    });
-    expect(data.highlights.a.car).toBe("opel-cascada-2016");
-    expect(data.highlights.a.href).toBe(
-      "/auto/opel-cascada-2016/navi-950/radio#b3",
-    );
-    expect(data.lastRead?.car).toBe("opel-cascada-2016");
-    expect(data.lastRead?.href).toBe("/auto/opel-cascada-2016/instrukcja/x");
-    expect(data.settings.activeCar).toBe("opel-cascada-2016");
-    expect(data.settings.fontSize).toBe("large");
-  });
-
-  it("leaves no active car for empty v1 data", () => {
-    expect(migrate({ version: 1 }).settings.activeCar).toBeNull();
-  });
 
   it("validates settings of the current version", () => {
-    const data = migrate({
+    const data = parseData({
       version: SCHEMA_VERSION,
       settings: { activeCar: "../x", profileName: "Jan" },
     });
@@ -265,56 +176,62 @@ describe("migrate", () => {
     expect(data.settings.profileName).toBe("Jan");
   });
 
-  it("rejects data from a newer app version", () => {
-    expect(() => migrate({ version: SCHEMA_VERSION + 1 })).toThrow(
-      UnsupportedVersionError,
-    );
-  });
-
-  it("drops malformed entries and keeps valid ones", () => {
-    const data = migrate({
-      version: 1,
+  it("drops malformed entries and keeps valid ones without rewriting old shapes", () => {
+    const data = parseData({
+      version: SCHEMA_VERSION,
       highlights: {
         ok: highlight("ok"),
         bad: { book: "manual" },
         wrongBook: { ...highlight("x"), book: "../etc" },
       },
       bookmarks: [
-        { book: "manual", sectionId: "a", title: "A", href: "/instrukcja/a" },
+        {
+          car: "car",
+          book: "manual",
+          sectionId: "a",
+          title: "A",
+          href: "/auto/car/manual/a",
+        },
+        { book: "manual", sectionId: "a" },
         "junk",
       ],
       settings: {
         fontSize: "huge",
         showUnavailable: true,
-        vehicle: {
-          "key.keyless": { status: "has", certainty: "confirmed" },
-          "infotainment.infinity": { status: "no", certainty: "confirmed" },
-          "engine.petrol16Turbo": { status: "has", certainty: "confirmed" },
-          bad: { status: "maybe" },
+        vehicles: {
+          car: {
+            "key.keyless": { status: "has", certainty: "confirmed" },
+            "infotainment.premiumAudio": {
+              status: "no",
+              certainty: "probable",
+            },
+            "unknown.feature": { status: "has", certainty: "confirmed" },
+            "drive.towbar": { status: "maybe" },
+            "lights.afl": { status: "has", certainty: "unknown" },
+          },
         },
       },
     });
     expect(Object.keys(data.highlights)).toEqual(["ok"]);
     expect(data.bookmarks).toHaveLength(1);
-    expect(data.bookmarks[0].id).toBe("opel-cascada-2016:manual:a");
-    expect(data.bookmarks[0].href).toBe("/auto/opel-cascada-2016/instrukcja/a");
+    expect(data.bookmarks[0].id).toBe("car:manual:a");
+    expect(data.bookmarks[0].href).toBe("/auto/car/manual/a");
     expect(data.settings.fontSize).toBe("normal");
     expect(data.settings.showUnavailable).toBe(true);
     expect(data.settings.vehicles).toEqual({
-      "opel-cascada-2016": {
+      car: {
         "key.keyless": { status: "has", certainty: "confirmed" },
-        "infotainment.premiumAudio": { status: "no", certainty: "confirmed" },
+        "infotainment.premiumAudio": { status: "no", certainty: "probable" },
       },
     });
-    expect("vehicle" in data.settings).toBe(false);
   });
 
-  it("keeps equipment of every car in v3 data", () => {
-    const data = migrate({
+  it("keeps equipment of every car and rejects invalid car ids", () => {
+    const data = parseData({
       version: SCHEMA_VERSION,
       settings: {
         vehicles: {
-          "skoda-octavia-2019": {
+          car: {
             "drive.towbar": { status: "has", certainty: "confirmed" },
             "made.up": { status: "has", certainty: "confirmed" },
           },
@@ -323,69 +240,23 @@ describe("migrate", () => {
         },
       },
     });
-
     expect(data.settings.vehicles).toEqual({
-      "skoda-octavia-2019": {
-        "drive.towbar": { status: "has", certainty: "confirmed" },
-      },
-    });
-  });
-
-  it("migrates only cars already used by the local profile into owned cars", () => {
-    const data = migrate({
-      version: 3,
-      settings: {
-        activeCar: "skoda-octavia-2019",
-        vehicles: {
-          "mazda-3-2020": {
-            "drive.towbar": { status: "has", certainty: "confirmed" },
-          },
-        },
-      },
-      bookmarks: [{ car: "volvo-v60-2021", book: "manual", sectionId: "x" }],
-      highlights: { invalid: { car: "../unsafe" } },
-    });
-
-    expect(data.settings.ownedCars).toEqual([
-      "skoda-octavia-2019",
-      "mazda-3-2020",
-      "volvo-v60-2021",
-    ]);
-  });
-
-  it("adds the event date field when upgrading v5 reminders", () => {
-    const data = migrate({
-      version: 5,
-      reminders: [
-        {
-          id: "inspection:car",
-          car: "car",
-          kind: "inspection",
-          title: "Badanie techniczne",
-          dueDate: "2026-10-01",
-        },
-      ],
-    });
-    expect(data.reminders[0]).toMatchObject({
-      dueDate: "2026-10-01",
-      eventDate: null,
+      car: { "drive.towbar": { status: "has", certainty: "confirmed" } },
     });
   });
 
   it("sanitizes owned cars and keeps an empty list by default", () => {
     expect(createEmptyData().settings.ownedCars).toEqual([]);
-    const data = migrate({
+    const data = parseData({
       version: SCHEMA_VERSION,
-      settings: {
-        ownedCars: ["skoda-octavia-2019", "../unsafe", "skoda-octavia-2019"],
-      },
+      settings: { ownedCars: ["car", "../unsafe", "car"] },
     });
-    expect(data.settings.ownedCars).toEqual(["skoda-octavia-2019"]);
+    expect(data.settings.ownedCars).toEqual(["car"]);
   });
 });
 
-describe("schema v5", () => {
-  const car = "skoda-octavia-2019";
+describe("history and reminders", () => {
+  const car = "car";
   const entry = (sectionId: string, at: string) => ({
     car,
     book: "manual",
@@ -396,17 +267,7 @@ describe("schema v5", () => {
     at,
   });
 
-  it("seeds the reading history from the last read section", () => {
-    const lastRead = { ...entry("a", "2026-01-02T00:00:00.000Z"), scrollY: 5 };
-    const data = migrate({ version: 4, lastRead, settings: {} });
-    expect(data.version).toBe(SCHEMA_VERSION);
-    expect(data.history).toEqual([
-      { ...entry("a", "2026-01-02T00:00:00.000Z") },
-    ]);
-    expect(data.reminders).toEqual([]);
-  });
-
-  it("sanitizes history and reminders, dropping retired favourites", () => {
+  it("sanitizes and deduplicates history and reminders", () => {
     const bookmark = {
       id: `${car}:manual:a`,
       car,
@@ -416,7 +277,7 @@ describe("schema v5", () => {
       href: `/auto/${car}/manual/a`,
       createdAt: "2026-01-01T00:00:00.000Z",
     };
-    const data = migrate({
+    const data = parseData({
       version: SCHEMA_VERSION,
       bookmarks: [bookmark],
       history: [
@@ -429,22 +290,14 @@ describe("schema v5", () => {
         {
           id: "r1",
           car,
+          kind: "custom",
           title: "Przegląd",
           dueDate: "2026-05-01",
           dueKm: 120000,
-          done: false,
-          createdAt: "2026-01-01T00:00:00.000Z",
-          updatedAt: "2026-01-01T00:00:00.000Z",
         },
         { id: "r2", car, title: "" },
         { id: "r3", car, title: "Zła data", dueDate: "01.05.2026" },
       ],
-      settings: {
-        favorites: {
-          [car]: [bookmark.id, `${car}:manual:missing`],
-          "../x": [bookmark.id],
-        },
-      },
     });
     expect(data.history.map((h) => [h.sectionId, h.at, h.thumb])).toEqual([
       ["a", "2026-01-03T00:00:00.000Z", null],
@@ -454,11 +307,10 @@ describe("schema v5", () => {
     expect(data.reminders.map((r) => r.kind)).toEqual(["custom", "custom"]);
     expect(data.reminders[1].dueDate).toBeNull();
     expect(data.bookmarks.map((b) => b.id)).toEqual([bookmark.id]);
-    expect("favorites" in data.settings).toBe(false);
   });
 
   it("keeps one inspection and one OC reminder per car", () => {
-    const data = migrate({
+    const data = parseData({
       version: SCHEMA_VERSION,
       reminders: [
         { id: "a", car, kind: "inspection", title: "Badanie techniczne" },
@@ -475,7 +327,7 @@ describe("schema v5", () => {
   });
 
   it("drops impossible calendar dates from reminders", () => {
-    const data = migrate({
+    const data = parseData({
       version: SCHEMA_VERSION,
       reminders: [
         { id: "valid", car, title: "Valid", dueDate: "2024-02-29" },
@@ -483,6 +335,33 @@ describe("schema v5", () => {
       ],
     });
     expect(data.reminders.map((r) => r.dueDate)).toEqual(["2024-02-29", null]);
+  });
+
+  it("keeps valid event dates without inferring them from deadlines", () => {
+    const data = parseData({
+      version: SCHEMA_VERSION,
+      reminders: [
+        {
+          id: "valid",
+          car,
+          kind: "inspection",
+          title: "Badanie",
+          eventDate: "2026-03-01",
+          dueDate: "2027-03-01",
+        },
+        {
+          id: "invalid",
+          car,
+          title: "Data",
+          eventDate: "2026-02-30",
+          dueDate: "2026-05-01",
+        },
+      ],
+    });
+    expect(data.reminders.map((r) => [r.eventDate, r.dueDate])).toEqual([
+      ["2026-03-01", "2027-03-01"],
+      [null, "2026-05-01"],
+    ]);
   });
 
   it("merges history and reminders, newest wins", () => {
@@ -517,19 +396,21 @@ describe("schema v5", () => {
 });
 
 describe("parseImport / mergeData", () => {
-  it("accepts export files and rejects foreign files", () => {
+  it("accepts only versioned Glovebox export files", () => {
     const data = createEmptyData();
     data.highlights.a = highlight("a");
-    const file = JSON.stringify({
-      app: "opel-cascada-manual",
-      exportedAt: "x",
-      data,
-    });
+    const file = JSON.stringify({ app: EXPORT_APP_ID, exportedAt: "x", data });
     expect(parseImport(file).highlights.a.id).toBe("a");
-    expect(() => parseImport(JSON.stringify({ app: "other", data }))).toThrow(
-      InvalidDataError,
-    );
-    expect(() => parseImport("{not json")).toThrow(InvalidDataError);
+    for (const invalid of [
+      JSON.stringify({ app: "other", data }),
+      JSON.stringify(data),
+      JSON.stringify({ app: EXPORT_APP_ID, data: null }),
+      "{not json",
+    ])
+      expect(() => parseImport(invalid)).toThrow(InvalidDataError);
+    expect(() =>
+      parseImport(JSON.stringify({ app: EXPORT_APP_ID, data: { version: 7 } })),
+    ).toThrow(UnsupportedVersionError);
   });
 
   it("merges by id, newest wins", () => {
@@ -590,6 +471,16 @@ describe("parseImport / mergeData", () => {
 });
 
 describe("AppStore", () => {
+  it("starts empty without loading other applications' data", () => {
+    const storage = memoryStorage({
+      "another-app": JSON.stringify(createEmptyData()),
+    });
+    const store = new AppStore(storage);
+    expect(store.get()).toEqual(createEmptyData());
+    expect(store.lastError).toBeNull();
+    expect(storage.data[STORAGE_KEY]).toBeUndefined();
+  });
+
   it("persists updates and notifies subscribers", () => {
     const storage = memoryStorage();
     const store = new AppStore(storage);
@@ -606,29 +497,49 @@ describe("AppStore", () => {
     expect(new AppStore(storage).get().highlights.a.id).toBe("a");
   });
 
-  it("backs up unreadable data instead of losing it", () => {
-    const storage = memoryStorage({ [STORAGE_KEY]: "{broken" });
-    const store = new AppStore(storage);
-    expect(store.get()).toEqual(createEmptyData());
-    expect(
-      Object.keys(storage.data).some((k) =>
+  it.each(["{broken", JSON.stringify({ version: 99 })])(
+    "backs up unreadable or unsupported data instead of losing it",
+    (raw) => {
+      const storage = memoryStorage({ [STORAGE_KEY]: raw });
+      const store = new AppStore(storage);
+      expect(store.get()).toEqual(createEmptyData());
+      const backup = Object.keys(storage.data).find((k) =>
         k.startsWith(`${STORAGE_KEY}:backup-`),
-      ),
-    ).toBe(true);
-    expect(store.lastError).toBeTruthy();
+      );
+      expect(backup).toBeDefined();
+      expect(storage.data[backup!]).toBe(raw);
+      expect(store.lastError).toBeTruthy();
+    },
+  );
+
+  it("does not replace current data when an import is rejected", () => {
+    const store = new AppStore(memoryStorage());
+    store.update((d) => ({ ...d, highlights: { a: highlight("a") } }));
+    const before = store.get();
+    expect(() =>
+      store.importJson(JSON.stringify({ app: "other", data: {} }), "replace"),
+    ).toThrow(InvalidDataError);
+    expect(store.get()).toBe(before);
   });
 
   it("exports, imports and clears", () => {
     const store = new AppStore(memoryStorage());
     store.update((d) => ({ ...d, highlights: { a: highlight("a") } }));
     const json = store.exportJson();
+    expect(JSON.parse(json)).toMatchObject({
+      app: "glovebox",
+      data: { version: 1 },
+    });
     store.clear();
     expect(store.get().highlights).toEqual({});
     store.importJson(json, "replace");
     expect(store.get().highlights.a.id).toBe("a");
     const other = createEmptyData();
     other.highlights.b = highlight("b");
-    store.importJson(JSON.stringify(other), "merge");
+    store.importJson(
+      JSON.stringify({ app: EXPORT_APP_ID, data: other }),
+      "merge",
+    );
     expect(Object.keys(store.get().highlights).sort()).toEqual(["a", "b"]);
   });
 });

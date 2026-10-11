@@ -21,9 +21,7 @@ export default async function EquipmentPage({ params }: Props) {
     ["Marka", car.brand],
     ["Model", car.model],
     ["Rocznik", String(car.year)],
-    ...(!car.spec && car.variant
-      ? [["Wersja", car.variant] as [string, string]]
-      : []),
+    ...(car.variant ? [["Wersja", car.variant] as [string, string]] : []),
   ];
 
   return (

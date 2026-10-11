@@ -17,17 +17,17 @@ Cache API needs a secure context (`localhost` or HTTPS); on plain-HTTP LAN addre
 
 ## Caches
 
-| Cache                            | Filled by                                               |
-| -------------------------------- | ------------------------------------------------------- |
-| `opel-cascada-manual-runtime-v3` | the service worker (app shell, visited pages, assets)   |
-| `opel-cascada-manual-offline-v7` | `saveCarOffline()` — every page/image/script of one car |
+| Cache                 | Filled by                                               |
+| --------------------- | ------------------------------------------------------- |
+| `glovebox-runtime-v1` | the service worker (app shell, visited pages, assets)   |
+| `glovebox-offline-v1` | `saveCarOffline()` — every page/image/script of one car |
 
 `install` fetches the install metadata (`/manifest.webmanifest` and the 192/512/maskable
 icons, so the installed app starts offline) and the app shell (`SHELL`: `/`, `/auta`,
 `/notatnik`, `/komentarze`, `/zakladki`, `/przypomnienia`, `/ustawienia`, `/dodaj-auto`), scans each HTML for `/_next/static/*` URLs (HTML
 and the inline RSC payload) and pre-caches those scripts/styles too, so every shell page
 hydrates offline even if it was never visited. Then `skipWaiting()`. `activate` deletes
-other `opel-cascada-manual-*` caches and claims clients. Bump the cache name when the
+other `glovebox-*` caches and claims clients. Bump the cache name when the
 strategy changes. Offline cache/status namespaces follow `SCHEMA_VERSION`; update the
 literal worker cache name with a schema change. Cache lookups use only the current runtime
 and offline caches, never obsolete caches left or recreated by an older tab. This prevents
@@ -58,10 +58,10 @@ old copies/statuses are not reported as usable.
   every book JSON plus `.next/BUILD_ID`, so it changes on re-import, re-extraction and app
   rebuilds.
 - If the stored status has the same version and the first URL is cached, nothing is
-  downloaded. Otherwise three workers fetch every URL into `opel-cascada-manual-offline-v7`;
+  downloaded. Otherwise three workers fetch every URL into `glovebox-offline-v1`;
   HTML responses are scanned for `/_next/static/*` assets, which are queued as best-effort
   extras (their failures do not count).
-- Status lives in localStorage key `opel-cascada-manual:offline:v7`
+- Status lives in localStorage key `glovebox:offline:v1`
   (`Record<car, { version, savedAt, total }>`), separate from the versioned app data. It is
   written only when every manifest URL succeeded; otherwise an error is shown and the next
   visit retries. One job per car at a time.
@@ -75,6 +75,6 @@ old copies/statuses are not reported as usable.
 
 ## Clearing
 
-Settings → "Usuń instrukcje zapisane offline" deletes all `opel-cascada-manual*` caches and
+Settings → "Usuń instrukcje zapisane offline" deletes all `glovebox-*` caches and
 calls `resetOfflineStatus()`. The active car is saved again on its next visit. User data in
-the `opel-cascada-manual` localStorage key is not affected.
+the `glovebox` localStorage key is not affected.

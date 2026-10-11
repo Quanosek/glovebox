@@ -2,6 +2,8 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import manifest from "@/app/manifest";
+import { APP_NAME, APP_VERSION } from "@/lib/brand";
+import { GET as health } from "@/app/api/health/route";
 
 const app = manifest();
 
@@ -27,6 +29,12 @@ function dimensions(name: string): string {
 }
 
 describe("web app manifest", () => {
+  it("identifies the production baseline as Glovebox 1.0.0", async () => {
+    expect(APP_NAME).toBe("Glovebox");
+    expect(APP_VERSION).toBe("1.0.0");
+    expect(app.name).toBe(APP_NAME);
+    expect(await health().json()).toEqual({ status: "ok", version: "1.0.0" });
+  });
   it("describes an installable standalone app", () => {
     expect(app).toMatchObject({
       id: "/",

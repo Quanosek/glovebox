@@ -39,11 +39,6 @@ export function AvailabilityBadges({
             {AVAILABILITY_LABEL.yours}
           </span>
         )}
-        {a.verify.length > 0 && (
-          <span className="badge" title={a.verify.map(featureLabel).join(", ")}>
-            {AVAILABILITY_LABEL.verify}
-          </span>
-        )}
         {a.probable.length > 0 && (
           <span
             className="badge"

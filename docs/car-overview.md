@@ -104,7 +104,7 @@ columns. Editing rules needs no re-extraction; `src/lib/__tests__/overview.test.
 - `/przypomnienia` without cars: a short explanation and "Dodaj auto" (`/dodaj-auto`).
 - Add-car wizard: step 2 film strip, step 4 `CarHero` from `GET /api/cars/<id>`.
 
-## Browser data (schema v7, `docs/storage.md`)
+## Browser data (schema v1, `docs/storage.md`)
 
 `history`, `reminders` and `bookmarks` back "Ostatnio czytane", "Przypomnienia"
 and "Ulubione". Reminders are shown on `/przypomnienia`, on the car page and as a count in

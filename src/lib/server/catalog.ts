@@ -58,7 +58,7 @@ const TTL = {
 };
 
 /** Bump when the normalisation changes so old cache files are rebuilt. */
-const CACHE_VERSION = 3;
+const CACHE_VERSION = 1;
 
 /** EU registrations that make a clean make name a reference brand. */
 const STRONG_BRAND_REGISTRATIONS = 5000;

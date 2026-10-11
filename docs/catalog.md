@@ -120,8 +120,7 @@ owner selects one later in the equipment editor; if the manual has no complete v
 the official engine list is a fallback. The chosen engine is stored in browser `settings.engines[carId]`
 (`fuel`, `engineCm3`, `powerKw`, `label`, optional manual `code`) and drives
 `suggestFromSpec`. The importer validates only brand/model/year and never writes engine
-choices to `car.json`. Existing shared `spec` values remain read-only compatibility hints,
-transferred once for cars already owned by the browser profile. Equipment editing prefers
+choices to `car.json`. Equipment editing prefers
 engine variants read from the manuals; catalogue variants are a fallback. The equipment list
 groups fuel types, sorts size/power ascending and displays KM first, with kW in parentheses.
 

@@ -5,17 +5,15 @@ content with generic features and lets the owner mark, **per car**, what their c
 car ships with presets: a feature without a stored state is neutral and its content is shown
 normally.
 Body construction is not optional equipment: a convertible's folding roof is not offered
-as a checkbox or gated. The retired `roof.electric` choice is ignored and removed by the
-existing sanitizer; optional remote roof operation remains independently selectable.
+as a checkbox or gated. Optional remote roof operation remains independently selectable.
 
 ## Definitions
 
 - `src/config/vehicle.ts` — `FEATURES` (generic, any brand: id, group, Polish label,
-  optional Polish note), `FEATURE_GROUPS`, `FEATURE_BY_ID`, `RENAMED_FEATURES` (old ids,
-  migrated in storage) and `suggestFromSpec(spec)`.
+  optional Polish note), `FEATURE_GROUPS`, `FEATURE_BY_ID` and `suggestFromSpec(spec)`.
 - `FeatureState = { status: "has" | "no", certainty }`: `confirmed` = chosen by the owner,
   `probable` = suggestion ("prawdopodobnie", shown as "podpowiedź – potwierdź" in the
-  editor), `verify` = "do weryfikacji" (older data only).
+  editor).
 - `suggestFromSpec` derives `probable` states from the engine picked in the browser
   profile (manual variants or the official catalogue, `docs/catalog.md`), only what the fuel type implies (diesel, hybrid, plug-in,
   CNG, …; LPG stays open because it is often fitted later).
@@ -41,7 +39,7 @@ existing sanitizer; optional remote roof operation remains independently selecta
 ## Evaluation and UI
 
 - `getAvailability(features, profile)` (`src/lib/availability.ts`) → `neutral | yours |
-verify | probable | missing`; unset features are skipped, any `no` → `missing`.
+probable | missing`; unset features are skipped, any `no` → `missing`.
 - `EXCLUSIVE_FEATURES` and `withExclusiveFeatures` (`src/config/vehicle.ts`) derive
   probable `no` alternatives for manual/automatic transmissions and manual/automatic
   climate control. Their content collapses immediately,
@@ -65,7 +63,7 @@ verify | probable | missing`; unset features are skipped, any `no` → `missing`
 
 ## Storage
 
-`settings.vehicles[carId][featureId]` and `settings.engines[carId]` (schema v7,
+`settings.vehicles[carId][featureId]` and `settings.engines[carId]` (schema v1,
 `docs/storage.md`). EngineSelector is available even without detected optional features:
 it offers variants read from the manuals, falling back to catalogue
 variants when no complete manual specifications are available. Options are grouped by fuel

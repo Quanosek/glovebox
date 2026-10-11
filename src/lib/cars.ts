@@ -1,5 +1,3 @@
-import type { CarSpec } from "@/lib/catalog";
-
 /**
  * Car types shared by the server (database reader, importer) and client
  * components. Client-safe: no Node APIs.
@@ -26,8 +24,6 @@ export interface CarFile {
   variant?: string;
   /** Catalogue ids when the car was chosen from the official list. */
   catalog?: { brand: string; model: string };
-  /** Legacy engine hint; new imports never store an engine on shared manuals. */
-  spec?: CarSpec;
   createdAt: string;
   books: CarBook[];
 }
@@ -41,7 +37,6 @@ export interface CarSummary {
   variant?: string;
   label: string;
   href: string;
-  spec?: CarSpec;
   catalog?: { brand: string; model: string };
   /** Pixel size of the brand logo already cached for the model year. */
   logo?: { width: number; height: number };

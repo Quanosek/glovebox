@@ -5,7 +5,7 @@ import {
   type AppData,
   type ExportFile,
 } from "./schema";
-import { mergeData, migrate, parseImport } from "./migrations";
+import { mergeData, parseData, parseImport } from "./data";
 
 type Listener = () => void;
 
@@ -94,7 +94,7 @@ export class AppStore {
     const raw = this.storage?.getItem(this.key);
     if (!raw) return createEmptyData();
     try {
-      return migrate(JSON.parse(raw));
+      return parseData(JSON.parse(raw));
     } catch (err) {
       // Keep the unreadable data so nothing is lost, then start fresh.
       try {

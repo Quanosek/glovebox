@@ -213,17 +213,17 @@ describe("brand metadata refresh", () => {
 });
 
 describe("Wikidata rate limits", () => {
-  it("serves a previous-version entry at once and re-parses it in the background", async () => {
+  it("does not use metadata from a different cache format", async () => {
     await fs.writeFile(
       metadataFile(),
-      JSON.stringify(metadata("Old.svg", Date.now())),
+      JSON.stringify({ ...metadata("Unusable.svg", Date.now()), version: 99 }),
     );
     const fetch = wikimedia();
     vi.stubGlobal("fetch", fetch);
     expect(await getCarLogo(car)).not.toBeNull();
     await prewarmLogoMetadata([{ name: "Opel" }]);
     expect(JSON.parse(await fs.readFile(metadataFile(), "utf8"))).toMatchObject(
-      { version: 2, logos: [{ file: "Opel.svg" }] },
+      { version: 1, logos: [{ file: "Opel.svg" }] },
     );
   });
   it("waits and retries after HTTP 429 instead of recording a missing logo", async () => {

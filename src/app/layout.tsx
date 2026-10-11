@@ -4,7 +4,6 @@ import { BackButton } from "@/components/BackButton";
 import { ClientEffects } from "@/components/ClientEffects";
 import { DialogHost } from "@/components/Dialog";
 import { Header } from "@/components/Header";
-import { EngineProfileInitializer } from "@/components/EngineProfileInitializer";
 import { LayoutHintProvider } from "@/lib/storage/hintContext";
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/brand";
 import { listCarSummaries } from "@/lib/content";
@@ -60,7 +59,6 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             Przejdź do treści
           </a>
           <Header cars={cars} />
-          <EngineProfileInitializer cars={cars} />
           <BackButton variant="page" />
           <ClientEffects />
           {children}

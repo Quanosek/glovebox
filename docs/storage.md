@@ -1,14 +1,18 @@
 # Storage
 
-All user data is stored in the browser under one localStorage key, `opel-cascada-manual`.
+All user data is stored in the browser under one localStorage key, `glovebox`.
 Nothing is sent anywhere.
+
+Glovebox 1.0 starts with schema 1 and its own browser/cache namespaces. Builds preceding
+Glovebox are not migrated and their exports are not accepted. Manuals in `database/`
+remain readable and can be assigned to the new browser profile.
 
 ## Modules (`src/lib/storage/`)
 
 - `schema.ts` — types, `SCHEMA_VERSION`, defaults, `createEmptyData()`.
-- `migrations.ts` — `migrate(raw)` runs `MIGRATIONS[v]` step by step up to the current
-  version, throws `UnsupportedVersionError` for data from a newer app version, then
-  `sanitize()` drops/repairs invalid entries. Also `parseImport()` and `mergeData()`.
+- `data.ts` — `parseData(raw)` requires the current integer schema version, throws
+  `UnsupportedVersionError` for any other version, then `sanitize()` drops/repairs
+  invalid entries. Also `parseImport()`, `mergeData()` and `historyKey()`.
 - `store.ts` — `AppStore` (in-memory snapshot + persistence + listeners), `getStore()`
   browser singleton (listens to the `storage` event for cross-tab sync), `newId()`.
 - `hooks.ts` — `useAppData()`, `useHydrated()`, `useVehicleProfile(carId?)`,
@@ -19,7 +23,7 @@ Nothing is sent anywhere.
 
 `updateData` takes a pure function `(data) => newData`; never mutate the snapshot.
 
-## Schema (version 7)
+## Schema (version 1)
 
 See `AGENTS.md` → Storage schema. Notes:
 
@@ -37,12 +41,12 @@ See `AGENTS.md` → Storage schema. Notes:
   keeps known feature ids and valid states only.
 - `settings.engines[carId]` holds the owner's selected `CarSpec` (`fuel`, displacement,
   power, label, optional manufacturer `code`). `null` means explicitly unknown; a missing
-  entry can be initialized from a legacy shared `car.spec` once for an owned car. New imports
-  never write engine selections into `car.json`. Valid fuel kinds, finite positive numbers
+  entry means no choice yet. New assignments explicitly set `null`. The importer
+  never writes engine selections into `car.json`. Valid fuel kinds, finite positive numbers
   and bounded labels/codes are checked during sanitization. `useCarEngine`, `setCarEngine`
-  and `initializeCarEngine` handle these choices. Changing an engine refreshes probable
+  handle these choices. Changing an engine refreshes probable
   equipment suggestions but preserves explicit owner choices.
-- `history` (v5) holds up to `HISTORY_LIMIT` (12) recently read sections, newest first, one
+- `history` holds up to `HISTORY_LIMIT` (12) recently read sections, newest first, one
   entry per `car:book:sectionId` (`historyKey`). `ReadingTracker` calls `recordReading` with the
   section's first illustration as `thumb` (only `/media/…` URLs survive `sanitize`; links must
   start with `/auto/`). The profile shows it under "Ostatnio czytane".
@@ -55,52 +59,28 @@ See `AGENTS.md` → Storage schema. Notes:
   `insurance` have one entry per car with the fixed id `${kind}:${car}` (`fixedReminderId`;
   `sanitize` rewrites their ids, so duplicates collapse and merging matches them).
 - The car page "Ulubione" bar is derived from `bookmarks` (the newest `FAVORITES_LIMIT` = 6
-  of the car); there is no separate favourites list. A `settings.favorites` object left by an
-  earlier development build is dropped by `sanitize`.
+  of the car); there is no separate favourites list.
 - `lastRead.scrollY` is restored only when the user clicks "Kontynuuj czytanie"
-  (a one-shot sessionStorage flag, `opel-cascada-manual:restore-scroll`).
+  (a one-shot sessionStorage flag, `glovebox:restore-scroll`).
 
-## Migrations
+## Changing the schema
 
-- `1 → 2`: keeps data from the former single-car version associated with its original
-  `opel-cascada-2016` car id, rewrites the old `/instrukcja/…` and `/navi-950/…` links, rebuilds
-  bookmark ids as `${car}:${book}:${sectionId}` and sets `activeCar` when the user had data.
-
-- `2 → 3`: the old single-car `settings.vehicle` profile moves to
-  `settings.vehicles["opel-cascada-2016"]`, with renamed feature ids mapped; the old
-  feature defaults themselves are not copied. This only preserves data created by the retired
-  single-car version; current installations have no preset vehicle or equipment.
-- `3 → 4`: `settings.ownedCars` is initialized from cars already used in this profile (active car,
-  equipment, highlights, bookmarks or last-read location), rather than claiming every car in the
-  manuals library.
-- `4 → 5`: adds `history` (seeded with the `lastRead` section, without thumbnail), empty
-  `reminders`.
-- `5 → 6`: adds `eventDate` to reminders; existing due dates are preserved.
-- `6 → 7`: adds empty per-car engine choices, preserving equipment and all other data.
-  `EngineProfileInitializer` transfers legacy shared selections only for owned cars with
-  no local choice; an explicit unknown choice is never overwritten.
-  New library assignments set an explicit unknown choice, so another owner's legacy manual
-  metadata cannot become their engine selection.
-
-Migrations run in memory on load; the upgraded shape is written on the next change.
-
-## Adding a migration
-
-1. Bump `SCHEMA_VERSION` in `schema.ts` and update the types.
-2. Add `MIGRATIONS[previousVersion] = (data) => ({ ...data, /* changes */, version: next })`.
-3. Update `sanitize()` for new fields.
-4. Add a test in `src/lib/__tests__/storage.test.ts` with a stored object of the old version.
+Update `SCHEMA_VERSION`, the types and validation in `data.ts` together. Add tests of the
+supported format and rejection of incompatible versions. There is no migration chain.
 
 ## Errors
 
 - Write failures (e.g. quota exceeded) are kept in `store.lastError` and shown on `/ustawienia`.
-- Unparseable or invalid stored data is copied to `opel-cascada-manual:backup-<timestamp>`
+- Unparseable or invalid stored data is copied to `glovebox:backup-<timestamp>`
   and the app starts with empty data.
 
 ## Backup
 
-- Export: `{ app: "opel-cascada-manual", exportedAt, data }` (pretty-printed JSON download).
-- Import: export file or bare `AppData`; `merge` mode keeps current data and takes the newer
+- Export: `{ app: "glovebox", exportedAt, data }` (pretty-printed JSON download named
+  `glovebox-kopia-YYYY-MM-DD.json`).
+- Import requires a Glovebox export wrapper and schema version 1; bare objects, files from
+  other apps and incompatible versions are rejected before changing the current profile.
+  `merge` mode keeps current data and takes the newer
   entry per id (`updatedAt`/`createdAt`), notebook pages and bookmarks are merged by id,
   equipment profiles per car and feature (the current state wins), history per section
   (newest `at` wins), reminders by id (newest `updatedAt` wins);
@@ -113,22 +93,22 @@ Migrations run in memory on load; the upgraded shape is written on the next chan
 
 ## Other keys
 
-- `opel-cascada-manual:offline:v7` — status of offline car copies (`src/lib/offline.ts`). It is
+- `glovebox:offline:v1` — status of offline car copies (`src/lib/offline.ts`). It is
   derived state (rebuilt on the next car visit), deliberately not part of `AppData`, the
   export file or the schema version.
   Its namespace follows the schema version so older app bundles are not treated as current
-  offline copies. Obsolete unversioned statuses are ignored.
-- `opel-cascada-manual:notifications` — last due date notified per reminder. Native browser
+  offline copies.
+- `glovebox:notifications` — last due date notified per reminder. Native browser
   notifications are optional and checked while the app is open; they are not scheduled while
   the app is closed.
-- sessionStorage `opel-cascada-manual:reader-navigation` — per-tab trails of manual pages
+- sessionStorage `glovebox:reader-navigation` — per-tab trails of manual pages
   per car, pending back targets and native-history reading boundaries. Not user annotations,
   not part of the backup or schema. Storage failures are logged and the current tab retains
   an in-memory trail.
 
 ## Layout hint cookie
 
-- `ocm-layout` (`src/lib/storage/hint.ts`) is a small JSON summary of the browser data,
+- `glovebox-layout` (`src/lib/storage/hint.ts`) is a small JSON summary of the browser data,
   written by `ClientEffects` after hydration on every data or offline-state change
   (`Path=/; Max-Age=31536000; SameSite=Strict`, kept below ~3.6 kB). It holds only what the
   first paint needs: active and owned car ids, font size, profile name, the four profile

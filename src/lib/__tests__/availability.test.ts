@@ -17,7 +17,7 @@ import { excerpt, normalizeText } from "@/lib/search";
 const PROFILE: VehicleProfile = {
   "drive.cruiseControl": { status: "has", certainty: "confirmed" },
   "drive.adaptiveCruise": { status: "no", certainty: "confirmed" },
-  "lights.afl": { status: "has", certainty: "verify" },
+  "lights.afl": { status: "has", certainty: "probable" },
   "engine.diesel": { status: "no", certainty: "probable" },
 };
 
@@ -46,8 +46,8 @@ describe("getAvailability", () => {
     expect(a.missing).toEqual(["drive.adaptiveCruise"]);
   });
 
-  it("flags features to verify and probable ones", () => {
-    expect(getAvailability(["lights.afl"], PROFILE).kind).toBe("verify");
+  it("flags probable equipment suggestions", () => {
+    expect(getAvailability(["lights.afl"], PROFILE).kind).toBe("probable");
     expect(getAvailability(["engine.diesel"], PROFILE).kind).toBe("missing");
     expect(
       getAvailability(["engine.diesel"], {

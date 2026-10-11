@@ -38,7 +38,7 @@ const mainTable = "[CO2Emission].[latest].[co2cars]";
 const cacheFile = (name: string) =>
   path.join(memory.root, ".catalog", `${name}.json`);
 const snapshot = (value: unknown, savedAt = Date.now()) => ({
-  version: 3,
+  version: 1,
   savedAt,
   ttl: 7 * 24 * 60 * 60 * 1000,
   value,

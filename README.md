@@ -1,4 +1,4 @@
-# <img src="src/app/icon.svg" width="40" height="40" alt="" /> Glovebox
+# <img src="src/app/icon.svg" width="40" height="40" alt="" /> Glovebox 1.0
 
 Twój cyfrowy schowek na instrukcje samochodowe. Dodajesz własne pliki PDF,
 a Glovebox zamienia je w wygodny przewodnik po Twoim aucie — z wyszukiwaniem,
@@ -27,7 +27,7 @@ Potrzebujesz **Git oraz działającego Dockera z Compose**:
 W terminalu, jako zwykły użytkownik (bez `sudo`):
 
 ```bash
-git clone https://github.com/Quanosek/opel-cascada-manual.git glovebox
+git clone https://github.com/Quanosek/glovebox.git
 cd glovebox
 sh scripts/prepare-docker.sh
 docker compose up -d --build

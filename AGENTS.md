@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # AGENTS.md — Glovebox
 
-**Glovebox** (package `glovebox`; name in `src/lib/brand.ts`, use it everywhere the app names
+**Glovebox 1.0** (package `glovebox`; name and package version in `src/lib/brand.ts`, use it everywhere the app names
 itself) is a local Next.js app for reading vehicle manuals from any manufacturer, with
 highlighting, comments, bookmarks and a Markdown notebook. The visual hierarchy takes
 inspiration from Opel's Navi 950 interface; the vehicle database itself is generic and user
@@ -167,7 +167,7 @@ src/
   lib/brand.ts                  app name + description (metadata, header, manifest, User-Agent)
   lib/cars.ts, lib/slug.ts      client-safe car types/helpers and id rules
   lib/files.ts                  manual file title, file size and decimal-comma formatting
-  lib/storage/                  localStorage store, schema, migrations, React hooks,
+  lib/storage/                  localStorage store, schema, data validation, React hooks,
                                 layout hint cookie (hint.ts, hintContext.tsx)
   lib/reminders.ts              reminder dates, due/soon rules (pure, tested)
   lib/anchoring/                text-quote/position anchoring + DOM helpers
@@ -196,7 +196,7 @@ route)`, `getBook`, `getSection`, `sectionHref`, `getTocTree`, `getPrevNext`,
   depends on stored data must wait for `useHydrated()` to avoid hydration mismatches.
   `useActiveCar(cars)` resolves the current car (URL `/auto/<id>` first, then
   `settings.activeCar`).
-- First paint = final layout: the `ocm-layout` cookie (`src/lib/storage/hint.ts`) mirrors a
+- First paint = final layout: the `glovebox-layout` cookie (`src/lib/storage/hint.ts`) mirrors a
   small summary of the browser data; the root layout reads it and `useLayoutHint()` gives
   client components the car ids, counts and "Czytaj dalej" card before hydration. Placeholders
   must match the real element boxes exactly (`docs/ui.md`, `docs/storage.md`).
@@ -271,7 +271,7 @@ Details in `docs/vehicle-profile.md`. Every car is tagged; no car has preset equ
 - `getAvailability` (`src/lib/availability.ts`): any tagged feature with status `no` ->
   `missing` ("Brak w Twoim aucie": section or heading part collapsed by `SectionGate`,
   greyed in the TOC, lists and search, filtered from the warnings index unless "Pokaż
-  wszystko" is on); else `verify` / `probable` badges; else "Twoje auto". Collapsed
+  wszystko" is on); else `probable` badges; else "Twoje auto". Collapsed
   content stays in the DOM (`hidden`) so anchoring and in-page links keep working.
 - To add a feature: add it to `FEATURES`, add a rule in `FEATURE_RULES`, run `pnpm test`.
 
@@ -291,14 +291,12 @@ Details in `docs/vehicle-profile.md`. Every car is tagged; no car has preset equ
 
 ## Storage schema
 
-Single localStorage key `opel-cascada-manual` (a legacy internal id kept on purpose, like the
-export `app` id and cache name prefixes: renaming it would lose existing browser data; never
-show it in the UI), versioned (`SCHEMA_VERSION` in
+Single localStorage key `glovebox`, versioned (`SCHEMA_VERSION` in
 `src/lib/storage/schema.ts`):
 
 ```ts
 AppData {
-  version: 7;
+  version: 1;
   highlights: Record<id, { id, car, book, sectionId, sectionTitle, href,
     anchor: { exact, prefix, suffix, start, end }, color, comment, createdAt, updatedAt }>;
   notebook: { pages: { id, title, body /* Markdown */, createdAt, updatedAt }[] }; // user order
@@ -315,16 +313,16 @@ AppData {
 }
 ```
 
-- Historical v1 → v2 and v2 → v3 migrations preserve data from the retired single-car
-  application. The legacy vehicle id and routes only occur in migration code; they do not seed
-  a vehicle or affect new installs.
+- Glovebox 1.0 starts with schema 1 and fresh browser/cache namespaces. There is no
+  backward compatibility with builds preceding Glovebox. Disk manuals are independent of
+  browser profiles and remain readable.
 - `settings.ownedCars` holds ids assigned to the local profile; removing one does not delete its
   manuals from `database/`.
-- Changing the shape: bump `SCHEMA_VERSION`, add `MIGRATIONS[oldVersion]` in
-  `migrations.ts`, extend `sanitize`, add a test in `src/lib/__tests__/storage.test.ts`.
-- Export file: `{ app: "opel-cascada-manual", exportedAt, data }`. Import accepts it (or bare
-  data) in `merge` (newest `updatedAt` wins per id) or `replace` mode.
-- Unreadable stored data is copied to `opel-cascada-manual:backup-<timestamp>` before reset.
+- Changing the shape: update `SCHEMA_VERSION` and validation in `data.ts`, and test
+  accepted and rejected formats in `src/lib/__tests__/storage.test.ts`.
+- Export file: `{ app: "glovebox", exportedAt, data }`. Import requires that identity and
+  the current schema, in `merge` (newest `updatedAt` wins per id) or `replace` mode.
+- Unreadable stored data is copied to `glovebox:backup-<timestamp>` before reset.
 
 More detail: `docs/ui.md`, `docs/import.md`, `docs/offline.md`, `docs/storage.md`,
 `docs/highlighting.md`, `docs/comments.md`, `docs/notebook.md`, `docs/extraction.md`,
@@ -341,7 +339,7 @@ More detail: `docs/ui.md`, `docs/import.md`, `docs/offline.md`, `docs/storage.md
 - Tests cover the critical paths and must grow with them: the database reader
   (`content.test.ts`), import validation (`importer.test.ts`), path safety of `/media`
   (`media.test.ts`), cross-site rejection of every mutating API route (`guard.test.ts`),
-  storage migrations, anchoring, the service worker and the install manifest, plus the
+  storage validation, anchoring, the service worker and the install manifest, plus the
   extractor rules in `scripts/tests/`. Test databases are built in a temporary folder with
   `src/lib/__tests__/fixtures/database.ts`, never in `database/`.
 - Extractor refactors must not change the output: regenerate the local manuals and compare the

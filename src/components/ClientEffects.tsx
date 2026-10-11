@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useOfflineState } from "@/lib/offline";
 import { HINT_COOKIE, buildHint, serializeHint } from "@/lib/storage/hint";
 import { useAppData, useHydrated } from "@/lib/storage/hooks";
+import { STORAGE_KEY } from "@/lib/storage/schema";
 import { watchTypography } from "@/lib/typographyDom";
 import { dueSoon, formatDate, todayIso } from "@/lib/reminders";
 
@@ -46,7 +47,7 @@ export function ClientEffects() {
       let sent: Record<string, string> = {};
       try {
         sent = JSON.parse(
-          localStorage.getItem("opel-cascada-manual:notifications") ?? "{}",
+          localStorage.getItem(`${STORAGE_KEY}:notifications`) ?? "{}",
         ) as Record<string, string>;
       } catch {
         // A broken notification log must not prevent reminders from appearing.
@@ -84,7 +85,7 @@ export function ClientEffects() {
       }
       try {
         localStorage.setItem(
-          "opel-cascada-manual:notifications",
+          `${STORAGE_KEY}:notifications`,
           JSON.stringify(sent),
         );
       } catch {

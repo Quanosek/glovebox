@@ -49,7 +49,7 @@ three times before the brand counts as failed.
   logo list; TTL 30 days when found, 7 days when not found, 1 hour after an error; a stale
   copy is returned immediately while a background request refreshes it; a cached entry
   without any logo is never served stale — the request waits for the lookup instead; `CACHE_VERSION`,
-  older-version entries are refreshed at once but served meanwhile, also offline) and `<sha1(file)>.<ext>`
+  only format version 1 is accepted; mismatched formats are refreshed before use) and `<sha1(file)>.<ext>`
   images (kept forever). Failed downloads are retried after an hour (in memory). Only PNG,
   JPEG, GIF and WebP are stored and served, checked by magic bytes, max 2 MB — never SVG.
 - A failure recorded by another process (typically a rate-limited `pnpm initial`) does not

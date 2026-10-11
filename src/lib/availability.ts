@@ -9,15 +9,12 @@ import {
  * section's feature tags and the (possibly user-edited) vehicle profile.
  * Client-safe: no Node APIs.
  */
-export type AvailabilityKind =
-  "neutral" | "yours" | "verify" | "probable" | "missing";
+export type AvailabilityKind = "neutral" | "yours" | "probable" | "missing";
 
 export interface Availability {
   kind: AvailabilityKind;
   /** Features the car does not have (status "no"). */
   missing: string[];
-  /** Features marked "do weryfikacji". */
-  verify: string[];
   /** Features marked "prawdopodobnie". */
   probable: string[];
   /** Features the car has. */
@@ -29,7 +26,6 @@ export interface Availability {
 export const AVAILABILITY_LABEL: Record<AvailabilityKind, string> = {
   neutral: "",
   yours: "Twoje auto",
-  verify: "Do weryfikacji",
   probable: "Prawdopodobnie",
   missing: "Brak w Twoim aucie",
 };
@@ -42,7 +38,6 @@ export function getAvailability(
   const a: Availability = {
     kind: "neutral",
     missing: [],
-    verify: [],
     probable: [],
     present: [],
     notes: [],
@@ -53,12 +48,10 @@ export function getAvailability(
     if (!state || !def) continue;
     if (state.status === "no") a.missing.push(id);
     else a.present.push(id);
-    if (state.certainty === "verify") a.verify.push(id);
     if (state.certainty === "probable") a.probable.push(id);
     if (def.note && !a.notes.includes(def.note)) a.notes.push(def.note);
   }
   if (a.missing.length > 0) a.kind = "missing";
-  else if (a.verify.length > 0) a.kind = "verify";
   else if (a.probable.length > 0) a.kind = "probable";
   else if (a.present.length > 0) a.kind = "yours";
   return a;

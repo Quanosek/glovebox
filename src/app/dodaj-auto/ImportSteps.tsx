@@ -329,7 +329,7 @@ export function StepDone({
             brand={car.brand}
             model={car.model}
             year={car.year}
-            variant={car.spec ? undefined : car.variant}
+            variant={car.variant}
             badge="Dodano"
             heading="h2"
           />

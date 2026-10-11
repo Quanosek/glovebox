@@ -13,9 +13,9 @@
  */
 /* global self, caches, fetch, URL, Response */
 
-const PREFIX = "opel-cascada-manual-";
-const CACHE = `${PREFIX}runtime-v3`;
-const OFFLINE_CACHE = `${PREFIX}offline-v7`;
+const PREFIX = "glovebox-";
+const CACHE = `${PREFIX}runtime-v1`;
+const OFFLINE_CACHE = `${PREFIX}offline-v1`;
 const SHELL = [
   // Install metadata, so the installed app starts offline with its icons.
   "/manifest.webmanifest",

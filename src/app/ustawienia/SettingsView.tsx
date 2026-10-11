@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { FontSize } from "@/lib/storage/schema";
+import { CACHE_PREFIX, type FontSize } from "@/lib/storage/schema";
 import { updateData, useAppData, useHydrated } from "@/lib/storage/hooks";
 import { useLayoutHint } from "@/lib/storage/hintContext";
 import { getStore } from "@/lib/storage/store";
@@ -43,7 +43,7 @@ export function SettingsView() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `instrukcje-kopia-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `glovebox-kopia-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     setMessage({ kind: "ok", text: "Kopia zapasowa została pobrana." });
@@ -99,7 +99,7 @@ export function SettingsView() {
     const keys = await caches.keys();
     await Promise.all(
       keys
-        .filter((k) => k.startsWith("opel-cascada-manual"))
+        .filter((k) => k.startsWith(CACHE_PREFIX))
         .map((k) => caches.delete(k)),
     );
     resetOfflineStatus();

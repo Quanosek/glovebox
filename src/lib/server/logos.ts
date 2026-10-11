@@ -1,11 +1,15 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { APP_NAME } from "@/lib/brand";
+import { APP_NAME, APP_VERSION } from "@/lib/brand";
 import type { CarFile } from "@/lib/cars";
 import { catalogKey } from "@/lib/catalog";
 import { getDatabaseDir } from "@/lib/content";
 import { validTimestamp, writeCache } from "@/lib/server/catalogCache";
-import { brandMetadataFile, logoImageBase } from "@/lib/server/logoSize";
+import {
+  brandMetadataFile,
+  logoImageBase,
+  LOGO_CACHE_VERSION,
+} from "@/lib/server/logoSize";
 import {
   logoCandidates,
   parseLogoClaims,
@@ -25,7 +29,7 @@ import {
 
 const WIKIDATA = "https://www.wikidata.org/w/api.php";
 const COMMONS_FILE = "https://commons.wikimedia.org/wiki/Special:FilePath/";
-const USER_AGENT = `${APP_NAME}/1.0 (vehicle manual library)`;
+const USER_AGENT = `${APP_NAME}/${APP_VERSION} (vehicle manual library)`;
 const IMAGE_WIDTH = 400;
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 const MAX_CANDIDATES = 5;
@@ -71,10 +75,9 @@ const DAY = 24 * 60 * 60 * 1000;
 /** Found brands are refreshed monthly; misses and errors are retried sooner. */
 const TTL = { found: 30 * DAY, missing: 7 * DAY, failed: DAY / 24 };
 /**
- * Bump when the brand matching or claim parsing changes. Entries of an older
- * version are refreshed at once but still served (also offline) meanwhile.
+ * Bump when the brand matching or claim parsing changes.
  */
-const CACHE_VERSION = 2;
+const CACHE_VERSION = LOGO_CACHE_VERSION;
 
 interface BrandEntry {
   version: number;
@@ -230,12 +233,7 @@ async function brandLogos(
   // hourly back-off in `failedBrands`.
   const inheritedFailure =
     !waitForRefresh && !!valid?.failure && !failedBrands.has(file);
-  if (
-    valid &&
-    valid.version === CACHE_VERSION &&
-    !inheritedFailure &&
-    Date.now() - valid.fetchedAt < valid.ttl
-  )
+  if (valid && !inheritedFailure && Date.now() - valid.fetchedAt < valid.ttl)
     return valid.logos;
   if (Date.now() < (failedBrands.get(file) ?? 0)) return valid?.logos ?? [];
   const refresh = once(`brand:${file}`, async () => {
@@ -287,9 +285,7 @@ async function brandLogos(
 function validBrandEntry(value: BrandEntry | null): value is BrandEntry {
   return (
     !!value &&
-    Number.isInteger(value.version) &&
-    value.version >= 1 &&
-    value.version <= CACHE_VERSION &&
+    value.version === CACHE_VERSION &&
     validTimestamp(value.fetchedAt) &&
     typeof value.ttl === "number" &&
     value.ttl > 0 &&

@@ -53,7 +53,7 @@ export default async function CarPage({ params }: Props) {
           brand={car.brand}
           model={car.model}
           year={car.year}
-          variant={car.spec ? undefined : car.variant}
+          variant={car.variant}
         >
           <Link
             href={equipmentHref(car.id)}

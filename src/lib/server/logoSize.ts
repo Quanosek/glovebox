@@ -12,6 +12,7 @@ import { pickLogo, type BrandLogo } from "@/lib/logos";
  */
 
 export const LOGO_EXTENSIONS = ["png", "jpg", "gif", "webp"] as const;
+export const LOGO_CACHE_VERSION = 1;
 
 export const brandMetadataFile = (dir: string, brand: string) =>
   path.join(dir, `brand-${catalogKey(brand).toLowerCase()}.json`);
@@ -93,8 +94,9 @@ export function cachedLogoSize(
   try {
     const entry = JSON.parse(
       fs.readFileSync(brandMetadataFile(dir, car.brand), "utf8"),
-    ) as { logos?: BrandLogo[] };
-    if (!Array.isArray(entry.logos)) return null;
+    ) as { version?: number; logos?: BrandLogo[] };
+    if (entry.version !== LOGO_CACHE_VERSION || !Array.isArray(entry.logos))
+      return null;
     const logo = pickLogo(entry.logos, car.year);
     if (!logo) return null;
     const base = logoImageBase(dir, logo.file);

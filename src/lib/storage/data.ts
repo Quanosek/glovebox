@@ -17,166 +17,13 @@ import {
   type NotePage,
   type Settings,
 } from "./schema";
-import {
-  FEATURE_BY_ID,
-  RENAMED_FEATURES,
-  type FeatureState,
-} from "@/config/vehicle";
+import { FEATURE_BY_ID, type FeatureState } from "@/config/vehicle";
 import { isValidId } from "@/lib/slug";
 import { sanitizeEngine } from "@/lib/engines";
 
-const LEGACY_CAR_ID = "opel-cascada-2016";
-
-/**
- * Migrations upgrade stored data one version at a time:
- * `MIGRATIONS[n]` converts data of version `n` into version `n + 1`.
- * Add an entry whenever `SCHEMA_VERSION` is bumped.
- */
-export type Migration = (
-  data: Record<string, unknown>,
-) => Record<string, unknown>;
-
-export const MIGRATIONS: Record<number, Migration> = {
-  // Data written before versioning existed (no `version` field) is treated
-  // as version 0 and has the same shape as version 1.
-  0: (data) => ({ ...data, version: 1 }),
-  // v2: multiple cars. Older single-car data keeps its original car association.
-  1: migrateV1toV2,
-  // v3: equipment profiles are stored separately for each car.
-  2: migrateV2toV3,
-  // v4: cars are assigned to a local profile instead of all being shown by default.
-  3: migrateV3toV4,
-  // v5: reading history, service reminders and per-car favourites.
-  4: migrateV4toV5,
-  // v6: fixed reminders retain the event date used to calculate their deadline.
-  5: (data) => data,
-  // v7: engine choices live in the browser; shared manuals have no selected engine.
-  6: (data) => ({
-    ...data,
-    settings: {
-      ...(isObject(data.settings) ? data.settings : {}),
-      engines: {},
-    },
-  }),
-};
-
-const V1_ROUTES = ["/instrukcja", "/navi-950"];
-
-/** Rewrites historic single-car URLs to their original car URL. */
-export function upgradeV1Href(href: string): string {
-  for (const route of V1_ROUTES) {
-    if (
-      href === route ||
-      href.startsWith(`${route}/`) ||
-      href.startsWith(`${route}#`)
-    )
-      return `/auto/${LEGACY_CAR_ID}${href}`;
-  }
-  return href;
-}
-
-function migrateV1toV2(data: Record<string, unknown>) {
-  const withCar = (item: unknown) =>
-    isObject(item)
-      ? {
-          ...item,
-          car: LEGACY_CAR_ID,
-          href: typeof item.href === "string" ? upgradeV1Href(item.href) : "",
-        }
-      : item;
-  const highlights: Record<string, unknown> = {};
-  if (isObject(data.highlights)) {
-    for (const [id, h] of Object.entries(data.highlights))
-      highlights[id] = withCar(h);
-  }
-  const bookmarks = Array.isArray(data.bookmarks)
-    ? data.bookmarks.map((b) =>
-        isObject(b)
-          ? {
-              ...(withCar(b) as Record<string, unknown>),
-              id: `${LEGACY_CAR_ID}:${str(b.book)}:${str(b.sectionId)}`,
-            }
-          : b,
-      )
-    : [];
-  const hasData =
-    Object.keys(highlights).length > 0 ||
-    bookmarks.length > 0 ||
-    isObject(data.lastRead);
-  const settings = isObject(data.settings) ? data.settings : {};
-  return {
-    ...data,
-    highlights,
-    bookmarks,
-    lastRead: isObject(data.lastRead) ? withCar(data.lastRead) : null,
-    settings: {
-      ...settings,
-      activeCar: hasData ? LEGACY_CAR_ID : null,
-    },
-  };
-}
-
-function migrateV2toV3(data: Record<string, unknown>) {
-  const settings = isObject(data.settings) ? { ...data.settings } : {};
-  const vehicles: Record<string, unknown> = {};
-  if (isObject(settings.vehicle)) {
-    const legacyProfile: Record<string, unknown> = {};
-    for (const [id, state] of Object.entries(settings.vehicle))
-      legacyProfile[RENAMED_FEATURES[id] ?? id] ??= state;
-    if (Object.keys(legacyProfile).length > 0)
-      vehicles[LEGACY_CAR_ID] = legacyProfile;
-  }
-  delete settings.vehicle;
-  return { ...data, settings: { ...settings, vehicles } };
-}
-
-function migrateV3toV4(data: Record<string, unknown>) {
-  const settings = isObject(data.settings) ? { ...data.settings } : {};
-  const ownedCars = new Set<string>();
-  const addCar = (value: unknown) => {
-    if (isValidId(value)) ownedCars.add(value);
-  };
-  addCar(settings.activeCar);
-  if (isObject(settings.vehicles))
-    for (const car of Object.keys(settings.vehicles)) addCar(car);
-  if (isObject(data.highlights))
-    for (const highlight of Object.values(data.highlights))
-      if (isObject(highlight)) addCar(highlight.car);
-  if (Array.isArray(data.bookmarks))
-    for (const bookmark of data.bookmarks)
-      if (isObject(bookmark)) addCar(bookmark.car);
-  if (isObject(data.lastRead)) addCar(data.lastRead.car);
-  return {
-    ...data,
-    settings: { ...settings, ownedCars: [...ownedCars] },
-  };
-}
-
-function migrateV4toV5(data: Record<string, unknown>) {
-  const lr = data.lastRead;
-  const history = isObject(lr)
-    ? [
-        {
-          car: lr.car,
-          book: lr.book,
-          sectionId: lr.sectionId,
-          title: lr.title,
-          href: lr.href,
-          thumb: null,
-          at: lr.at,
-        },
-      ]
-    : [];
-  return {
-    ...data,
-    history,
-    reminders: [],
-  };
-}
-
 export class UnsupportedVersionError extends Error {
   constructor(public readonly found: number) {
-    super(`Kopia pochodzi z nowszej wersji aplikacji (wersja ${found}).`);
+    super("Kopia pochodzi z nieobsługiwanej wersji Glovebox.");
     this.name = "UnsupportedVersionError";
   }
 }
@@ -198,28 +45,14 @@ const num = (v: unknown, fallback = 0): number =>
 const COLORS: HighlightColor[] = ["light", "silver", "graphite", "red"];
 const FONT_SIZES: FontSize[] = ["small", "normal", "large", "xlarge"];
 
-/** Upgrades raw stored data to the current schema and validates it. */
-export function migrate(
-  raw: unknown,
-  migrations: Record<number, Migration> = MIGRATIONS,
-  target: number = SCHEMA_VERSION,
-): AppData {
-  if (raw == null) return createEmptyData();
+/** Validates the current Glovebox schema; no historical data is upgraded. */
+export function parseData(raw: unknown): AppData {
   if (!isObject(raw)) throw new InvalidDataError();
-  let data: Record<string, unknown> = raw;
-  let version = typeof data.version === "number" ? data.version : 0;
-  if (version > target) throw new UnsupportedVersionError(version);
-  while (version < target) {
-    const step = migrations[version];
-    if (!step)
-      throw new InvalidDataError(
-        `Kopia pochodzi ze zbyt starej wersji aplikacji (wersja ${version}).`,
-      );
-    data = step(data);
-    version += 1;
-    data.version = version;
-  }
-  return sanitize(data);
+  if (typeof raw.version !== "number" || !Number.isInteger(raw.version))
+    throw new InvalidDataError("Kopia nie zawiera prawidłowej wersji danych.");
+  if (raw.version !== SCHEMA_VERSION)
+    throw new UnsupportedVersionError(raw.version);
+  return sanitize(raw);
 }
 
 /** Drops malformed entries instead of failing the whole document. */
@@ -423,9 +256,7 @@ function sanitizeProfile(
       FEATURE_BY_ID[id] &&
       isObject(state) &&
       (state.status === "has" || state.status === "no") &&
-      (state.certainty === "confirmed" ||
-        state.certainty === "verify" ||
-        state.certainty === "probable")
+      (state.certainty === "confirmed" || state.certainty === "probable")
     )
       out[id] = { status: state.status, certainty: state.certainty };
   }
@@ -465,7 +296,7 @@ function sanitizeHighlight(id: string, h: unknown): Highlight | null {
   };
 }
 
-/** Accepts an export file (`{ app, data }`) or a bare data object. */
+/** Accepts only a versioned Glovebox export file. */
 export function parseImport(json: string): AppData {
   let parsed: unknown;
   try {
@@ -473,13 +304,9 @@ export function parseImport(json: string): AppData {
   } catch {
     throw new InvalidDataError("Nie udało się odczytać pliku kopii.");
   }
-  if (isObject(parsed) && "data" in parsed) {
-    if (parsed.app !== EXPORT_APP_ID) {
-      throw new InvalidDataError("Plik nie pochodzi z tej aplikacji.");
-    }
-    return migrate(parsed.data);
-  }
-  return migrate(parsed);
+  if (!isObject(parsed) || parsed.app !== EXPORT_APP_ID)
+    throw new InvalidDataError("Plik nie jest kopią danych Glovebox.");
+  return parseData(parsed.data);
 }
 
 /**

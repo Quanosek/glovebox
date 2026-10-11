@@ -3,13 +3,14 @@ import type { CarSpec } from "@/lib/catalog";
 
 /**
  * Persisted application data (localStorage, single key).
- * Bump `SCHEMA_VERSION` and add a migration in `migrations.ts` whenever the
+ * Bump `SCHEMA_VERSION` and update validation in `data.ts` whenever the
  * shape changes. See docs/storage.md.
  */
 
-export const STORAGE_KEY = "opel-cascada-manual";
-export const SCHEMA_VERSION = 7;
-export const EXPORT_APP_ID = "opel-cascada-manual";
+export const STORAGE_KEY = "glovebox";
+export const SCHEMA_VERSION = 1;
+export const EXPORT_APP_ID = "glovebox";
+export const CACHE_PREFIX = "glovebox-";
 
 export type HighlightColor = "light" | "silver" | "graphite" | "red";
 

@@ -36,9 +36,6 @@ export function SectionList({ items }: { items: SectionListItem[] }) {
                 {kind === "yours" && (
                   <span className="badge badge-dark">Twoje auto</span>
                 )}
-                {kind === "verify" && (
-                  <span className="badge">Do weryfikacji</span>
-                )}
                 {kind === "probable" && (
                   <span className="badge">Prawdopodobnie</span>
                 )}

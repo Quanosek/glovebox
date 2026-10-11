@@ -1,5 +1,6 @@
 import { RESERVED_BOOK_ROUTES } from "@/lib/cars";
 import { isValidId } from "@/lib/slug";
+import { STORAGE_KEY } from "@/lib/storage/schema";
 
 export interface ReaderTrail {
   pages: string[];
@@ -10,7 +11,7 @@ export interface ReaderEntry {
   path: string;
   index: number;
 }
-const KEY = "opel-cascada-manual:reader-navigation";
+const KEY = `${STORAGE_KEY}:reader-navigation`;
 const EMPTY: ReaderTrail = { pages: [], pending: null, floor: -1 };
 const memory: Record<string, ReaderTrail> = {};
 const isObject = (value: unknown): value is Record<string, unknown> =>

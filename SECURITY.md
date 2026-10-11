@@ -1,21 +1,16 @@
-# Security Policy
+# Security policy
 
-## Supported Versions
+## Supported versions
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+Glovebox 1.0.x is the supported release line. Fixes are developed on `master`.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+## Reporting a vulnerability
 
-## Reporting a Vulnerability
+Please report security issues privately through
+[GitHub vulnerability reporting](https://github.com/Quanosek/glovebox/security/advisories/new).
+If private reporting is unavailable, open an issue requesting a private contact without
+including exploit details, credentials or personal data.
 
-Use this section to tell people how to report a vulnerability.
-
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+Include the affected version, reproduction steps and expected impact. Do not attach
+personal manuals or browser backups. Confirmed issues are addressed on the supported
+release line; no fixed response time is promised.

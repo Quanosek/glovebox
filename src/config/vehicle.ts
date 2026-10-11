@@ -16,9 +16,9 @@ import type { CarSpec } from "@/lib/catalog";
 export type FeatureStatus = "has" | "no";
 /**
  * confirmed = set by the owner, probable = suggested from the engine data
- * ("prawdopodobnie"), verify = "do weryfikacji" (kept for older data).
+ * ("prawdopodobnie").
  */
-export type FeatureCertainty = "confirmed" | "verify" | "probable";
+export type FeatureCertainty = "confirmed" | "probable";
 
 export interface FeatureState {
   status: FeatureStatus;
@@ -352,14 +352,6 @@ export function chooseFeature(
   }
   return result;
 }
-
-/** Ids renamed since earlier versions (stored data is migrated). */
-export const RENAMED_FEATURES: Record<string, FeatureId> = {
-  "assist.parkSensorsRear": "assist.parkSensors",
-  "assist.parkSensorsFront": "assist.parkSensors",
-  "infotainment.infinity": "infotainment.premiumAudio",
-  "infotainment.navi950": "infotainment.navigation",
-};
 
 const probable = (status: FeatureStatus): FeatureState => ({
   status,

@@ -11,7 +11,7 @@ import { FAVORITES_LIMIT, type AppData, type FontSize } from "./schema";
  * highlights text and is never trusted for anything but layout; the real data
  * in localStorage replaces it right after hydration (docs/storage.md).
  */
-export const HINT_COOKIE = "ocm-layout";
+export const HINT_COOKIE = "glovebox-layout";
 
 /** Recent list rows shown on the profile (history / highlights). */
 export const PROFILE_LIST_LIMIT = 5;

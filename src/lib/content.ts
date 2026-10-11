@@ -122,10 +122,9 @@ export function getCarSummary(car: CarFile): CarSummary {
     brand: car.brand,
     model: car.model,
     year: car.year,
-    variant: car.spec ? undefined : car.variant,
+    variant: car.variant,
     label: carLabel(car),
     href: carHref(car.id),
-    ...(car.spec ? { spec: car.spec } : {}),
     ...(car.catalog ? { catalog: car.catalog } : {}),
     ...withLogo(cachedLogoSize(car, getDatabaseDir())),
     books: bookCtxs(car).map((ctx) => {
