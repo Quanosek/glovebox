@@ -221,7 +221,7 @@ export function Header({ cars }: { cars: CarSummary[] }) {
       <nav
         id="main-nav"
         aria-label="Główna nawigacja"
-        className={`${open ? "block" : "hidden"} absolute top-full right-0 left-0 z-50 max-h-[calc(100dvh-var(--header-h))] overflow-y-auto border-t border-line bg-white lg:static lg:max-h-none lg:overflow-visible lg:bg-transparent`}
+        className={`${open ? "block" : "hidden"} absolute top-full right-0 left-0 z-50 max-h-[calc(100dvh-var(--header-h))] overflow-y-auto border-t border-line bg-white lg:static lg:block lg:max-h-none lg:overflow-visible lg:bg-transparent`}
       >
         <div className="app-frame flex items-center">
           <ul className="flex min-w-0 flex-1 flex-col lg:flex-row lg:flex-wrap">
