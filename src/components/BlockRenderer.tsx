@@ -336,7 +336,13 @@ function Runs({
 function WarningIcon({ kind }: { kind: WarningKind }) {
   if (kind === "note") {
     return (
-      <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
+      <svg
+        viewBox="0 0 20 20"
+        width="16"
+        height="16"
+        className="shrink-0"
+        aria-hidden="true"
+      >
         <rect
           x="2"
           y="2"
@@ -355,17 +361,25 @@ function WarningIcon({ kind }: { kind: WarningKind }) {
     );
   }
   return (
-    <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      className="shrink-0"
+      aria-hidden="true"
+    >
       <path
-        d="M10 2 19 18H1Z"
+        d="M12 3 22 21H2Z"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.6"
+        strokeLinejoin="round"
       />
       <path
-        d="M10 7.5V12.5M10 14.3v1.4"
+        d="M12 8V14M12 17v1"
         stroke="currentColor"
         strokeWidth="1.8"
+        strokeLinecap="round"
       />
     </svg>
   );

@@ -32,7 +32,7 @@ export function ContinueReading({
   return (
     <div className="panel">
       <div className="panel-title">Czytaj dalej</div>
-      <div className="flex flex-wrap items-center gap-4 p-4">
+      <div className="flex flex-col items-stretch gap-4 p-4">
         {view.thumb && (
           <span className="thumb h-20 w-28 shrink-0 p-1">
             {/* eslint-disable-next-line @next/next/no-img-element -- local manual illustration */}
@@ -48,7 +48,7 @@ export function ContinueReading({
         </div>
         <Link
           href={view.href}
-          className="btn btn-primary"
+          className="btn btn-primary w-full justify-center"
           onClick={() => {
             if (!lastRead) return;
             try {

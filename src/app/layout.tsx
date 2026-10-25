@@ -50,7 +50,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         {/* eslint-disable-next-line @next/next/no-css-tags -- see public/highlights.css */}
         <link rel="stylesheet" href="/highlights.css" />
       </head>
-      <body className="flex min-h-full flex-col">
+      <body className="app-body flex min-h-full flex-col">
         <LayoutHintProvider hint={hint}>
           <a
             href="#main"
@@ -63,7 +63,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <ClientEffects />
           {children}
           <DialogHost />
-          <footer className="mt-auto border-t border-line bg-paper py-3 text-xs text-steel print:hidden">
+          <footer className="app-footer mt-auto border-t border-line bg-paper text-xs text-steel print:hidden">
             <p className="app-frame">
               Notatki i ustawienia zapisują się w tej przeglądarce.
             </p>

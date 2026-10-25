@@ -178,14 +178,10 @@ export default async function SectionPage({ params }: Props) {
         {(prev || next) && (
           <nav
             aria-label="Nawigacja między rozdziałami"
-            className="mt-10 grid gap-3 sm:grid-cols-2 print:hidden"
+            className="mt-10 flex flex-col gap-3 print:hidden"
           >
-            {prev ? (
-              <NeighbourLink ctx={ctx} section={prev} dir="prev" />
-            ) : (
-              <span className="hidden sm:block" />
-            )}
             {next && <NeighbourLink ctx={ctx} section={next} dir="next" />}
+            {prev && <NeighbourLink ctx={ctx} section={prev} dir="prev" />}
           </nav>
         )}
       </article>
