@@ -130,6 +130,11 @@ placeholder?, defaultValue?, maxLength?, ... })` asks for one line of text (e.g.
   `min-w-[11.75rem]` box that fits the longest Polish date, the time in a `5ch` box)
   and a red "Bez internetu" badge when offline. "Przypomnienia" carries a `.nav-count` badge
   with reminders that passed or are due within 30 days. There is no separate status bar.
+  On phones, the main navigation overlays the page below the sticky header instead of
+  changing the page position; the reader's "Spis treści" overlay behaves the same way.
+  The search field and its button share one red hover/focus border.
+- The footer uses the dynamic viewport height and safe-area insets so it remains readable
+  above mobile browser controls and device home indicators.
 - No layout jumps on load: client parts that depend on browser data render their final
   layout before hydration from the layout hint (`useLayoutHint()`, `docs/storage.md`). A
   placeholder must have the exact box of what replaces it: same element structure, fixed

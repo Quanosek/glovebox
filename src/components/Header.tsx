@@ -170,11 +170,11 @@ export function Header({ cars }: { cars: CarSummary[] }) {
         <form
           onSubmit={onSearch}
           role="search"
-          className="ml-auto flex max-w-sm min-w-0 flex-1"
+          className="header-search ml-auto flex h-9 max-w-sm min-w-0 flex-1"
         >
           <input
             type="search"
-            className="field h-9 min-w-0 border-r-0"
+            className="field header-search-field h-full min-w-0 flex-1"
             placeholder={
               car
                 ? `Szukaj: ${car.brand} ${car.model}…`
@@ -184,7 +184,11 @@ export function Header({ cars }: { cars: CarSummary[] }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          <button type="submit" className="btn h-9" aria-label="Szukaj">
+          <button
+            type="submit"
+            className="btn header-search-button h-full"
+            aria-label="Szukaj"
+          >
             <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
               <circle
                 cx="8.5"
@@ -217,7 +221,7 @@ export function Header({ cars }: { cars: CarSummary[] }) {
       <nav
         id="main-nav"
         aria-label="Główna nawigacja"
-        className={`${open ? "block" : "hidden"} border-t border-line bg-white lg:block lg:bg-transparent`}
+        className={`${open ? "block" : "hidden"} absolute top-full right-0 left-0 z-50 max-h-[calc(100dvh-var(--header-h))] overflow-y-auto border-t border-line bg-white lg:static lg:max-h-none lg:overflow-visible lg:bg-transparent`}
       >
         <div className="app-frame flex items-center">
           <ul className="flex min-w-0 flex-1 flex-col lg:flex-row lg:flex-wrap">

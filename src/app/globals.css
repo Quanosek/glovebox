@@ -136,6 +136,18 @@ body {
   overflow-wrap: anywhere;
 }
 
+.app-body {
+  min-height: 100dvh;
+}
+
+.app-footer {
+  padding-block: 0.75rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+.app-footer > .app-frame {
+  padding-inline: max(var(--gutter), env(safe-area-inset-left, 0px))
+    max(var(--gutter), env(safe-area-inset-right, 0px));
+}
+
 ::selection {
   background: rgba(200, 16, 46, 0.18);
 }
@@ -326,6 +338,24 @@ body {
     font-size: 0.9375rem;
     color: var(--color-ink);
     transition: border-color 160ms var(--ease-ui);
+  }
+  .header-search {
+    border: 1px solid var(--color-silver);
+    transition: border-color 160ms var(--ease-ui);
+  }
+  .header-search:hover,
+  .header-search:focus-within {
+    border-color: var(--color-red);
+  }
+  .header-search .header-search-field {
+    width: auto;
+    border: 0;
+  }
+  .header-search .header-search-button {
+    border: 0;
+  }
+  .header-search .header-search-button:focus-visible {
+    outline: none;
   }
   select.field {
     appearance: none;

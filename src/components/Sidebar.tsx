@@ -51,7 +51,7 @@ export function Sidebar({
   }, [pathname]);
 
   return (
-    <aside className="border-b border-line bg-paper lg:sticky lg:top-(--header-h) lg:flex lg:h-[calc(100vh-var(--header-h))] lg:w-80 lg:shrink-0 lg:flex-col lg:border-x lg:border-b-0 print:hidden">
+    <aside className="relative z-20 border-b border-line bg-paper lg:sticky lg:top-(--header-h) lg:z-auto lg:flex lg:h-[calc(100vh-var(--header-h))] lg:w-80 lg:shrink-0 lg:flex-col lg:border-x lg:border-b-0 print:hidden">
       <BackButton variant="sidebar" bookIndexHref={current} />
       <button
         type="button"
@@ -66,7 +66,7 @@ export function Sidebar({
         id="toc"
         ref={navRef}
         aria-label="Spis treści"
-        className={`${open ? "block" : "hidden"} max-h-[70vh] overflow-y-auto py-2 lg:block lg:max-h-none lg:min-h-0 lg:flex-1`}
+        className={`${open ? "block" : "hidden"} absolute top-full right-0 left-0 z-30 max-h-[calc(100dvh-10rem)] overflow-y-auto border-y border-line bg-paper py-2 shadow-md lg:static lg:block lg:max-h-none lg:min-h-0 lg:flex-1 lg:border-0 lg:bg-transparent lg:shadow-none`}
       >
         {books.map((book) => {
           const isOpen = openBooks[book.href] ?? book.href === current;
