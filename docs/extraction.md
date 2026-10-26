@@ -75,7 +75,9 @@ implementation is the `scripts/manual_extract/` package, one module per topic:
    to different tables. Then `page.find_tables(strategy="lines_strict")` for gridded tables (one
    replaces a rule-only reading of the same area that found fewer filled cells)
    (≥ 2 columns; coloured word highlights are not grids); table text is not repeated in
-   paragraphs. `--no-tables` disables. Each table keeps its cell rectangles; when a cell holds a
+   paragraphs. On PyMuPDF 2+, `use_layout=False` preserves line-only detection instead of
+   inferring unruled grids that can absorb outline captions or duplicate header rows.
+   `--no-tables` disables. Each table keeps its cell rectangles; when a cell holds a
    pictogram (font glyph, vector drawing or small raster, e.g. the "Symbol" column of warning
    lamps), a page reference or a link, the block also gets `cells` (runs per cell, aligned with
    the plain-text `rows` that search and data cards use). Cell pictograms are rendered from the

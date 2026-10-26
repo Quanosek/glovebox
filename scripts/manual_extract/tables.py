@@ -11,6 +11,7 @@ from .document import Document
 from .frames import page_frames
 from .geometry import center
 from .model import Box, Item, Span
+from .pdf import pymupdf
 from .text import REF_MARK, clean_text, join_line_texts, normalize_title
 
 
@@ -322,7 +323,9 @@ def grid_tables(doc: Document, page: Any) -> list[Item]:
     out: list[Item] = []
     try:
         # Strict lines: backgrounds (highlighted words) are not table grids.
-        found = page.find_tables(strategy="lines_strict")
+        # PyMuPDF 2 defaults to layout inference, which also invents unruled grids.
+        options = {"use_layout": False} if int(pymupdf.VersionBind.split(".")[0]) >= 2 else {}
+        found = page.find_tables(strategy="lines_strict", **options)
     except Exception as exc:  # pragma: no cover - depends on PDF
         print(f"  ! table detection failed on page {page.number + 1}: {exc}", file=sys.stderr)
         return out
