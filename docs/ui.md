@@ -33,7 +33,15 @@ Europe screens. Every screen should be self-explanatory, calm and consistent. Vi
      left edge (direct children other than `.reader-grid` stay 48rem).
 - Header: the brand / car logo starts exactly where the first navigation key starts
   (`.nav-link` has no left padding on the first item), and the clock ends exactly where the
-  search button ends.
+  top row's last action ends.
+- Project links: `ProjectLinks` shares the BuyCoffee and project repository destinations
+  from `src/lib/brand.ts` between compact icon buttons beside the header search and labelled
+  footer buttons. Support uses the red button; source code uses silver. Both open a new
+  tab with accessible labels announcing it, without remote widgets, images or background
+  requests. The footer (`Footer`) keeps the app name and package version, profile/notebook/
+  settings navigation, the browser-local storage reminder and an AGPL license link.
+  Its rows wrap on narrow screens. Below 40rem the header links move into the expandable
+  menu with visible labels, leaving room for search; wider screens use compact icons.
 - `body` sets `overflow-wrap: anywhere`, so strings without spaces (file names, codes, long
   links) break inside boxes instead of overflowing them, and flex/grid items may shrink below
   their longest word. Tables use `break-word` and scroll sideways in their wrapper. `.btn` and

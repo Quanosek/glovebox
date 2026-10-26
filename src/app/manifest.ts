@@ -99,7 +99,7 @@ export default function manifest(): MetadataRoute.Manifest {
       },
       {
         src: "/screenshots/profile-narrow.webp",
-        sizes: "824x1830",
+        sizes: "412x915",
         type: "image/webp",
         form_factor: "narrow",
         label: "Profil na telefonie",

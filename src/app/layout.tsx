@@ -4,6 +4,7 @@ import { BackButton } from "@/components/BackButton";
 import { ClientEffects } from "@/components/ClientEffects";
 import { DialogHost } from "@/components/Dialog";
 import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { LayoutHintProvider } from "@/lib/storage/hintContext";
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/brand";
 import { listCarSummaries } from "@/lib/content";
@@ -63,11 +64,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <ClientEffects />
           {children}
           <DialogHost />
-          <footer className="app-footer mt-auto border-t border-line bg-paper text-xs text-steel print:hidden">
-            <p className="app-frame">
-              Notatki i ustawienia zapisują się w tej przeglądarce.
-            </p>
-          </footer>
+          <Footer />
         </LayoutHintProvider>
       </body>
     </html>

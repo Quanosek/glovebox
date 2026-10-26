@@ -11,6 +11,7 @@ import { useLayoutHint } from "@/lib/storage/hintContext";
 import { useActiveCar, useAppData, useHydrated } from "@/lib/storage/hooks";
 import { CarLogo } from "./CarLogo";
 import { Logo } from "./Logo";
+import { ProjectLinks } from "./ProjectLinks";
 import { Skeleton } from "./Skeleton";
 
 /** Current time, refreshed every 15 s; null until hydrated. */
@@ -133,7 +134,7 @@ export function Header({ cars }: { cars: CarSummary[] }) {
       ref={ref}
       className="silver-bar sticky top-0 z-40 border-t-4 border-t-red print:hidden"
     >
-      <div className="app-frame flex h-14 items-center gap-3">
+      <div className="app-frame flex h-14 items-center gap-2 sm:gap-3">
         <Link
           href="/"
           className="flex shrink-0 items-center gap-2.5 text-black"
@@ -207,6 +208,10 @@ export function Header({ cars }: { cars: CarSummary[] }) {
           </button>
         </form>
 
+        <div className="hidden sm:block">
+          <ProjectLinks compact />
+        </div>
+
         <button
           type="button"
           className="btn btn-ghost h-9 lg:hidden"
@@ -252,6 +257,9 @@ export function Header({ cars }: { cars: CarSummary[] }) {
             })}
           </ul>
           <Clock />
+        </div>
+        <div className="app-frame border-t border-line py-3 sm:hidden">
+          <ProjectLinks />
         </div>
       </nav>
     </header>
