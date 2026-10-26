@@ -42,6 +42,8 @@ Europe screens. Every screen should be self-explanatory, calm and consistent. Vi
   list items; `hyphens: auto` (with `lang="pl"`) in manual text and notebook previews.
 - Fact grids do not leave permanent empty grey cells: three car metadata or technical-preview
   facts share one row, and longer technical fact lists stretch the final row.
+- "Czytaj dalej" stacks its thumbnail, text and full-width action on phones; from 40rem they
+  share a horizontally aligned row and the action uses its natural width.
 
 ## Type scale (`src/app/globals.css`)
 

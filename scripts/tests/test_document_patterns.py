@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -418,6 +419,16 @@ class DocumentPatternTests(unittest.TestCase):
 
 
 class TableAndFigureTests(unittest.TestCase):
+    def test_grid_detection_uses_only_rules_on_supported_pymupdf_versions(self) -> None:
+        for version in ("1.26.0", "2.0.0"):
+            with self.subTest(version=version):
+                page = Mock()
+                page.find_tables.return_value.tables = []
+                with patch.object(pymupdf, "VersionBind", version):
+                    self.assertEqual(tables.grid_tables(Mock(), page), [])
+                options = {"use_layout": False} if version == "2.0.0" else {}
+                page.find_tables.assert_called_once_with(strategy="lines_strict", **options)
+
     def test_merged_cells_get_spans(self) -> None:
         boxes = [
             [(0, 0, 50, 30), (50, 0, 150, 15), None],
