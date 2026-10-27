@@ -5,12 +5,12 @@ import { ProjectLinks } from "./ProjectLinks";
 export function Footer() {
   return (
     <footer className="app-footer mt-auto border-t border-line bg-paper print:hidden">
-      <div className="app-frame space-y-4">
+      <div className="app-frame space-y-3">
         <div className="flex justify-end">
           <ProjectLinks />
         </div>
         <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3 border-t border-line pt-3 text-xs leading-relaxed text-graphite">
-          <p className="min-w-0 flex-[1_1_32rem]">
+          <p className="min-w-0 flex-[1_1_32rem] text-[0.6875rem]">
             Możesz używać, modyfikować i rozpowszechniać projekt zgodnie z
             warunkami licencji{" "}
             <a
@@ -46,7 +46,7 @@ export function Footer() {
               height={15}
               alt=""
               unoptimized
-              className="shrink-0 opacity-60 grayscale"
+              className="shrink-0 opacity-60 brightness-0"
             />
           </p>
         </div>
