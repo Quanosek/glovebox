@@ -2,7 +2,7 @@
   "name": "glovebox",
   "version": "1.1.0",
   "private": true,
-  "packageManager": "pnpm@11.28.5",
+  "packageManager": "pnpm@12.15.0",
   "scripts": {
     "initial": "node scripts/initial.mjs",
     "dev": "next dev",
@@ -33,14 +33,14 @@
     "@types/react-dom": "^19.3.0",
     "eslint": "^9.39.5",
     "eslint-config-next": "16.4.0",
-    "jsdom": "^30.1.2",
-    "knip": "^6.41.0",
+    "jsdom": "^30.1.3",
+    "knip": "^6.43.0",
     "prettier": "^3.9.10",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "sharp": "^0.35.5",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.3",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.5"
   },
   "engines": {
     "node": ">=22.22.2",
