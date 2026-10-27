@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Glovebox 1.0.x is the supported release line. Fixes are developed on `master`.
+Glovebox is the supported release line. Fixes are developed on `master`.
 
 ## Reporting a vulnerability
 

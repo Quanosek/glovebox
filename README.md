@@ -1,4 +1,4 @@
-# <img src="src/app/icon.svg" width="40" height="40" alt="" /> Glovebox 1.0
+# <img src="src/app/icon.svg" width="40" height="40" alt="" /> Glovebox
 
 Twój cyfrowy schowek na instrukcje samochodowe. Dodajesz własne pliki PDF,
 a Glovebox zamienia je w wygodny przewodnik po Twoim aucie — z wyszukiwaniem,

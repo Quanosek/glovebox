@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
+import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 import manifest from "@/app/manifest";
 import { APP_NAME, APP_VERSION } from "@/lib/brand";
@@ -29,11 +30,11 @@ function dimensions(name: string): string {
 }
 
 describe("web app manifest", () => {
-  it("identifies the production baseline as Glovebox 1.0.0", async () => {
+  it("identifies the app and reports its package version", async () => {
     expect(APP_NAME).toBe("Glovebox");
-    expect(APP_VERSION).toBe("1.0.0");
+    expect(APP_VERSION).toBe("1.1.0");
     expect(app.name).toBe(APP_NAME);
-    expect(await health().json()).toEqual({ status: "ok", version: "1.0.0" });
+    expect(await health().json()).toEqual({ status: "ok", version: "1.1.0" });
   });
   it("describes an installable standalone app", () => {
     expect(app).toMatchObject({
@@ -59,6 +60,43 @@ describe("web app manifest", () => {
     expect(sized("any", "192x192") && sized("any", "512x512")).toBe(true);
     expect(sized("maskable", "512x512")).toBe(true);
     expect(sized("monochrome", "512x512")).toBe(true);
+  });
+
+  it("provides light and dark icons selected by the system theme", async () => {
+    const { metadata } = await import("@/app/layout");
+    const icons =
+      metadata.icons &&
+      typeof metadata.icons === "object" &&
+      "icon" in metadata.icons
+        ? metadata.icons.icon
+        : [];
+    expect(icons).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          url: "/icon-light.svg",
+          media: "(prefers-color-scheme: light)",
+        }),
+        expect.objectContaining({
+          url: "/icon-dark.svg",
+          media: "(prefers-color-scheme: dark)",
+        }),
+      ]),
+    );
+    for (const name of ["icon-dark.svg", "icon-light.svg"]) {
+      expect(existsSync(path.join("public", name))).toBe(true);
+      expect(
+        existsSync(path.join("public", name.replace(".svg", "-512.png"))),
+      ).toBe(true);
+    }
+    expect(dimensions("public/icon-dark-512.png")).toBe("512x512");
+    expect(dimensions("public/icon-light-512.png")).toBe("512x512");
+    for (const name of ["icon-dark-512.png", "icon-light-512.png"]) {
+      const { data } = await sharp(path.join("public", name))
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      expect(data[3], name).toBe(0);
+    }
   });
 
   it("has wide and narrow screenshots in their declared sizes", () => {

@@ -93,7 +93,7 @@ function worker() {
 }
 
 describe("schema-compatible offline pages", () => {
-  it("uses the Glovebox 1.0 cache namespace", () => {
+  it("uses the Glovebox cache namespace", () => {
     expect(CACHE_PREFIX).toBe("glovebox-");
     expect(OFFLINE_CACHE).toBe("glovebox-offline-v1");
   });

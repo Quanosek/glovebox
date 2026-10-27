@@ -54,7 +54,7 @@ function NeighbourLink({
   return (
     <Link
       href={sectionHref(ctx, section)}
-      className={`panel hover-tile group flex h-full min-h-22 items-center gap-3 p-3 ${
+      className={`panel hover-tile group flex h-full min-h-22 flex-1 items-center gap-3 p-3 ${
         dir === "next" ? "flex-row-reverse text-right" : ""
       }`}
     >
@@ -178,10 +178,10 @@ export default async function SectionPage({ params }: Props) {
         {(prev || next) && (
           <nav
             aria-label="Nawigacja między rozdziałami"
-            className="mt-10 flex flex-col gap-3 print:hidden"
+            className="mt-10 flex flex-col gap-3 sm:flex-row print:hidden"
           >
-            {next && <NeighbourLink ctx={ctx} section={next} dir="next" />}
             {prev && <NeighbourLink ctx={ctx} section={prev} dir="prev" />}
+            {next && <NeighbourLink ctx={ctx} section={next} dir="next" />}
           </nav>
         )}
       </article>
