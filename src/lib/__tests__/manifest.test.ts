@@ -68,6 +68,10 @@ describe("web app manifest", () => {
       expect(dimensions(file(shot.src)), shot.src).toBe(shot.sizes);
   });
 
+  it("preserves the original resolution of the footer author mark", () => {
+    expect(dimensions(file("/author-mark.png"))).toBe("512x512");
+  });
+
   it("points shortcuts at existing pages", () => {
     for (const shortcut of app.shortcuts ?? [])
       expect(

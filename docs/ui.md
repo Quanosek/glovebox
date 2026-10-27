@@ -33,7 +33,8 @@ Europe screens. Every screen should be self-explanatory, calm and consistent. Vi
      left edge (direct children other than `.reader-grid` stay 48rem).
 - Header: the brand / car logo starts exactly where the first navigation key starts
   (`.nav-link` has no left padding on the first item), and the clock ends exactly where the
-  top row's last action ends.
+  top row's last action ends. Search input and submit button share the hover border and
+  one outer focus outline on the form; neither child draws a separate focus outline.
 - Project links: `ProjectLinks` shares the BuyCoffee and project repository destinations
   from `src/lib/brand.ts` between compact icon buttons beside the header search and labelled
   footer buttons. Support uses the red button; source code uses silver. Both open a new
@@ -42,15 +43,22 @@ Europe screens. Every screen should be self-explanatory, calm and consistent. Vi
   the two-row structure inspired by Pielgrzym: right-aligned project actions above a divider,
   then the AGPL usage/source-sharing/warranty notice and author signature. Unlike Pielgrzym,
   it does not repeat the app name, logo or version and has no internal page navigation.
-  The signature uses the same local author mark
-  (`public/author-mark.png`, pre-cached by the service worker), rendered in greyscale.
-  The legal notice also explains local data and manual-content rights.
+  The signature uses the original 512×512 rocket from Pielgrzym's `images/icon-512x512.png`
+  (revision `75065bdef11352cb9596320e4324373a5221ff8c`), copied unchanged to
+  `public/author-mark.png` and pre-cached by the service worker. Zero brightness with reduced
+  opacity renders only its grey silhouette, preserving transparency without internal details.
+  The top row uses compact vertical spacing. The legal notice uses 11px text on phones and
+  larger screens and also explains local data and manual-content rights.
   Its rows wrap on narrow screens. Below 40rem project links appear only in the footer,
   never in the mobile menu; wider screens also use compact header icons.
 - `body` sets `overflow-wrap: anywhere`, so strings without spaces (file names, codes, long
   links) break inside boxes instead of overflowing them, and flex/grid items may shrink below
   their longest word. Tables use `break-word` and scroll sideways in their wrapper. `.btn` and
   `.badge` stay on one line; use `truncate` (with a `title`) for single-line names.
+- Panels and page shells have `min-width: 0`. Profile and car-picker grids explicitly use
+  one `minmax(0, 1fr)` column below their multi-column breakpoints, so truncated history,
+  reminder, car and notebook titles never widen the mobile layout. Do not mask overflow
+  on the document: constrain the grid tracks and let their content wrap or truncate.
 - `text-wrap: balance` on headings and `.panel-title`, `text-wrap: pretty` on paragraphs and
   list items; `hyphens: auto` (with `lang="pl"`) in manual text and notebook previews.
 - Fact grids do not leave permanent empty grey cells: three car metadata or technical-preview

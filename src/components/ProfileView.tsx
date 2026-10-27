@@ -130,7 +130,7 @@ export function ProfileView({
 
       <section
         aria-label="Co chcesz zrobić?"
-        className="mt-6 grid gap-4 md:grid-cols-2"
+        className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2"
       >
         {hasManuals && (
           <a href="#auta" className="panel hover-tile group block">
@@ -194,7 +194,7 @@ export function ProfileView({
         </div>
         {!hydrated && noteCount > 0 ? (
           <ul
-            className="grid gap-4 md:grid-cols-3"
+            className="grid grid-cols-1 gap-4 md:grid-cols-3"
             aria-busy="true"
             aria-label="Wczytywanie notatek"
           >
@@ -226,7 +226,7 @@ export function ProfileView({
             .
           </div>
         ) : (
-          <ul className="grid gap-4 md:grid-cols-3">
+          <ul className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {pages.map((p) => (
               <li key={p.id} className="panel flex flex-col">
                 <Link
