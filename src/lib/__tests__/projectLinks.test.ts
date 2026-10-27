@@ -35,10 +35,11 @@ describe("project links", () => {
     },
   );
 
-  it("keeps local-data information, branding and the project license in the footer", () => {
+  it("keeps legal information and author identity without repeating the app title or version", () => {
     const html = renderToStaticMarkup(createElement(Footer));
-    expect(html).toContain(APP_NAME);
-    expect(html).toContain(`v${APP_VERSION}`);
+    expect(html).not.toContain(`>${APP_NAME}<`);
+    expect(html).not.toContain(`v${APP_VERSION}`);
+    expect(html).not.toContain('viewBox="0 0 64 64"');
     expect(html).toContain(
       "Notatki i ustawienia zapisują się w tej przeglądarce;",
     );
