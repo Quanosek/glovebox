@@ -50,7 +50,7 @@ export function ProjectLinks({ compact = false }: { compact?: boolean }) {
             rel="noopener noreferrer"
             aria-label={description}
             title={description}
-            className={`btn ${index === 0 ? "btn-primary" : ""} ${compact ? "h-9 w-9 p-0" : "gap-2"}`}
+            className={`btn justify-center [&>svg]:shrink-0 ${index === 0 ? "btn-primary" : ""} ${compact ? "h-9 w-9 p-0" : "gap-2"}`}
           >
             {link.icon}
             {!compact && <span>{link.label}</span>}

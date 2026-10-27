@@ -38,10 +38,15 @@ Europe screens. Every screen should be self-explanatory, calm and consistent. Vi
   from `src/lib/brand.ts` between compact icon buttons beside the header search and labelled
   footer buttons. Support uses the red button; source code uses silver. Both open a new
   tab with accessible labels announcing it, without remote widgets, images or background
-  requests. The footer (`Footer`) keeps the app name and package version, profile/notebook/
-  settings navigation, the browser-local storage reminder and an AGPL license link.
-  Its rows wrap on narrow screens. Below 40rem the header links move into the expandable
-  menu with visible labels, leaving room for search; wider screens use compact icons.
+  requests. Icons are centred on both axes and cannot shrink. The footer (`Footer`) uses
+  the two-row structure inspired by Pielgrzym: right-aligned project actions above a divider,
+  then the AGPL usage/source-sharing/warranty notice and author signature. Unlike Pielgrzym,
+  it does not repeat the app name, logo or version and has no internal page navigation.
+  The signature uses the same local author mark
+  (`public/author-mark.png`, pre-cached by the service worker), rendered in greyscale.
+  The legal notice also explains local data and manual-content rights.
+  Its rows wrap on narrow screens. Below 40rem project links appear only in the footer,
+  never in the mobile menu; wider screens also use compact header icons.
 - `body` sets `overflow-wrap: anywhere`, so strings without spaces (file names, codes, long
   links) break inside boxes instead of overflowing them, and flex/grid items may shrink below
   their longest word. Tables use `break-word` and scroll sideways in their wrapper. `.btn` and
