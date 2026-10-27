@@ -12,6 +12,7 @@ export function Logo({
       width={size}
       height={size}
       className={className}
+      filter="drop-shadow(0 1px 1px #0003)"
       aria-hidden="true"
       focusable="false"
     >

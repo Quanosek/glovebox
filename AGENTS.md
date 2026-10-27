@@ -10,8 +10,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # AGENTS.md — Glovebox
 
-**Glovebox 1.0** (package `glovebox`; name and package version in `src/lib/brand.ts`, use it everywhere the app names
-itself) is a local Next.js app for reading vehicle manuals from any manufacturer, with
+**Glovebox** (package `glovebox`; app name in `src/lib/brand.ts`, package version in
+`package.json`) is a local Next.js app for reading vehicle manuals from any manufacturer, with
 highlighting, comments, bookmarks and a Markdown notebook. The visual hierarchy takes
 inspiration from Opel's Navi 950 interface; the vehicle database itself is generic and user
 populated. There is no bundled example, default vehicle, manual template or generated content.
@@ -239,10 +239,11 @@ which then shows the equipment step.
   `watchTypography()` on the client for everything else. Editorial Polish (`„…”`, `–`, `…`,
   sentence case, one term per concept). Details in `docs/ui.md`.
 - App icon: Glovebox mark (open manual in a glovebox, ink lines + red latch) in
-  `src/app/icon.svg`; its `prefers-color-scheme: dark` rules switch only the browser tab icon to
-  a dark tile — the app itself stays light-only (`colorScheme: "light"`). `Logo.tsx` draws the
-  same mark. After editing the SVG run `pnpm icons` (ICO 16/32/48, apple-icon 180, manifest
-  96/192/512, maskable 192/512 and monochrome 512, always light); `src/app/manifest.ts` lists
+  `src/app/icon.svg`; theme-specific light and dark icons live in `public/icon-light.svg` and
+  `public/icon-dark.svg`, with subtle shadows in all generated formats. The app itself stays
+  light-only (`colorScheme: "light"`). `Logo.tsx` draws the same mark. After editing the source
+  SVG run `pnpm icons` (ICO 16/32/48, apple-icon 180, manifest 96/192/512, maskable 192/512,
+  monochrome 512 and theme variants); `src/app/manifest.ts` lists
   them together with the SVG, app shortcuts and the install screenshots in `public/screenshots/`
   (wide 1280×800 and narrow phone shots of the profile in an empty browser profile; retake them
   when the profile page changes). iOS/iPadOS use the `appleWebApp` metadata of the root layout. With an active car the header and the car
@@ -316,7 +317,7 @@ AppData {
 }
 ```
 
-- Glovebox 1.0 starts with schema 1 and fresh browser/cache namespaces. There is no
+- Glovebox starts with schema 1 and fresh browser/cache namespaces. There is no
   backward compatibility with builds preceding Glovebox. Disk manuals are independent of
   browser profiles and remain readable.
 - `settings.ownedCars` holds ids assigned to the local profile; removing one does not delete its

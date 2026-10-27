@@ -23,6 +23,20 @@ export const metadata: Metadata = {
   description: APP_DESCRIPTION,
   // iOS/iPadOS home screen app (the manifest covers the other platforms).
   appleWebApp: { capable: true, title: APP_NAME, statusBarStyle: "default" },
+  icons: {
+    icon: [
+      {
+        url: "/icon-light.svg",
+        type: "image/svg+xml",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        url: "/icon-dark.svg",
+        type: "image/svg+xml",
+        media: "(prefers-color-scheme: dark)",
+      },
+    ],
+  },
   // Page numbers and part numbers of manuals are not phone numbers.
   formatDetection: { telephone: false, email: false, address: false },
   robots: { index: false, follow: false },

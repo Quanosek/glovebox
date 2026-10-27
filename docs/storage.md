@@ -3,7 +3,7 @@
 All user data is stored in the browser under one localStorage key, `glovebox`.
 Nothing is sent anywhere.
 
-Glovebox 1.0 starts with schema 1 and its own browser/cache namespaces. Builds preceding
+Glovebox starts with schema 1 and its own browser/cache namespaces. Builds preceding
 Glovebox are not migrated and their exports are not accepted. Manuals in `database/`
 remain readable and can be assigned to the new browser profile.
 

@@ -9,8 +9,9 @@
 //   icons with the mark inside the maskable safe zone (Android adaptive icons);
 // - public/icon-monochrome-512.png: the mark alone on transparency, for
 //   themed (monochrome) launcher icons.
-// The SVG itself switches to a dark tile under `prefers-color-scheme: dark`;
-// raster icons cannot, so they always use the light (default) colours.
+// - public/icon-dark-512.png, public/icon-light-512.png: theme-specific
+//   variants corresponding to public/icon-dark.svg and public/icon-light.svg.
+// Raster icons are fixed to the light (default) colours.
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -20,19 +21,24 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const appDir = path.join(root, "src/app");
 const publicDir = path.join(root, "public");
 const source = await readFile(path.join(appDir, "icon.svg"), "utf8");
+const darkSource = await readFile(path.join(publicDir, "icon-dark.svg"));
+const lightSource = await readFile(path.join(publicDir, "icon-light.svg"));
 // Drop the dark-scheme rules so the light colours are rendered.
 const svg = Buffer.from(
   source.replace(/@media[^{]*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g, ""),
 );
 const BACKGROUND = "#ffffff";
 
-const png = (size) =>
-  sharp(svg, { density: Math.ceil((72 * size) / 64) * 2 })
+const renderPng = (sourceSvg, size, background) => {
+  const image = sharp(sourceSvg, { density: Math.ceil((72 * size) / 64) * 2 })
     .resize(size, size)
-    .flatten({ background: BACKGROUND })
-    .ensureAlpha()
+    .ensureAlpha();
+  return (background ? image.flatten({ background }) : image)
     .png({ compressionLevel: 9 })
     .toBuffer();
+};
+
+const png = (size) => renderPng(svg, size, BACKGROUND);
 
 // The mark scaled to 72% keeps its farthest corner inside the 80% circle.
 const maskable = async (size) => {
@@ -82,6 +88,14 @@ await writeFile(path.join(publicDir, "icon-96.png"), await png(96));
 await writeFile(path.join(publicDir, "icon-192.png"), await png(192));
 await writeFile(path.join(publicDir, "icon-512.png"), await png(512));
 await writeFile(
+  path.join(publicDir, "icon-dark-512.png"),
+  await renderPng(darkSource, 512),
+);
+await writeFile(
+  path.join(publicDir, "icon-light-512.png"),
+  await renderPng(lightSource, 512),
+);
+await writeFile(
   path.join(publicDir, "icon-maskable-192.png"),
   await maskable(192),
 );
@@ -121,5 +135,5 @@ await writeFile(
   Buffer.concat([header, ...entries, ...images]),
 );
 console.log(
-  "✓ favicon.ico, apple-icon.png and the manifest icons (96, 192, 512, maskable 192/512, monochrome 512) generated from src/app/icon.svg",
+  "✓ favicon.ico, apple-icon.png, manifest icons and theme variants generated",
 );
