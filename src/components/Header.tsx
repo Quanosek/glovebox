@@ -258,9 +258,6 @@ export function Header({ cars }: { cars: CarSummary[] }) {
           </ul>
           <Clock />
         </div>
-        <div className="app-frame border-t border-line py-3 sm:hidden">
-          <ProjectLinks />
-        </div>
       </nav>
     </header>
   );

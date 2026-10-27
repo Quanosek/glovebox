@@ -22,6 +22,7 @@ const SHELL = [
   "/icon-192.png",
   "/icon-512.png",
   "/icon-maskable-512.png",
+  "/author-mark.png",
   "/",
   "/auta",
   "/notatnik",
