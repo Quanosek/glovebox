@@ -53,7 +53,8 @@ staging. Inspect specific leftovers while stopped before deleting them.
 Next.js standalone output is enabled by `GLOVEBOX_STANDALONE=1` only during
 Docker builds. Ordinary `pnpm build` / `pnpm start` remain supported.
 Next.js uses its default worker and entry-loading behavior, without experimental
-configuration options. Type checking remains enabled.
+runtime options; the only experimental key is `agentUpgrade: "security"`, which
+marks the app for security-only Next.js upgrades. Type checking remains enabled.
 
 Docker caches the dependency-installation layer; changing source alone does
 not reinstall dependencies. There is no additional pnpm cache mount.

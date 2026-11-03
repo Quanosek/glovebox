@@ -85,8 +85,11 @@ describe("Docker setup", () => {
       expect(env).toContain("MANUALS_ALLOW_REMOTE_IMPORT=1\n");
     });
 
-    it("uses no experimental Next.js configuration", () => {
-      expect(nextConfig).not.toHaveProperty("experimental");
+    it("uses no experimental Next.js runtime configuration", () => {
+      // Only the upgrade-channel marker is allowed; it does not change runtime behavior.
+      expect(nextConfig.experimental ?? {}).toEqual({
+        agentUpgrade: "security",
+      });
     });
   });
 

@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
     "/*": ["./database/**/*", "./.venv/**/*", "./.runtime/**/*"],
   },
   images: { unoptimized: true },
+  experimental: {
+    agentUpgrade: "security",
+  },
   turbopack: {
     rules: {
       "*.css": {
