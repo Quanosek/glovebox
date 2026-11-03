@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { APP_NAME } from "@/lib/brand";
-import { hasReadableManual, type CarSummary } from "@/lib/cars";
+import type { CarSummary } from "@/lib/cars";
 import { useOnline } from "@/lib/offline";
 import { dueSoon, todayIso } from "@/lib/reminders";
 import { useLayoutHint } from "@/lib/storage/hintContext";
@@ -77,7 +77,6 @@ function Clock() {
 export function Header({ cars }: { cars: CarSummary[] }) {
   const pathname = usePathname();
   const car = useActiveCar(cars);
-  const hasManuals = hasReadableManual(cars);
   const hydrated = useHydrated();
   const hint = useLayoutHint();
   const data = useAppData();
@@ -93,9 +92,7 @@ export function Header({ cars }: { cars: CarSummary[] }) {
     { href: "/", label: "Profil", exact: true },
     ...(car
       ? [{ href: car.href, label: `${car.brand} ${car.model}` }]
-      : hasManuals
-        ? [{ href: "/auta", label: "Wybierz auto" }]
-        : []),
+      : [{ href: "/dodaj-auto", label: "Dodaj auto" }]),
     { href: "/przypomnienia", label: "Przypomnienia", badge: due },
     { href: "/notatnik", label: "Notatnik" },
     { href: "/komentarze", label: "Komentarze" },

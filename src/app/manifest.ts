@@ -62,10 +62,10 @@ export default function manifest(): MetadataRoute.Manifest {
     icons: ICONS,
     shortcuts: [
       {
-        name: "Wybierz auto",
-        short_name: "Auta",
-        description: "Lista aut z instrukcjami",
-        url: "/auta",
+        name: "Dodaj auto",
+        short_name: "Dodaj auto",
+        description: "Dodaj auto krok po kroku",
+        url: "/dodaj-auto",
         icons: SHORTCUT_ICON,
       },
       {

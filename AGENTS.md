@@ -126,7 +126,6 @@ src/
     manifest.ts                 web app manifest (install name, light colours, icons)
     page.tsx                    profile (ProfileView): assigned cars / notebook / continue reading,
                                 reading history, recent highlights, "Czy wiesz, że…" tips
-    auta/                       car list (CarPicker)
     auto/[car]/                 car "home screen" (docs/car-overview.md): car card, numbers,
                                 favourites, quick tiles, books, tools, technical-data preview,
                                 service reminders, offline status; layout tracks active car

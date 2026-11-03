@@ -31,7 +31,8 @@ describe("project links", () => {
       expect(html.includes("<span>Postaw kawę</span>")).toBe(!compact);
       expect(html.includes("<span>GitHub</span>")).toBe(!compact);
       expect(html).toContain("justify-center");
-      expect(html).toContain("[&amp;&gt;svg]:shrink-0");
+      // Header buttons are icon-only; footer buttons are text-only.
+      expect(html.includes("<svg")).toBe(compact);
     },
   );
 

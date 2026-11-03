@@ -24,7 +24,6 @@ const SHELL = [
   "/icon-maskable-512.png",
   "/author-mark.png",
   "/",
-  "/auta",
   "/notatnik",
   "/komentarze",
   "/zakladki",

@@ -37,9 +37,9 @@ Europe screens. Every screen should be self-explanatory, calm and consistent. Vi
   one outer focus outline on the form; neither child draws a separate focus outline.
 - Project links: `ProjectLinks` shares the BuyCoffee and project repository destinations
   from `src/lib/brand.ts` between compact icon buttons beside the header search and labelled
-  footer buttons. Support uses the red button; source code uses silver. Both open a new
+  text-only footer buttons (no icons). Support uses the red button; source code uses silver. Both open a new
   tab with accessible labels announcing it, without remote widgets, images or background
-  requests. Icons are centred on both axes and cannot shrink. The footer (`Footer`) uses
+  requests. Header icons are centred on both axes and cannot shrink. The footer (`Footer`) uses
   the two-row structure inspired by Pielgrzym: right-aligned project actions above a divider,
   then the AGPL usage/source-sharing/warranty notice and author signature. Unlike Pielgrzym,
   it does not repeat the app name, logo or version and has no internal page navigation.
@@ -246,7 +246,7 @@ placeholder?, defaultValue?, maxLength?, ... })` asks for one line of text (e.g.
   manual it is the first row of the table of contents (`.sidebar-back`: white key, red arrow,
   above the book groups); on other secondary screens it sits above the content in
   `.back-navigation`, aligned with `.page-shell`. Main views
-  of the top navigation (`/`, car page, `/auta`, `/przypomnienia`, `/notatnik`, `/komentarze`,
+  of the top navigation (`/`, car page or `/dodaj-auto`, `/przypomnienia`, `/notatnik`, `/komentarze`,
   `/zakladki`, `/ustawienia`) intentionally have none. The reader key uses `.btn` cursor,
   focus, hover and press feedback. It returns to the previous distinct manual page of the
   current car, skipping other screens and in-page anchors. The public Navigation API

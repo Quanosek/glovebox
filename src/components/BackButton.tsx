@@ -8,7 +8,7 @@ import { goReaderBack, readerCar } from "@/lib/readerNavigation";
 /** Main views from the top navigation intentionally have no back button. */
 const PRIMARY_PATHS = new Set([
   "/",
-  "/auta",
+  "/dodaj-auto",
   "/przypomnienia",
   "/notatnik",
   "/komentarze",

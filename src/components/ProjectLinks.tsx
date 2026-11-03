@@ -52,7 +52,7 @@ export function ProjectLinks({ compact = false }: { compact?: boolean }) {
             title={description}
             className={`btn justify-center [&>svg]:shrink-0 ${index === 0 ? "btn-primary" : ""} ${compact ? "h-9 w-9 p-0" : "gap-2"}`}
           >
-            {link.icon}
+            {compact && link.icon}
             {!compact && <span>{link.label}</span>}
           </a>
         );

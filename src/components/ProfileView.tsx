@@ -124,7 +124,7 @@ export function ProfileView({
         {!hasManuals
           ? "Nie dodano jeszcze żadnych instrukcji. Dodaj pierwsze auto z plików PDF, aby rozpocząć czytanie."
           : myCars.length === 0
-            ? "Dodaj auto do swojego profilu, wybierając je z dostępnych instrukcji albo dodając własne. Twoje ustawienia zostają na tym urządzeniu."
+            ? "Dodaj swoje auto krok po kroku. Twoje ustawienia zostają na tym urządzeniu."
             : "Nie musisz zakładać konta ani się logować. Twoje zaznaczenia, komentarze, notatki i ustawienia zostają tylko na tym urządzeniu. Wybierz auto, a jego instrukcje zapiszą się tak, by działały także bez internetu."}
       </p>
 
@@ -134,7 +134,7 @@ export function ProfileView({
       >
         {hasManuals && (
           <a href="#auta" className="panel hover-tile group block">
-            <div className="panel-title">Wybór auta</div>
+            <div className="panel-title">Twoje auta</div>
             <div className="p-5">
               <h2 className="type-card group-hover:text-red">
                 {active ? active.label : "Wybierz auto"}
@@ -142,7 +142,7 @@ export function ProfileView({
               <p className="mt-1 text-sm text-graphite">
                 {active
                   ? `Wybrane auto · ${active.books.length} ${plural(active.books.length, "instrukcja", "instrukcje", "instrukcji")}. Zmień albo dodaj własne poniżej.`
-                  : `Liczba Twoich aut: ${myCars.length}. Możesz dodać kolejne z dostępnych instrukcji.`}
+                  : `Liczba Twoich aut: ${myCars.length}. Kolejne dodasz krok po kroku.`}
               </p>
             </div>
           </a>

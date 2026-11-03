@@ -23,7 +23,7 @@ Cache API needs a secure context (`localhost` or HTTPS); on plain-HTTP LAN addre
 | `glovebox-offline-v1` | `saveCarOffline()` — every page/image/script of one car |
 
 `install` fetches the install metadata (`/manifest.webmanifest` and the 192/512/maskable
-icons, so the installed app starts offline) and the app shell (`SHELL`: `/`, `/auta`,
+icons, so the installed app starts offline) and the app shell (`SHELL`: `/`,
 `/notatnik`, `/komentarze`, `/zakladki`, `/przypomnienia`, `/ustawienia`, `/dodaj-auto`), scans each HTML for `/_next/static/*` URLs (HTML
 and the inline RSC payload) and pre-caches those scripts/styles too, so every shell page
 hydrates offline even if it was never visited. Then `skipWaiting()`. `activate` deletes
